@@ -401,7 +401,11 @@ function showTab(t){
 function toEmail(id){id=String(id||'').trim();return id.indexOf('@')>=0?id:id+'@iaosdops.internal';}
 function showLogin(msg){$('app').classList.add('hide');$('login').classList.remove('hide');$('loginErr').textContent=msg||'';}
 function enter(){
-  return sb.from('users').select('role,status').limit(1).then(function(r){
+  return sb.auth.getUser().then(function(u){
+    var uid=u&&u.data&&u.data.user&&u.data.user.id;
+    if(!uid){throw new Error('계정 정보를 확인할 수 없어요.');}
+    return sb.from('users').select('role,status').eq('auth_uid',uid).limit(1);
+  }).then(function(r){
     var row=(r.data||[])[0];
     if(r.error||!row){throw new Error('계정 정보를 확인할 수 없어요.');}
     if(row.status!=='active'||(row.role!=='master'&&row.role!=='group_viewer')){

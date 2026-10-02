@@ -855,7 +855,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r16-1002-1710</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r17-1002-1730</div>
   </div>
 </div>
 
@@ -2934,7 +2934,7 @@ textarea.rpt-edit{resize:vertical;min-height:36px}
       <div id="reportPrintArea" style="background:white;padding:16px;border:1px solid #ccc">
         <div id="reportBigTitle" style="text-align:center;font-size:19px;font-weight:800;letter-spacing:6px;margin-bottom:14px">상 황 발 생 보 고 서</div>
         <table class="rpt-table" id="rptGenericTable">
-          <tr><td class="rpt-lbl" style="width:20%">사업부명</td><td style="width:30%" id="rptDept">T1환경미화사업부</td><td class="rpt-lbl" style="width:20%">보고자</td><td style="width:30%" id="rptReporter"></td></tr>
+          <tr><td class="rpt-lbl" style="width:20%">사업부명</td><td style="width:30%" id="rptDept" class="div-nm">T1환경미화사업부</td><td class="rpt-lbl" style="width:20%">보고자</td><td style="width:30%" id="rptReporter"></td></tr>
           <tr><td class="rpt-lbl">발생일시</td><td id="rptDatetime"></td><td class="rpt-lbl">발생장소</td><td id="rptLocation"></td></tr>
           <tr><td class="rpt-lbl" rowspan="6" style="text-align:center">상황내용</td><td class="rpt-lbl">발생시간</td><td colspan="2" id="rptTime"></td></tr>
           <tr><td class="rpt-lbl">발생장소</td><td colspan="2"><input type="text" class="rpt-edit" id="rptLocation2" oninput="document.getElementById('rptLocation').textContent=this.value"></td></tr>
@@ -3306,7 +3306,7 @@ textarea.rpt-edit{resize:vertical;min-height:36px}
         <button type="button" id="adcSigStatusToggle" onclick="adcToggleSigStatus()" style="margin-top:10px;width:100%;padding:11px;background:var(--teal2);color:#fff;border:none;border-radius:var(--r2);font-size:13.5px;font-weight:700;cursor:pointer">📋 등록 현황 보기 (관리자·팀장·조장·조장대행)</button>
         <div id="adcSigStatusPanel" style="display:none;margin-top:8px;max-height:280px;overflow-y:auto;background:#fff;border-radius:8px;padding:6px 4px"></div>
       </div>
-      <div class="fg"><label class="f-lbl">소속</label><input type="text" id="adcMyDept" class="ri" value="T1환경미화사업부"></div>
+      <div class="fg"><label class="f-lbl">소속</label><input type="text" id="adcMyDept" class="ri" value=""></div>
       <div class="fg"><label class="f-lbl">직책</label><input type="text" id="adcMyPosition" class="ri" placeholder="예: 과장, 팀장, 사원"></div>
       <div class="fg"><label class="f-lbl">사번</label><input type="text" id="adcMyEmpId" class="ri" placeholder="사번 입력"></div>
       <div class="fg">
@@ -5921,7 +5921,7 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
 
 <div id="sVeh" class="scr">
   <div class="app-hd">
-    <div class="logo-w"><div class="logo-img"><img src="logo.png" alt="logo"></div><div class="logo-t"><h2>차량운행기록부</h2><p>T1 환경미화사업부 스타리아 821로8915</p></div></div>
+    <div class="logo-w"><div class="logo-img"><img src="logo.png" alt="logo"></div><div class="logo-t"><h2>차량운행기록부</h2><p><span class="div-nm">T1 환경미화사업부</span> 스타리아 821로8915</p></div></div>
     <button class="back-hd" onclick="go('main')" id="vehBackBtn">← 메인</button>
     <button id="vehLogoutBtn" onclick="doLogout()" style="display:none;padding:6px 12px;background:var(--danger-bg);color:var(--danger);border:1.5px solid var(--danger);border-radius:20px;font-size:13px;font-weight:700;cursor:pointer">로그아웃</button>
   </div>
@@ -7787,7 +7787,7 @@ async function edDownloadExcel(){
     ws['!cols']=[{wch:22},{wch:20}];
     dlFinalizeSheet(ws);
     var wb={SheetNames:['현황판'],Sheets:{'현황판':ws}};
-                await dlSaveWorkbook(wb, 'T1_현황판_'+d.dFrom+(d.dFrom!==d.dTo?'~'+d.dTo:'')+'.xlsx');
+                await dlSaveWorkbook(wb, iaosDID()+'_현황판_'+d.dFrom+(d.dFrom!==d.dTo?'~'+d.dTo:'')+'.xlsx');
     toast('✅ 현황판 엑셀 다운로드 완료');
   }catch(e){ toast('다운로드 오류: '+_safeErrMsg(e)); }
 }
@@ -10180,7 +10180,7 @@ function showInfo(){
     +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
     +'<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--navy));display:flex;align-items:center;justify-content:center;font-size:23px;font-weight:900;color:white">'+me.initial+'</div>'
     +'<div><div style="font-size:19px;font-weight:800;color:var(--g7)">'+me.name+'</div>'
-    +'<div style="font-size:14px;color:var(--g4)">'+(me.department||'T1환경미화사업부')+' · '+me.team+' · '+roleLabel+'</div></div></div>'
+    +'<div style="font-size:14px;color:var(--g4)">'+(me.department||iaosDN())+' · '+me.team+' · '+roleLabel+'</div></div></div>'
     +'<div style="background:var(--g1);border-radius:var(--r2);padding:12px;margin-bottom:12px">'
     +'<div style="font-size:13px;font-weight:800;color:var(--g6);margin-bottom:8px">🔤 글씨 크기</div>'
     +'<div id="fontScaleBtns" style="display:flex;gap:6px"></div>'
@@ -10332,6 +10332,8 @@ window.curDivision=(function(){ try{return localStorage.getItem('iaos_div')||nul
 var IAOS_DIVS=[];            // [{id,name,sort_order}]
 var IAOS_REG={teams:[],groups:[]};
 function iaosDivName(id){ var d=(IAOS_DIVS||[]).filter(function(x){return x.id===id;})[0]; return d?d.name:(id||''); }
+function iaosDN(){ try{ var multi=me&&(me.role==='master'||me.role==='group_viewer'); var id=multi?window.curDivision:(me&&me.division_id); return iaosDivName(id)||'환경미화운영그룹'; }catch(e){ return '환경미화운영그룹'; } }
+function iaosDID(){ try{ var multi=me&&(me.role==='master'||me.role==='group_viewer'); return (multi?window.curDivision:(me&&me.division_id))||'IAOS'; }catch(e){ return 'IAOS'; } }
 function iaosDivShort(id){ var s=iaosDivName(id).replace('환경미화사업부','').replace('환경미화','').trim(); return s||iaosDivName(id); }
 async function iaosFetchDivisions(){
   if(IAOS_DIVS.length) return IAOS_DIVS;
@@ -10642,7 +10644,7 @@ setInterval(function(){
     doLogout();
   }
 }, 60000);
-function goLogin(){go('login');document.querySelectorAll('.t-btn,.r-btn').forEach(b=>b.classList.remove('on'));['rNm','rEm','rPw','rPw2'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});document.getElementById('rErr').style.display='none';regGatePassedEmpNo=null;var gs=document.getElementById('regGateStep');if(gs)gs.style.display='block';var fb=document.getElementById('regFormBody');if(fb)fb.style.display='none';var ge=document.getElementById('regGateEmpNo');if(ge)ge.value='';var gerr=document.getElementById('regGateErr');if(gerr)gerr.style.display='none';var gce=document.getElementById('regConfirmedEmpNo');if(gce)gce.textContent='';var gd=document.getElementById('regDept');if(gd)gd.value='T1환경미화사업부';var gcd=document.getElementById('regConfirmedDept');if(gcd)gcd.textContent='';}
+function goLogin(){go('login');document.querySelectorAll('.t-btn,.r-btn').forEach(b=>b.classList.remove('on'));['rNm','rEm','rPw','rPw2'].forEach(i=>{const e=document.getElementById(i);if(e)e.value='';});document.getElementById('rErr').style.display='none';regGatePassedEmpNo=null;var gs=document.getElementById('regGateStep');if(gs)gs.style.display='block';var fb=document.getElementById('regFormBody');if(fb)fb.style.display='none';var ge=document.getElementById('regGateEmpNo');if(ge)ge.value='';var gerr=document.getElementById('regGateErr');if(gerr)gerr.style.display='none';var gce=document.getElementById('regConfirmedEmpNo');if(gce)gce.textContent='';var gd=document.getElementById('regDept');if(gd)gd.value='';var gcd=document.getElementById('regConfirmedDept');if(gcd)gcd.textContent='';}
 function pickT(el){
   document.querySelectorAll('#regTeamGrid .t-btn').forEach(function(b){b.classList.remove('on');});
   el.classList.add('on');
@@ -12544,7 +12546,7 @@ async function dlCSV(type, mode){
           ]);
         });
         var vRange=dlDateRangeStr(r3.data.map(function(d){return d.date;}));
-        var vWrap=dlWithTitle(vRows,'T1환경미화사업부 차량운행일지',vRange,11);
+        var vWrap=dlWithTitle(vRows,iaosDN()+' 차량운행일지',vRange,11);
         var ws3=XLSX.utils.aoa_to_sheet(vWrap.rows);
         ws3['!merges']=vWrap.merges;
         // 계기판 km(전/후) 컬럼에 천단위 쉼표 서식 적용 (헤더 다음 데이터 행부터)
@@ -12743,7 +12745,7 @@ async function dlCSV(type, mode){
           ]);
         });
         var lostRange=dlDateRangeStr(rl.data.map(function(d){return d.created_at;}));
-        var lostWrap=dlWithTitle(lostRows,'T1환경미화사업부 습득물 처리현황',lostRange,9);
+        var lostWrap=dlWithTitle(lostRows,iaosDN()+' 습득물 처리현황',lostRange,9);
         var wsl=XLSX.utils.aoa_to_sheet(lostWrap.rows);
         wsl['!merges']=lostWrap.merges;
         wsl['!cols']=[{wch:18},{wch:10},{wch:10},{wch:12},{wch:20},{wch:16},{wch:24},{wch:10},{wch:24}];
@@ -12954,7 +12956,7 @@ async function dlCSV(type, mode){
       notice:'공지사항', regulation:'사규파일목록', users:'사용자목록', all:'전체현황'
     };
     var dlLabel=dlNameMap[type]||type;
-    var dlFileName='T1_'+dlLabel+'_'+today+'.xlsx';
+    var dlFileName=iaosDID()+'_'+dlLabel+'_'+today+'.xlsx';
     if(mode==='email'){
       openEmailSendModal({
         label: dlLabel+' 자료를 엑셀 파일로 첨부해 보냅니다.',
@@ -12970,7 +12972,7 @@ async function dlCSV(type, mode){
     toast('✅ 엑셀 다운로드 완료');
   }catch(e){console.error(e);toast('오류: '+_safeErrMsg(e));}
 }
-function _dlCSV_old(type){if(!me||!(me.role==='admin'||me.role==='master')){toast('다운로드 권한이 없습니다');return;}toast(type+' 다운로드 중...');setTimeout(()=>{const rows=[['T1환경미화사업부 '+type],['날짜','구역','B2F','B1F','1F','2F','3F','4F','집하장','소계']];const zones=['L/S 동편','L/S 서편','A/S 동편','A/S 서편'];const from=new Date('2026-05-01'),to=new Date('2026-05-31');for(let d=new Date(from);d<=to&&rows.length<200;d.setDate(d.getDate()+1)){zones.forEach(z=>{const vs=[2,5,8,7,6,5,2].map(v=>v+Math.floor(Math.random()*3));rows.push([d.toISOString().slice(0,10),z,...vs,vs.reduce((a,b)=>a+b,0)]);});}const csv='\uFEFF'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='T1_'+type+'.csv';a.click();URL.revokeObjectURL(url);toast('✓ 다운로드 완료!');},600);}
+function _dlCSV_old(type){if(!me||!(me.role==='admin'||me.role==='master')){toast('다운로드 권한이 없습니다');return;}toast(type+' 다운로드 중...');setTimeout(()=>{const rows=[[iaosDN()+' '+type],['날짜','구역','B2F','B1F','1F','2F','3F','4F','집하장','소계']];const zones=['L/S 동편','L/S 서편','A/S 동편','A/S 서편'];const from=new Date('2026-05-01'),to=new Date('2026-05-31');for(let d=new Date(from);d<=to&&rows.length<200;d.setDate(d.getDate()+1)){zones.forEach(z=>{const vs=[2,5,8,7,6,5,2].map(v=>v+Math.floor(Math.random()*3));rows.push([d.toISOString().slice(0,10),z,...vs,vs.reduce((a,b)=>a+b,0)]);});}const csv='\uFEFF'+rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=iaosDID()+'_'+type+'.csv';a.click();URL.revokeObjectURL(url);toast('✓ 다운로드 완료!');},600);}
 
 // ─ 현재 근무인원 ─
 var _mpDataLoadedToday=false; // ★ 2026-09-23 loadMpFromDB()가 오늘자 데이터를 실제로 다 불러온 뒤에만 true
@@ -14792,7 +14794,7 @@ function subVeh(){
   if(!dest){toast('목적지를 입력해주세요');return;}
   if(!purpose){toast('목적을 입력해주세요');return;}
   var dist=after-before;
-  var dept=(dept2||(me?me.team:'T1환경미화사업부'));
+  var dept=(dept2||(me?me.team:iaosDN()));
   var record={date:date,dept:dept,name:name,before:before,after:after,dist:dist,start:start,end:end,dest:dest,purpose:purpose,etc:etc};
   // DB 저장 (전체 공유) - localStorage 미사용
   // DB 저장 즉시 실행
@@ -14800,7 +14802,7 @@ function subVeh(){
     var res = await sb.from('vehicle_log').insert({
       date: record.date,
       driver: record.name,
-      team: record.dept||'T1환경미화사업부',
+      team: record.dept||iaosDN(),
       vehicle: record.dest,
       purpose: record.purpose,
       start_km: record.before,
@@ -14926,7 +14928,7 @@ async function saveVehEdit(){
   if(!purpose){toast('목적을 입력해주세요');return;}
   try{
     var res=await sb.from('vehicle_log').update({
-      date:date, driver:name, team:dept||'T1환경미화사업부', vehicle:dest,
+      date:date, driver:name, team:dept||iaosDN(), vehicle:dest,
       purpose:purpose, start_km:before, end_km:after,
       start_time:start||null, end_time:end||null, etc:etc||null
     }).eq('id',id);
@@ -14973,7 +14975,7 @@ async function dlVeh(){
     rows.push([r.date, r.dept||'T1운영', r.name, r.before||0, r.after||0, r.dist||0, r.start||'', r.end||'', r.dest||'', r.purpose||'', r.etc||'']);
   });
   var range=(typeof dlDateRangeStr==='function')?dlDateRangeStr(filtered.map(function(r){return r.date;})):'';
-  var wrap=(typeof dlWithTitle==='function')?dlWithTitle(rows,'T1환경미화사업부 차량운행일지',range,11):{rows:rows,merges:[]};
+  var wrap=(typeof dlWithTitle==='function')?dlWithTitle(rows,iaosDN()+' 차량운행일지',range,11):{rows:rows,merges:[]};
   var ws=XLSX.utils.aoa_to_sheet(wrap.rows);
   ws['!merges']=wrap.merges;
   ws['!cols']=[{wch:11},{wch:9},{wch:9},{wch:14},{wch:14},{wch:9},{wch:9},{wch:9},{wch:12},{wch:14},{wch:12}];
@@ -15533,7 +15535,7 @@ async function dlWorkVeh(){
     vehGroups[v].forEach(function(r){
       rows.push([r.date, r.vehicle||'', r.dept||'T1운영', r.name, r.before||0, r.after||0, r.dist||0, r.start||'', r.end||'', r.dest||'', r.purpose||'', r.co_rider||'', r.fuel||'', r.etc||'']);
     });
-    var wrap=(typeof dlWithTitle==='function')?dlWithTitle(rows,'T1환경미화사업부 공사업무용차량 운행일지 - '+v,range,14):{rows:rows,merges:[]};
+    var wrap=(typeof dlWithTitle==='function')?dlWithTitle(rows,iaosDN()+' 공사업무용차량 운행일지 - '+v,range,14):{rows:rows,merges:[]};
     var ws=XLSX.utils.aoa_to_sheet(wrap.rows);
     ws['!merges']=wrap.merges;
     ws['!cols']=[{wch:11},{wch:12},{wch:9},{wch:9},{wch:14},{wch:14},{wch:9},{wch:9},{wch:9},{wch:12},{wch:14},{wch:10},{wch:10},{wch:12}];
@@ -15863,14 +15865,14 @@ async function dlJointWork(){
   rows.push(['','','','','','','합계(중복제거)',jwDlHeadTotal,'','']);
   try{
     var range=(typeof dlDateRangeStr==='function')?dlDateRangeStr(filtered.map(function(r){return r.work_date;})):'';
-    var wrap=(typeof dlWithTitle==='function')?dlWithTitle(rows,'T1환경미화사업부 공동작업 기록',range,10):{rows:rows,merges:[]};
+    var wrap=(typeof dlWithTitle==='function')?dlWithTitle(rows,iaosDN()+' 공동작업 기록',range,10):{rows:rows,merges:[]};
     var ws=XLSX.utils.aoa_to_sheet(wrap.rows);
     ws['!merges']=wrap.merges;
     ws['!cols']=[{wch:12},{wch:8},{wch:20},{wch:12},{wch:16},{wch:8},{wch:22},{wch:10},{wch:16},{wch:10}];
     var wb=XLSX.utils.book_new();
     dlFinalizeSheet(ws);
     XLSX.utils.book_append_sheet(wb,ws,'공동작업');
-                await dlSaveWorkbook(wb, 'T1_공동작업기록_'+(from&&to?from+'_'+to:'전체')+'.xlsx');
+                await dlSaveWorkbook(wb, iaosDID()+'_공동작업기록_'+(from&&to?from+'_'+to:'전체')+'.xlsx');
     toast('📥 공동작업 기록 다운로드 완료 ('+filtered.length+'건)');
   }catch(e){ toast('⚠️ 다운로드 실패: '+_safeErrMsg(e)); }
 }
@@ -16297,7 +16299,7 @@ async function jwSchedDownload(){
     dlFinalizeSheet(ws);
     XLSX.utils.book_append_sheet(wb,ws,'사전등록스케줄');
     var today=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
-    await dlSaveWorkbook(wb, 'T1_공동작업_사전등록스케줄_'+today+'.xlsx');
+    await dlSaveWorkbook(wb, iaosDID()+'_공동작업_사전등록스케줄_'+today+'.xlsx');
     toast('📥 다운로드 완료 ('+jwScheduleData.length+'건)');
   }catch(e){ toast('⚠️ 다운로드 실패: '+_safeErrMsg(e)); }
 }
@@ -21236,7 +21238,7 @@ async function loadUserList(){
         +(groupOnly?('<span style="font-size:11.5px;padding:2px 8px;border-radius:20px;background:#FDF4FF;color:#A21CAF;font-weight:700">'+groupOnly+'</span>'):'')
         +'<span style="font-size:11.5px;padding:2px 8px;border-radius:20px;background:var(--navy-bg);color:var(--navy);font-weight:700">'+u.role+'</span>';
       row.innerHTML='<div style="display:flex;flex-direction:column;width:100%;gap:8px">'
-        +'<div class="u-info" style="width:100%;justify-content:space-between"><div style="display:flex;align-items:center;gap:9px;min-width:0"><div class="u-ico" style="flex-shrink:0">'+eeEsc(u.name[0])+'</div><div style="font-size:17px;font-weight:800;color:var(--navy)">'+eeEsc(u.department||'T1환경미화사업부')+'</div></div><div style="font-size:13px;color:var(--g5);font-weight:600;flex-shrink:0;padding-left:8px">'+eeEsc(u.name)+'</div></div>'
+        +'<div class="u-info" style="width:100%;justify-content:space-between"><div style="display:flex;align-items:center;gap:9px;min-width:0"><div class="u-ico" style="flex-shrink:0">'+eeEsc(u.name[0])+'</div><div style="font-size:17px;font-weight:800;color:var(--navy)">'+eeEsc(u.department||iaosDN())+'</div></div><div style="font-size:13px;color:var(--g5);font-weight:600;flex-shrink:0;padding-left:8px">'+eeEsc(u.name)+'</div></div>'
         +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span class="chip chip-ok">활성</span>'+unlockBtn+moveBtn+empIdBtn+memberBtn+pwResetBtn+'<button class="perm-btn" data-name="'+u.name+'" data-id="'+u.id+'" style="padding:4px 9px;background:var(--navy-bg);color:var(--navy);border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer">🔐 권한</button><button class="withdraw-btn" data-id="'+u.id+'" data-name="'+u.name+'" style="padding:5px 9px;background:var(--danger-bg);color:var(--danger);border:1.5px solid rgba(217,64,64,.2);border-radius:20px;font-size:13px;font-weight:700;cursor:pointer">🗑️ 완전삭제</button></div>'
         +'<div style="display:flex;flex-wrap:wrap;gap:5px">'+infoChips+'</div>'
         +'<div id="perm-'+u.id+'" style="display:flex;flex-wrap:wrap;gap:4px">'+permChips+'</div>'
@@ -21292,7 +21294,7 @@ async function editUserEmpId(id,name,curEmpId){
       if(sigRes.data){
         await sb.from('user_signatures').update({employee_id:v||null, updated_at:new Date().toISOString()}).eq('username',id);
       }else if(v){
-        await sb.from('user_signatures').upsert({username:id, employee_id:v, dept:'T1환경미화사업부', updated_at:new Date().toISOString()},{onConflict:'username'});
+        await sb.from('user_signatures').upsert({username:id, employee_id:v, dept:iaosDN(), updated_at:new Date().toISOString()},{onConflict:'username'});
       }
     }catch(syncErr){ console.error('사번→서명프로필 동기화 실패:', syncErr); }
     hideM('adminAuthModal');
@@ -21918,7 +21920,7 @@ async function downloadHoExcel(){
     XLSX.utils.book_append_sheet(wb,ws,'인수인계');
 
     var now=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
-                await dlSaveWorkbook(wb, 'T1_인수인계_'+now+'.xlsx');
+                await dlSaveWorkbook(wb, iaosDID()+'_인수인계_'+now+'.xlsx');
     toast('✅ 인수인계 엑셀 다운로드 완료');
   }catch(e){ toast('다운로드 오류: '+_safeErrMsg(e)); }
 }
@@ -23427,14 +23429,14 @@ async function downloadAccidentExcel(){
   });
   try{
     var range=(typeof dlDateRangeStr==='function')?dlDateRangeStr(filtered.map(function(r){return r.occurred_at||r.created_at;})):'';
-    var wrap=(typeof dlWithTitle==='function')?dlWithTitle(rows,'T1환경미화사업부 안전사고 현황',range,15):{rows:rows,merges:[]};
+    var wrap=(typeof dlWithTitle==='function')?dlWithTitle(rows,iaosDN()+' 안전사고 현황',range,15):{rows:rows,merges:[]};
     var ws=XLSX.utils.aoa_to_sheet(wrap.rows);
     ws['!merges']=wrap.merges;
     ws['!cols']=[{wch:16},{wch:9},{wch:8},{wch:18},{wch:12},{wch:24},{wch:18},{wch:20},{wch:10},{wch:12},{wch:10},{wch:9},{wch:10},{wch:16},{wch:12}];
     var wb=XLSX.utils.book_new();
     dlFinalizeSheet(ws);
     XLSX.utils.book_append_sheet(wb,ws,'안전사고');
-    var fname='T1_안전사고현황'+(mf?'_'+mf:'')+'.xlsx';
+    var fname=iaosDID()+'_안전사고현황'+(mf?'_'+mf:'')+'.xlsx';
                 await dlSaveWorkbook(wb, fname);
     toast('📥 다운로드 완료');
   }catch(e){ toast('⚠️ 다운로드 실패: '+_safeErrMsg(e)); }
@@ -23467,13 +23469,13 @@ async function downloadLostExcel(){
   try{
     var wb=XLSX.utils.book_new();
     var range=(typeof dlDateRangeStr==='function')?dlDateRangeStr(filtered.map(function(r){return r.created_at;})):'';
-    var wrap=(typeof dlWithTitle==='function')?dlWithTitle(rows,'T1환경미화사업부 습득물 처리현황',range,9):{rows:rows,merges:[]};
+    var wrap=(typeof dlWithTitle==='function')?dlWithTitle(rows,iaosDN()+' 습득물 처리현황',range,9):{rows:rows,merges:[]};
     var ws=XLSX.utils.aoa_to_sheet(wrap.rows);
     ws['!merges']=wrap.merges;
     ws['!cols']=[{wch:18},{wch:10},{wch:10},{wch:12},{wch:20},{wch:16},{wch:24},{wch:10},{wch:24}];
     dlFinalizeSheet(ws);
     XLSX.utils.book_append_sheet(wb,ws,'습득물');
-    var fname='T1_습득물관리'+(mf?'_'+mf:'')+'.xlsx';
+    var fname=iaosDID()+'_습득물관리'+(mf?'_'+mf:'')+'.xlsx';
                 await dlSaveWorkbook(wb, fname);
     toast('📥 다운로드 완료');
   }catch(e){ toast('⚠️ 다운로드 실패: '+_safeErrMsg(e)); }
@@ -26117,13 +26119,13 @@ async function mtgWeekDownloadReport(meetingId){
   var body=document.getElementById('mtgWeekDetailBody');
   if(!body || !body.querySelector('.mtg-infogrid')){ toast('⚠️ 먼저 자료를 불러온 뒤 다시 시도해주세요'); return; }
   var titleTxt=(document.getElementById('mtgWeekDetailTitle')||{}).textContent||('주간회의_'+meetingId);
-  await mtgExportHtmlToPdf(body, '주간회의자료_'+_mtgSafeFileName(titleTxt)+'.pdf', 'T1환경미화사업부 주간회의자료');
+  await mtgExportHtmlToPdf(body, '주간회의자료_'+_mtgSafeFileName(titleTxt)+'.pdf', iaosDN()+' 주간회의자료');
 }
 async function mtgMonthDownloadReport(reportMonth){
   var body=document.getElementById('mtgMonthDetailBody');
   if(!body || !body.children.length){ toast('⚠️ 먼저 자료를 불러온 뒤 다시 시도해주세요'); return; }
   var ym=String(reportMonth).slice(0,7);
-  await mtgExportHtmlToPdf(body, '월간전략회의_'+ym+'.pdf', 'T1환경미화사업부 '+ym+' 월간전략회의');
+  await mtgExportHtmlToPdf(body, '월간전략회의_'+ym+'.pdf', iaosDN()+' '+ym+' 월간전략회의');
 }
 
 // ── PDF 문서함 ──
@@ -26344,7 +26346,7 @@ async function loadAdcMySig(){
     var p=res&&res.data&&res.data[0];
     // 기존 서명 등록 이력이 없는 직원이면(=p 없음), users 테이블에 있는 사번/소속을 기본값으로 미리 채워준다
     var prof=_adcSigUsersById[targetId];
-    document.getElementById('adcMyDept').value=(p&&p.dept)||(prof&&prof.department)||'T1환경미화사업부';
+    document.getElementById('adcMyDept').value=(p&&p.dept)||(prof&&prof.department)||iaosDN();
     document.getElementById('adcMyPosition').value=(p&&p.position)||'';
     document.getElementById('adcMyEmpId').value=(p&&p.employee_id)||(prof&&prof.employee_id)||'';
     _adcMySigExistingPath=(p&&p.signature_path)||null;
@@ -27172,7 +27174,7 @@ async function dlToiletExcel(){
     dlFinalizeSheet(ws);
     XLSX.utils.book_append_sheet(wb,ws,'화장실현황');
     var today=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
-                await dlSaveWorkbook(wb, 'T1_화장실현황_'+today+'.xlsx');
+                await dlSaveWorkbook(wb, iaosDID()+'_화장실현황_'+today+'.xlsx');
     toast('📥 다운로드 완료 ('+toiletData.length+'건)');
   }catch(e){ toast('⚠️ 다운로드 실패: '+_safeErrMsg(e)); }
 }
@@ -27869,7 +27871,7 @@ async function facDownload(type){
     dlFinalizeSheet(ws);
     XLSX.utils.book_append_sheet(wb,ws,cfg.title);
     var today=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
-                await dlSaveWorkbook(wb, 'T1_'+cfg.title+'현황_'+today+'.xlsx');
+                await dlSaveWorkbook(wb, iaosDID()+'_'+cfg.title+'현황_'+today+'.xlsx');
     toast('📥 다운로드 완료 ('+data.length+'건)');
   }catch(e){ toast('⚠️ 다운로드 실패: '+_safeErrMsg(e)); }
 }
@@ -28801,7 +28803,7 @@ async function downloadWasteExcel(){
     ws['!cols']=[{wch:12},{wch:8},{wch:10},{wch:16},{wch:12},{wch:16},{wch:10},{wch:10},{wch:10},{wch:12},{wch:14},{wch:10},{wch:12},{wch:16}];
     dlFinalizeSheet(ws);
     XLSX.utils.book_append_sheet(wb,ws,'폐기물처리현황');
-                await dlSaveWorkbook(wb, 'T1_폐기물처리현황'+(mfv?'_'+mfv:'')+'.xlsx');
+                await dlSaveWorkbook(wb, iaosDID()+'_폐기물처리현황'+(mfv?'_'+mfv:'')+'.xlsx');
     toast('📥 다운로드 완료');
   }catch(e){ toast('⚠️ 다운로드 실패'); }
 }

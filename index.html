@@ -645,7 +645,7 @@ html{overflow-x:hidden}
         try{
           var _dv=_divScope(table);
           // 사용자 목록(승인대기·사용자)은 선택한 사업부 소속만 표시 (본인 조회는 제외)
-          if(!_dv && table==='users' && method==='GET' && params && params.id===undefined && params.email===undefined && params.auth_uid===undefined){
+          if(!_dv && table==='users' && method==='GET' && params && params.id===undefined && params.email===undefined && params.auth_uid===undefined && params.role!=='eq.group_viewer'){
             try{ if(me&&(me.role==='master'||me.role==='group_viewer')&&window.curDivision){ params=Object.assign({}, params, {division_id:'eq.'+window.curDivision}); } }catch(e){}
           }
           if(_dv){
@@ -902,7 +902,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r20-1002-1730</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r21-1002-1730</div>
   </div>
 </div>
 
@@ -7060,6 +7060,7 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
         <div class="r-btn" onclick="pickMoveRole(this)">기타</div>
         <div class="r-btn" onclick="pickMoveRole(this)">차량운행</div>
         <div class="r-btn" onclick="pickMoveRole(this)">차량운행기록부 게스트</div>
+        <div class="r-btn" id="tmRoleGV" onclick="pickMoveRole(this)" style="display:none">그룹 조회</div>
       </div>
       <div class="err" id="tmErr"></div>
 
@@ -10508,6 +10509,31 @@ function iaosSwitchDiv(id){
 // ══════════ 사업부 관리 (master 전용) — 사업부·팀·조·구역/건물 편집 ══════════
 var DM={div:null,divs:[],teams:[],groups:[],sites:[],selTeam:null,busy:false};
 function dmEsc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+async function dmGvLoad(){
+  var box=document.getElementById('dmGvBox'); if(!box) return;
+  var r=await sb.from('users').select('id,name,email,employee_id').eq('role','group_viewer').eq('status','active');
+  var list=(r&&r.data)||[];
+  var opts=DM.divs.map(function(d){return '<option value="'+dmEsc(d.id)+'">'+dmEsc(d.name.replace('환경미화사업부',''))+'</option>';}).join('');
+  var h='<div class="card" style="margin-bottom:12px"><div class="cb" style="padding:14px"><div style="font-size:13px;font-weight:800;color:var(--g6);margin-bottom:4px">🌐 그룹 조회 계정 <span style="font-weight:600;color:var(--g4)">(전체 사업부 열람 전용)</span></div>'
+   +'<div style="font-size:12px;color:var(--g4);margin-bottom:10px;line-height:1.5">지정: 관리자 &gt; 사용자 목록에서 대상자의 [🔄 이동] → 직급 "그룹 조회"를 선택하세요. 해제하면 선택한 사업부의 기타(열람전용) 계정으로 돌아갑니다.</div>';
+  if(!list.length) h+='<div style="padding:10px;text-align:center;color:var(--g4);font-size:13px">지정된 그룹 조회 계정이 없습니다</div>';
+  list.forEach(function(u){
+    h+='<div style="display:flex;align-items:center;gap:6px;padding:8px 0;border-top:1px solid var(--g1);flex-wrap:wrap"><div style="flex:1;min-width:120px"><b style="color:var(--navy)">'+dmEsc(u.name)+'</b> <span style="font-size:12px;color:var(--g4)">@'+dmEsc(u.email)+'</span></div>'
+     +'<select id="dmGvSel_'+u.id+'" class="ri" style="margin:0;width:auto;padding:6px 8px;font-size:13px">'+opts+'</select>'
+     +'<button class="dm-b2" onclick="dmGvOff(\''+u.id+'\',\''+dmEsc(u.name).replace(/\'/g,'')+'\')">해제</button></div>';
+  });
+  box.innerHTML=h+'</div></div>';
+}
+function dmGvOff(id,name){
+  var sel=document.getElementById('dmGvSel_'+id); var div=sel?sel.value:null;
+  if(!div){ toast('사업부를 선택해주세요'); return; }
+  if(!confirm(name+'님의 그룹 조회 권한을 해제하고 '+iaosDivName(div)+'의 기타(열람전용) 계정으로 돌릴까요?')) return;
+  requireAdminAuth(name+'님 그룹 조회 해제', async function(pw, errEl){
+    var res=await sb.rpc('admin_set_group_viewer', {p_admin_id:me.id, p_admin_password:pw, p_target_id:id, p_on:false, p_division_id:div});
+    if(res.error || res.data===false){ errEl.textContent='⚠️ '+(res.error?res.error.message:'해제 실패 (비밀번호 확인)'); errEl.style.display='block'; return; }
+    hideM('adminAuthModal'); toast('✅ '+name+'님 그룹 조회 해제 완료'); dmGvLoad();
+  });
+}
 function dmErr(r,okMsg){
   if(r&&r.error){
     var m=r.error.message||'오류';
@@ -10593,7 +10619,9 @@ function dmRender(){
    +'<input id="dmSiteName" class="ri" style="margin:0" placeholder="이름 (예: L/S 동편, 제1청사)"></div>'
    +'<div style="display:flex;gap:8px;margin-top:8px"><select id="dmSiteParent" class="ri" style="margin:0;flex:1"><option value="">상위 항목 없음</option>'+zones.map(function(z){return '<option value="'+z.id+'">'+dmEsc(z.name)+' 아래</option>';}).join('')+'</select><button class="dm-b" onclick="dmAddSite()">추가</button></div>'
    +'</div></div>';
+  h+='<div id="dmGvBox"></div>';
   w.innerHTML=h;
+  dmGvLoad();
 }
 function dmSelTeam(id){ DM.selTeam=(DM.selTeam===id?null:id); dmRender(); }
 async function dmSaveDiv(){
@@ -21409,7 +21437,7 @@ async function openTeamMove(id, name, currentTeam){
   document.getElementById('tmUserName').textContent=name;
   document.getElementById('tmCurrentTeam').textContent=currentTeam||'-';
   document.querySelectorAll('#teamMoveModal .r-btn').forEach(function(b){b.classList.remove('on');});
-  document.getElementById('tmRoleAdmin').style.display='';
+  document.getElementById('tmRoleAdmin').style.display='';document.getElementById('tmRoleGV').style.display='';
   document.getElementById('tmJoWrap').style.display='none';
   document.getElementById('tmJoGrp').innerHTML='';
   document.getElementById('tmErr').style.display='none';
@@ -21468,8 +21496,16 @@ async function saveTeamMove(){
   var err=document.getElementById('tmErr');
   err.style.display='none';
   var bad=function(m){ err.textContent='⚠️ '+m; err.style.display='block'; };
-  if(!tmDiv) return bad('소속 사업부를 선택해주세요');
   if(!tmSelectedRole) return bad('직급을 선택해주세요');
+  if(!tmDiv && tmSelectedRole!=='그룹 조회') return bad('소속 사업부를 선택해주세요');
+  if(tmSelectedRole==='그룹 조회'){
+    requireAdminAuth(tmTarget.name+'님 그룹 조회 지정', async function(pw, errEl){
+      var r2=await sb.rpc('admin_set_group_viewer', {p_admin_id:me.id, p_admin_password:pw, p_target_id:tmTarget.id, p_on:true});
+      if(r2.error || r2.data===false){ errEl.textContent='⚠️ '+(r2.error?r2.error.message:'지정 실패 (비밀번호 확인·승인된 계정인지 확인)'); errEl.style.display='block'; return; }
+      hideM('adminAuthModal'); toast('✅ '+tmTarget.name+'님을 그룹 조회 계정으로 지정했습니다'); closeTeamMove(); loadUserList();
+    });
+    return;
+  }
   var isAdminRole=(tmSelectedRole==='관리자');
   if(!isAdminRole && !tmTeamId) return bad('소속 팀을 선택해주세요');
   var joEl=document.querySelector('#tmJoGrp .t-btn.on');

@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<script>try{var _m=JSON.parse(localStorage.getItem("t1_me")||"null");var _d=_m?((_m.role==="master"||_m.role==="group_viewer")?localStorage.getItem("iaos_div"):_m.division_id):null;document.documentElement.setAttribute("data-div",_d||"ALL");}catch(e){document.documentElement.setAttribute("data-div","ALL");}</script>
+<script>try{var _q=new URLSearchParams(location.search);if(_q.get("app")==="1")sessionStorage.setItem("iaos_app","1");if(_q.get("div"))localStorage.setItem("iaos_div",_q.get("div"));}catch(e){}try{var _m=JSON.parse(localStorage.getItem("t1_me")||"null");var _d=_m?((_m.role==="master"||_m.role==="group_viewer")?localStorage.getItem("iaos_div"):_m.division_id):null;document.documentElement.setAttribute("data-div",_d||"ALL");}catch(e){document.documentElement.setAttribute("data-div","ALL");}</script>
 <title>환경미화운영그룹</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -769,7 +769,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r6-1002-1620</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r7-1002-1640</div>
   </div>
 </div>
 
@@ -849,6 +849,7 @@ html{overflow-x:hidden}
   <div class="app-hd">
     <div class="logo-w" onclick="window.open('https://gw.airportos.co.kr/index.jsp','_blank')" style="cursor:pointer" title="인천공항운영서비스 그룹웨어 바로가기"><div class="logo-img"><img src="logo.png" alt="logo"></div><div class="logo-t"><h2 class="div-nm">T1 환경미화사업부</h2><p>환경미화운영그룹</p></div></div>
     <!-- 알림 벨 -->
+    <div id="groupBackBtn" onclick="iaosBackToGroup()" style="display:none;background:#fff;color:var(--teal2);border-radius:14px;padding:4px 10px;font-size:12px;font-weight:800;margin-right:6px;white-space:nowrap;flex-shrink:0;cursor:pointer">◀ 그룹</div>
     <div id="divChip" onclick="openDivPicker()" style="display:none;background:rgba(255,255,255,.18);color:#fff;border-radius:14px;padding:4px 10px;font-size:12px;font-weight:700;margin-right:8px;white-space:nowrap;flex-shrink:0"></div>
     <div id="bellBtn" style="position:relative;cursor:pointer;margin-right:8px;padding:4px" onclick="openNotifDrawer()">
       <svg width="22" height="22" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
@@ -1255,7 +1256,7 @@ html{overflow-x:hidden}
   <div style="height:20px"></div>
     </div>
     <div class="mh-panel" id="mhPanelDash">
-  <div id="groupLinkCard" onclick="location.href='group.html'" style="display:none;cursor:pointer;margin:12px 13px 0;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,#6FA0EC,#5DC29C);color:#fff;font-weight:800;font-size:14px;align-items:center;justify-content:space-between"><span>📊 환경미화운영그룹 전체 통합 현황</span><span style="font-size:18px">›</span></div>
+  <div id="groupLinkCard" onclick="iaosBackToGroup()" style="display:none;cursor:pointer;margin:12px 13px 0;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,#6FA0EC,#5DC29C);color:#fff;font-weight:800;font-size:14px;align-items:center;justify-content:space-between"><span>📊 환경미화운영그룹 전체 통합 현황</span><span style="font-size:18px">›</span></div>
   <div style="padding:14px 13px 6px;display:flex;align-items:center;justify-content:space-between">
     <div>
       <h1 style="font-size:21px;font-weight:800;color:var(--g7)">운영현황</h1>
@@ -9643,6 +9644,8 @@ async function doLogin(){
 }
 
 function finishLogin(){
+  try{ localStorage.setItem('t1_me', JSON.stringify(me)); }catch(e){}
+  if(iaosRouteStart()) return;
   try{ initDivisionUI(); }catch(e){ console.warn(e); }
   applyRoleUI();
   applyFontScale();
@@ -10314,6 +10317,13 @@ function iaosApplyDivNames(){
   document.title=nm||'환경미화운영그룹';
   if(id) document.documentElement.setAttribute('data-div',id);
 }
+function iaosIsGroupRole(){ return !!(me&&['master','admin','group_viewer'].indexOf(me.role)!==-1); }
+function iaosBackToGroup(){ try{sessionStorage.removeItem('iaos_app');}catch(e){} location.href='group.html'; }
+function iaosRouteStart(){
+  if(!iaosIsGroupRole()) return false;
+  try{ if(sessionStorage.getItem('iaos_app')==='1') return false; }catch(e){}
+  location.replace('group.html'); return true;
+}
 function initDivisionUI(){
   var chip=document.getElementById('divChip'); if(!chip||!me) return;
   var multi=(me.role==='master'||me.role==='group_viewer');
@@ -10327,7 +10337,8 @@ function initDivisionUI(){
     chip.style.cursor=multi?'pointer':'default';
     chip.style.display='block';
     iaosApplyDivNames();
-    var gc=document.getElementById('groupLinkCard'); if(gc) gc.style.display=multi?'flex':'none';
+    var gc=document.getElementById('groupLinkCard'); if(gc) gc.style.display=iaosIsGroupRole()?'flex':'none';
+    var gb=document.getElementById('groupBackBtn'); if(gb) gb.style.display=iaosIsGroupRole()?'block':'none';
   });
 }
 function openDivPicker(){
@@ -10337,7 +10348,7 @@ function openDivPicker(){
    +'<div style="background:#fff;width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:18px 16px 26px">'
    +'<div style="font-size:16px;font-weight:800;margin-bottom:4px;color:var(--g7)">사업부 전환</div>'
    +'<div style="font-size:12px;color:var(--g4);margin-bottom:12px">선택한 사업부의 데이터가 화면에 표시됩니다</div>'
-   +'<div onclick="location.href=\'group.html\'" style="padding:13px 14px;border-radius:12px;margin-bottom:10px;background:linear-gradient(135deg,#6FA0EC,#5DC29C);color:#fff;font-size:15px;font-weight:800">📊 환경미화운영그룹 전체 통합 현황 ›</div>';
+   +'<div onclick="iaosBackToGroup()" style="padding:13px 14px;border-radius:12px;margin-bottom:10px;background:linear-gradient(135deg,#6FA0EC,#5DC29C);color:#fff;font-size:15px;font-weight:800">📊 환경미화운영그룹 전체 통합 현황 ›</div>';
   IAOS_DIVS.forEach(function(d){
     var on=d.id===window.curDivision;
     h+='<div onclick="iaosSwitchDiv(\''+d.id+'\')" style="padding:13px 14px;border:1.5px solid '+(on?'var(--teal)':'var(--g2)')+';background:'+(on?'var(--teal-bg)':'#fff')+';border-radius:12px;margin-bottom:8px;font-size:15px;font-weight:'+(on?'800':'600')+';color:'+(on?'var(--teal2)':'var(--g6)')+'">'+d.name+(on?' ✓':'')+'</div>';
@@ -10352,6 +10363,7 @@ function iaosSwitchDiv(id){
 }
 function doLogout(){
   me=null;
+  try{ sessionStorage.removeItem('iaos_app'); }catch(e){}
   try{ document.documentElement.setAttribute('data-div','ALL'); }catch(e){}
   try{ var _dc=document.getElementById('divChip'); if(_dc) _dc.style.display='none'; }catch(e){}
   try{ if(typeof msClearCache==='function') msClearCache(); }catch(e){}
@@ -28901,6 +28913,7 @@ async function refreshMpDataLight(){
         return;
       }
       me = JSON.parse(saved);
+      if(iaosRouteStart()) return;
       try{ initDivisionUI(); }catch(e){}
       applyRoleUI();
       applyFontScale();

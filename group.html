@@ -108,6 +108,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 #login button{width:100%;margin-top:18px;padding:14px;border-radius:13px;border:0;background:var(--ink);color:#fff;font-weight:800;font-size:15px}
 #login .err{color:var(--up);font-size:13px;margin-top:12px;min-height:18px}
 .hide{display:none!important}
+.gobar{display:flex;gap:8px;margin:12px 0 0}.gobar a{flex:1;text-align:center;text-decoration:none;padding:11px 4px;border-radius:12px;font-size:13px;font-weight:800;color:#2b3a55;line-height:1.25}.gobar a small{display:block;font-size:10.5px;font-weight:600;opacity:.7}.gobar a.off{opacity:.45;pointer-events:none}
 .sm{font-size:12px;color:var(--mut);background:none;border:0;padding:4px}
 :focus-visible{outline:3px solid #6FA0EC;outline-offset:2px}
 @media print{.tabs,.ex,.live,.chips,#logout{display:none!important}.pane{display:block!important}body{background:#fff}.card,.hero,.kp div,.pt{break-inside:avoid}}
@@ -149,6 +150,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
     <button data-t="rep" role="tab">리포트</button>
   </div>
 
+  <div id="goBar" class="gobar"></div>
   <section class="pane on" id="p-now"></section>
   <section class="pane" id="p-stat"></section>
   <section class="pane" id="p-rep"></section>
@@ -159,8 +161,8 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
 (function(){
 'use strict';
 var sb = null;
-var PALETTE = ['#6FA0EC','#5DC29C','#E3A04C','#B69AE8','#E58FA8','#7DC7D6'];      // 사업부 색 (파스텔)
-var SOFT    = ['#E4EDFC','#DDF3EA','#FBEBD2','#EDE5FA','#FBE3EA','#DDF1F5'];
+var PALETTE = ['#4DBDB2','#6FA0EC','#E3A04C','#B69AE8','#E58FA8','#7DC7D6'];      // 사업부 색 (파스텔)
+var SOFT    = ['#DDF3F1','#E4EDFC','#FBEBD2','#EDE5FA','#FBE3EA','#DDF1F5'];
 var SHIFTS  = ['오전','오후','야간'];
 var divs = [];            // [{id,name,short,color,soft}]
 var state = {tab:'now', month:null, kpi:1, repMode:'month'};
@@ -202,6 +204,14 @@ function loadDivisions(){
       return {id:d.id,name:d.name,short:d.name.replace(/환경미화사업부$/,'').replace(/사업부$/,'')||d.id,color:PALETTE[i%PALETTE.length],soft:SOFT[i%SOFT.length]};
     });
   });
+}
+function renderGoBar(){
+  var h='';
+  divs.forEach(function(d){
+    var ok=(state.role==='master'||state.role==='group_viewer'||d.id===state.myDiv);
+    h+='<a class="'+(ok?'':'off')+'" style="background:'+d.soft+'" href="index.html?app=1&div='+encodeURIComponent(d.id)+'">'+d.short+'<small>'+(ok?'앱 열기 ›':'내 사업부 아님')+'</small></a>';
+  });
+  $('goBar').innerHTML=h;
 }
 function byDiv(rows,key){var o={};rows.forEach(function(r){(o[r.division_id]=o[r.division_id]||[]).push(r);});return o;}
 
@@ -404,34 +414,30 @@ function enter(){
   return sb.auth.getUser().then(function(u){
     var uid=u&&u.data&&u.data.user&&u.data.user.id;
     if(!uid){throw new Error('계정 정보를 확인할 수 없어요.');}
-    return sb.from('users').select('role,status').eq('auth_uid',uid).limit(1);
+    return sb.from('users').select('role,status,division_id').eq('auth_uid',uid).limit(1);
   }).then(function(r){
     var row=(r.data||[])[0];
     if(r.error||!row){throw new Error('계정 정보를 확인할 수 없어요.');}
-    if(row.status!=='active'||(row.role!=='master'&&row.role!=='group_viewer')){
-      return sb.auth.signOut().then(function(){showLogin('이 화면은 그룹 조회 전용 계정만 볼 수 있어요.');});
+    if(row.status!=='active'||(row.role!=='master'&&row.role!=='group_viewer'&&row.role!=='admin')){
+      // 일반 직원은 사업부 앱으로
+      location.replace('index.html?app=1');return;
     }
+    state.role=row.role; state.myDiv=row.division_id;
     $('login').classList.add('hide');$('app').classList.remove('hide');
     state.month=lastMonths(1)[0];
-    return loadDivisions().then(load);
+    return loadDivisions().then(function(){renderGoBar();return load();});
   }).catch(function(e){showLogin((e&&e.message)||'로그인 중 문제가 생겼어요.');});
 }
+function readShared(){try{var a=JSON.parse(localStorage.getItem('t1_auth')||'null');return a&&a.access_token?a:null;}catch(e){return null;}}
+function writeShared(ses){try{localStorage.setItem('t1_auth',JSON.stringify({access_token:ses.access_token,refresh_token:ses.refresh_token,expires_at:ses.expires_at||Math.floor(Date.now()/1000)+3600}));}catch(e){}}
+function toLogin(){location.replace('index.html');}
 function init(){
-  if(/여기에/.test(SUPABASE_URL)||/여기에/.test(SUPABASE_ANON_KEY)||!window.supabase){
-    showLogin('접속 정보가 아직 입력되지 않았어요. 파일 맨 위의 SUPABASE_URL, SUPABASE_ANON_KEY를 채워 주세요.');return;
-  }
-  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-  $('loginBtn').onclick=function(){
-    var id=$('uid').value,pw=$('upw').value; if(!id||!pw){$('loginErr').textContent='아이디와 비밀번호를 입력하세요.';return;}
-    $('loginBtn').disabled=true;$('loginErr').textContent='';
-    sb.auth.signInWithPassword({email:toEmail(id),password:pw}).then(function(r){
-      $('loginBtn').disabled=false;
-      if(r.error){$('loginErr').textContent='아이디 또는 비밀번호가 맞지 않아요.';return;}
-      $('upw').value='';enter();
-    });
-  };
-  $('upw').addEventListener('keydown',function(e){if(e.key==='Enter')$('loginBtn').click();});
-  $('logout').onclick=function(){sb.auth.signOut().then(function(){showLogin('');});};
+  $('loginBtn').onclick=toLogin; $('loginBtn').textContent='로그인 화면으로';
+  ['uid','upw'].forEach(function(k){var e=$(k); if(e){e.style.display='none'; if(e.previousElementSibling&&e.previousElementSibling.tagName==='LABEL') e.previousElementSibling.style.display='none';}});
+  if(!window.supabase){showLogin('화면을 불러오지 못했어요. 새로고침 해주세요.');return;}
+  sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY,{auth:{persistSession:false,autoRefreshToken:true,detectSessionInUrl:false}});
+  sb.auth.onAuthStateChange(function(ev,ses){ if(ses&&(ev==='TOKEN_REFRESHED'||ev==='SIGNED_IN')) writeShared(ses); });
+  $('logout').onclick=function(){try{localStorage.removeItem('t1_auth');localStorage.removeItem('t1_me');sessionStorage.removeItem('iaos_app');}catch(e){} toLogin();};
   $('refresh').onclick=load;
   document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){showTab(b.dataset.t);};});
   document.addEventListener('click',function(e){
@@ -442,7 +448,12 @@ function init(){
     load();
   });
   setInterval(function(){if(!document.hidden&&state.tab==='now'&&!$('app').classList.contains('hide'))load();},60000);
-  sb.auth.getSession().then(function(r){ if(r.data&&r.data.session) enter(); else showLogin(''); });
+  var sh=readShared();
+  if(!sh){toLogin();return;}
+  sb.auth.setSession({access_token:sh.access_token,refresh_token:sh.refresh_token}).then(function(r){
+    if(r.error||!r.data||!r.data.session){toLogin();return;}
+    writeShared(r.data.session); enter();
+  });
 }
 init();
 })();

@@ -64,6 +64,36 @@ button{font:inherit;color:inherit;cursor:pointer}
 .gl{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center;font-size:12px;font-weight:700;margin-top:6px}
 .lg{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;font-size:11px;color:var(--mut);margin-top:8px;font-weight:600}
 .lg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+/* 현황판 */
+.dp{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.dp .nv{display:flex;align-items:center;gap:4px}
+.dp .nv button{border:0;background:#fff;border:1px solid var(--line);border-radius:9px;padding:5px 9px;font-weight:800;color:var(--mut)}
+.dp .nv b{min-width:84px;text-align:center;font-size:13px}
+.dp .md{display:flex;background:#E6E8EC;border-radius:99px;padding:2px}
+.dp .md button{border:0;background:none;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;color:var(--mut)}
+.dp .md button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px #2b2f3620}
+.kg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:10px}
+.kg div{background:#fff;border:1px solid var(--line);border-radius:14px;padding:9px 8px;text-align:center}
+.kg small{display:block;font-size:10.5px;color:var(--mut);font-weight:700;line-height:1.3;min-height:27px}
+.kg b{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+.kg b i{font-style:normal;font-size:11px;color:var(--mut);font-weight:600;margin-left:1px}
+.kg .ok b{color:#2FA67C}.kg .wn b{color:#C98A1B}.kg .dg b{color:#D2503F}
+.dc{display:block;text-decoration:none;color:inherit;border-radius:16px;padding:11px 12px;margin-bottom:8px}
+.dc .t{display:flex;justify-content:space-between;align-items:center;font-weight:800;font-size:14px}
+.dc .t span{font-size:11px;color:var(--mut);font-weight:700}
+.dc .big{font-size:26px;font-weight:800;font-variant-numeric:tabular-nums;margin:4px 0 6px}
+.dc .big i{font-style:normal;font-size:12px;color:var(--mut);margin-left:2px}
+.dc .big em{font-style:normal;font-size:12px;color:var(--mut);font-weight:700;margin-left:8px}
+.dc .m6{display:grid;grid-template-columns:repeat(3,1fr);gap:4px}
+.dc .m6 div{background:#ffffffb8;border-radius:9px;padding:4px 0;text-align:center;font-size:10px;color:var(--mut);font-weight:700}
+.dc .m6 b{display:block;font-size:13px;color:var(--ink);font-variant-numeric:tabular-nums}
+.gl2{padding:5px 0;font-size:13px;display:flex;gap:8px;align-items:center}
+.gl2 i{width:9px;height:9px;border-radius:50%;flex:none}
+.dl{width:100%;margin-top:6px;padding:11px;border-radius:13px;border:1px solid var(--line);background:#fff;font-weight:800;font-size:13px}
+.hb{display:grid;grid-template-columns:60px 1fr 28px;gap:8px;align-items:center;font-size:12px;margin:6px 0;color:var(--mut);font-weight:700}
+.hb span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb .b{height:11px;background:var(--soft);border-radius:7px;overflow:hidden}.hb .b i{display:block;height:100%;border-radius:7px;min-width:2px}
+.hb em{font-style:normal;text-align:right;color:var(--ink);font-weight:800}
 /* 통계 */
 .chips{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
 .chips button{padding:6px 13px;border-radius:99px;background:#fff;border:1px solid var(--line);font-size:12px;color:var(--mut);font-weight:700}
@@ -145,7 +175,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
     </div>
   </div>
   <div class="tabs" role="tablist">
-    <button class="on" data-t="now" role="tab">현황</button>
+    <button class="on" data-t="now" role="tab">현황판</button>
     <button data-t="stat" role="tab">통계</button>
     <button data-t="rep" role="tab">리포트</button>
   </div>
@@ -157,6 +187,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
 <script>
 (function(){
 'use strict';
@@ -237,38 +268,102 @@ function delta(cur,prev,key){
   return '<s class="'+cls+'">'+(p>0?'▲':'▼')+Math.abs(p)+'%</s>';
 }
 
-/* ---------- 현황 탭 ---------- */
+/* ---------- 현황판 탭 ---------- */
+var DASH={mode:'day',y:0,m:0,d:0,last:null};
+function dashInit(){var t=today(); if(!DASH.y){DASH.y=t.y;DASH.m=t.m;DASH.d=t.d;}}
+function dashRange(){
+  dashInit(); var t=today(), tStr=ymd(t.y,t.m,t.d), from,to,label;
+  if(DASH.mode==='day'){from=to=ymd(DASH.y,DASH.m,DASH.d); label=(from===tStr)?'오늘':from;}
+  else if(DASH.mode==='month'){from=ymd(DASH.y,DASH.m,1); to=ymd(DASH.y,DASH.m,daysIn(DASH.y,DASH.m)); if(to>tStr)to=tStr; label=(DASH.y===t.y&&DASH.m===t.m)?'이번 달':(DASH.y+'년 '+DASH.m+'월');}
+  else {from=ymd(DASH.y,1,1); to=ymd(DASH.y,12,31); if(to>tStr)to=tStr; label=(DASH.y===t.y)?'올해':(DASH.y+'년');}
+  return {from:from,to:to,label:label,isToday:(DASH.mode==='day'&&from===tStr),avg:DASH.mode!=='day'};
+}
+function dashMove(n){
+  var t=today();
+  if(DASH.mode==='day'){var x=new Date(Date.UTC(DASH.y,DASH.m-1,DASH.d+n)); DASH.y=x.getUTCFullYear();DASH.m=x.getUTCMonth()+1;DASH.d=x.getUTCDate();}
+  else if(DASH.mode==='month'){DASH.m+=n; if(DASH.m<1){DASH.m=12;DASH.y--;} if(DASH.m>12){DASH.m=1;DASH.y++;}}
+  else DASH.y+=n;
+  if(ymd(DASH.y,DASH.mode==='year'?1:DASH.m,DASH.mode==='day'?DASH.d:1)>ymd(t.y,t.m,t.d)){DASH.y=t.y;DASH.m=t.m;DASH.d=t.d;}
+  load();
+}
+function dashCalc(rows,rg){
+  var R={}; rows.forEach(function(r){var o=(R[r.division_id]=R[r.division_id]||{}); (o[r.metric]=o[r.metric]||{})[r.k]=Number(r.v)||0;});
+  var out={};
+  divs.forEach(function(d){
+    var o=R[d.id]||{}, g=function(m,k){return (o[m]&&o[m][k])||0;};
+    var days=Math.max(g('days',''),1), f=rg.avg?function(v){return Math.round(v/days);}:function(v){return Math.round(v);};
+    var sh={'오전':f(g('shift','오전')),'오후':f(g('shift','오후')),'야간':f(g('shift','야간')),'관리자':f(g('shift','관리자'))};
+    var staff=sh['오전']+sh['오후']+sh['야간']+sh['관리자'], quota=g('quota','total');
+    var hoT=g('ho','total'), hoC=g('ho','confirmed'), vT=g('voc','total'), vD=g('voc','done'), lT=g('lost','total'), lD=g('lost','done');
+    out[d.id]={sh:sh,staff:staff,quota:quota,rate:quota?Math.round(staff/quota*100):null,
+      hoT:hoT,hoC:hoC,hoRate:hoT?Math.round(hoC/hoT*100):100,vT:vT,vRate:vT?Math.round(vD/vT*100):100,lT:lT,lRate:lT?Math.round(lD/lT*100):100,
+      acc:g('acc','total'),ev:g('ho','event'),jwN:g('jw','count'),jwP:g('jw','people'),
+      fac:o.fac||{},vcat:o.voc_cat||{},atype:o.acc_type||{}};
+  });
+  return out;
+}
+function sumObj(out,key){var t={};divs.forEach(function(d){var o=out[d.id][key];Object.keys(o).forEach(function(k){t[k]=(t[k]||0)+o[k];});});return t;}
+function hbars(obj,color,empty){
+  var ks=Object.keys(obj).sort(function(a,b){return obj[b]-obj[a];}).slice(0,5);
+  if(!ks.length) return '<div class="empty" style="padding:8px 0">'+empty+'</div>';
+  var mx=obj[ks[0]];
+  return ks.map(function(k){return '<div class="hb"><span>'+esc(k)+'</span><div class="b"><i style="width:'+(obj[k]/mx*100)+'%;background:'+color+'"></i></div><em>'+n0(obj[k])+'</em></div>';}).join('');
+}
+function kcell(label,val,unit,lv){return '<div class="'+(lv||'')+'"><small>'+label+'</small><b>'+val+'<i>'+unit+'</i></b></div>';}
 function renderNow(rows){
-  var el=$('p-now');
-  var m={}; divs.forEach(function(d){m[d.id]=[0,0,0];});
-  rows.forEach(function(r){var i=SHIFTS.indexOf(r.shift); if(i>=0&&m[r.division_id]) m[r.division_id][i]+=Number(r.qty)||0;});
-  var tot=divs.map(function(d){return m[d.id].reduce(function(a,b){return a+b;},0);});
-  var all=tot.reduce(function(a,b){return a+b;},0);
-  var shiftTot=[0,1,2].map(function(i){return divs.reduce(function(a,d){return a+m[d.id][i];},0);});
+  var el=$('p-now'), rg=dashRange();
   if(!divs.length){el.innerHTML='<div class="card empty">등록된 사업부가 없어요.<br>사업부 관리에서 사업부를 먼저 추가하세요.</div>';return;}
-  var digits=String(all).split('').map(function(c){return '<div class="d">'+c+'</div>';}).join('');
-  var share=divs.map(function(d,i){return '<i style="width:'+(all?tot[i]/all*100:0)+'%;background:'+d.color+'"></i>';}).join('');
-  var shl=divs.map(function(d,i){return '<span>'+esc(d.short)+' '+(all?Math.round(tot[i]/all*100):0)+'%</span>';}).join('');
-  var max=Math.max.apply(null,tot);
-  var cards=divs.map(function(d,i){
-    return '<div class="cl" style="background:'+d.soft+'"><div class="nm"><i style="background:'+d.color+'"></i>'+esc(d.short)+'</div>'
-      +'<div class="ring">'+ringSvg(m[d.id],d.color)+'<div class="c"><b>'+n0(tot[i])+'</b><span>명</span></div></div>'
-      +'<div class="mini">'+SHIFTS.map(function(s,k){return '<div>'+s+'<b>'+n0(m[d.id][k])+'</b></div>';}).join('')+'</div>'
-      +(max>0&&tot[i]===max?'<span class="top">최다</span>':'')+'</div>';
+  var o=dashCalc(rows,rg); DASH.last={rg:rg,o:o};
+  var sum=function(k){return divs.reduce(function(a,d){return a+(o[d.id][k]||0);},0);};
+  var staff=sum('staff'), quota=sum('quota'), hoT=sum('hoT'), hoC=sum('hoC'), vT=sum('vT'), acc=sum('acc');
+  var staffQ=divs.reduce(function(a,d){return a+(o[d.id].quota?o[d.id].staff:0);},0), rate=quota?Math.round(staffQ/quota*100):null, hoRate=hoT?Math.round(hoC/hoT*100):100;
+  var pl=rg.label+(rg.avg?' 일평균':'');
+  var nav='<div class="dp"><div class="nv"><button type="button" data-dmove="-1" aria-label="이전">◀</button><b>'+esc(rg.label)+'</b><button type="button" data-dmove="1" aria-label="다음">▶</button>'
+    +(rg.isToday?'':'<button type="button" data-dlive="1">오늘</button>')+'</div>'
+    +'<div class="md">'+[['day','일간'],['month','월간'],['year','연간']].map(function(x){return '<button type="button" data-dmode="'+x[0]+'" class="'+(DASH.mode===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div></div>';
+  var kpi='<div class="kg">'
+    +kcell(pl+' 근무인원',n0(staff),'명')
+    +kcell('근무율 (정원 대비)',rate==null?'–':rate,rate==null?'':'%',rate==null?'':(rate>=80?'ok':(rate>=60?'wn':'dg')))
+    +kcell('인수인계 완료율',hoRate,'%',hoRate>=90?'ok':(hoRate>=70?'wn':'dg'))
+    +kcell('민원 접수',n0(vT),'건')
+    +kcell('안전사고',n0(acc),'건',acc===0?'ok':'dg')
+    +kcell('미확인 인수인계',n0(hoT-hoC),'건',(hoT-hoC)===0?'ok':'wn')+'</div>';
+  var today1='';
+  if(rg.isToday){
+    today1='<div class="card"><h3>오늘 한눈에 보기</h3>'+divs.map(function(d){
+      var x=o[d.id], a=x.staff>0, b=(x.hoT-x.hoC)===0;
+      return '<div class="gl2"><i style="background:'+d.color+'"></i><b style="min-width:62px">'+esc(d.short)+'</b><span>'+(a?'🟢 인력현황 입력':'🟡 인력현황 미입력')+'</span><span>'+(b?'🟢 인계 확인 완료':'🟡 미확인 인계 '+(x.hoT-x.hoC)+'건')+'</span></div>';
+    }).join('')+'</div>';
+  }
+  var cards=divs.map(function(d){
+    var x=o[d.id], ok=(state.role==='master'||state.role==='group_viewer'||d.id===state.myDiv);
+    return '<a class="dc" style="background:'+d.soft+'" href="index.html?app=1&div='+encodeURIComponent(d.id)+'"><div class="t"><span style="color:var(--ink)"><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+d.color+';margin-right:6px"></i>'+esc(d.name)+'</span><span>'+(ok?'상세 ›':'')+'</span></div>'
+      +'<div class="big">'+n0(x.staff)+'<i>명</i><em>'+(x.rate==null?'정원 미등록':('근무율 '+x.rate+'%'))+'</em></div>'
+      +'<div class="m6"><div>오전<b>'+n0(x.sh['오전'])+'</b></div><div>오후<b>'+n0(x.sh['오후'])+'</b></div><div>야간<b>'+n0(x.sh['야간'])+'</b></div>'
+      +'<div>인수인계<b>'+x.hoRate+'%</b></div><div>민원처리<b>'+x.vRate+'%</b></div><div>유실물<b>'+x.lRate+'%</b></div>'
+      +'<div>안전사고<b>'+n0(x.acc)+'</b></div><div>공동작업<b>'+n0(x.jwN)+'</b></div><div>고장신고<b>'+n0(x.ev)+'</b></div></div></a>';
   }).join('');
-  var gmax=Math.max(1,Math.max.apply(null,[].concat.apply([],divs.map(function(d){return m[d.id];}))));
-  var cols=SHIFTS.map(function(s,k){
-    return '<div class="gcol">'+divs.map(function(d){var v=m[d.id][k];return '<div style="height:'+(v/gmax*88)+'%;background:'+d.color+'"><b>'+n0(v)+'</b></div>';}).join('')+'</div>';
-  }).join('');
-  var lg=divs.map(function(d){return '<span><i style="background:'+d.color+'"></i>'+esc(d.short)+'</span>';}).join('');
-  el.innerHTML=
-   '<div class="board"><div class="lb"><span>지금 근무 중인 인원</span><span>'+divs.length+'개 사업부 합계</span></div>'
-   +'<div class="flap" role="img" aria-label="'+all+'명">'+digits+'<span class="unit">명</span></div>'
-   +'<div class="share">'+share+'</div><div class="shl">'+shl+'</div></div>'
-   +(all===0?'<div class="card empty">오늘 입력된 인력현황이 아직 없어요.<br>입력이 들어오면 여기에 바로 표시돼요.</div>':'')
-   +'<div class="card"><h3>사업부 비교 <small>오늘 근무 인원</small></h3><div class="cmp">'+cards+'</div></div>'
-   +'<div class="card"><h3>근무조별 비교 <small>같은 시간대끼리 나란히</small></h3><div class="gc">'+cols+'</div>'
-   +'<div class="gl">'+SHIFTS.map(function(s,k){return '<span>'+s+' '+n0(shiftTot[k])+'</span>';}).join('')+'</div><div class="lg">'+lg+'</div></div>';
+  var shT=['오전','오후','야간'].map(function(s){return divs.reduce(function(a,d){return a+o[d.id].sh[s];},0);});
+  var shMax=Math.max.apply(null,shT.concat([1]));
+  var shBars=['오전','오후','야간'].map(function(s,i){return '<div class="hb"><span>'+s+'</span><div class="b"><i style="width:'+(shT[i]/shMax*100)+'%;background:#6FA0EC"></i></div><em>'+n0(shT[i])+'</em></div>';}).join('');
+  var ana='<div class="card"><h3>현황 분석 <small>'+esc(pl)+' · 전 사업부 합산</small></h3>'
+    +'<div style="font-size:12px;font-weight:800;margin:4px 0">시간대별 현장 인원</div>'+shBars
+    +'<div style="font-size:12px;font-weight:800;margin:12px 0 4px">시설물 고장 유형</div>'+hbars(sumObj(o,'fac'),'#6FA0EC','시설물 고장 없음')
+    +'<div style="font-size:12px;font-weight:800;margin:12px 0 4px">민원 유형</div>'+hbars(sumObj(o,'vcat'),'#B69AE8','민원 없음')
+    +'<div style="font-size:12px;font-weight:800;margin:12px 0 4px">안전사고 재해형태</div>'+hbars(sumObj(o,'atype'),'#E2705F','✅ 이상 없음')+'</div>';
+  el.innerHTML=nav+kpi+today1+'<div class="card" style="padding:12px 12px 4px"><h3>사업부별 현황 <small>카드를 누르면 사업부 앱으로 이동</small></h3>'+cards+'</div>'+ana
+    +'<button class="dl" id="dashXl" type="button">📥 엑셀 다운로드 (사업부별)</button>'
+    +'<div class="note">근무율 = 근무인원 ÷ 사업부 정원(정원 미등록 사업부는 –). 월간·연간은 일평균 기준입니다.</div>';
+  var xb=$('dashXl'); if(xb) xb.onclick=dashExcel;
+}
+function dashExcel(){
+  var L=DASH.last; if(!L||!window.XLSX){return;}
+  var aoa=[['환경미화운영그룹 현황판', L.rg.label+' ('+L.rg.from+(L.rg.from!==L.rg.to?' ~ '+L.rg.to:'')+')'+(L.rg.avg?' · 일평균':'')],[],
+    ['사업부','근무인원','정원','근무율(%)','오전','오후','야간','관리자','인수인계 완료율(%)','민원 접수','민원 처리율(%)','유실물 접수','안전사고','공동작업','고장 신고']];
+  divs.forEach(function(d){var x=L.o[d.id]; aoa.push([d.name,x.staff,x.quota||'',x.rate==null?'':x.rate,x.sh['오전'],x.sh['오후'],x.sh['야간'],x.sh['관리자'],x.hoRate,x.vT,x.vRate,x.lT,x.acc,x.jwN,x.ev]);});
+  var ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[{wch:22}].concat(new Array(14).fill({wch:12}));
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'그룹 현황판');
+  try{XLSX.writeFile(wb,'그룹_현황판_'+L.rg.from+(L.rg.from!==L.rg.to?'~'+L.rg.to:'')+'.xlsx');}catch(e){}
 }
 
 /* ---------- 통계 탭 ---------- */
@@ -380,7 +475,7 @@ function saveImage(){
 
 /* ---------- 로딩 ---------- */
 function stamp(){var p=kstParts();$('stamp').textContent='오늘 '+p.m+'/'+p.d+' '+p.hh+':'+p.mm+' 기준';}
-function loadNow(){return rpc('group_headcount_today').then(renderNow);}
+function loadNow(){var rg=dashRange();return rpc('group_dashboard',{p_from:rg.from,p_to:rg.to}).then(renderNow);}
 function loadStats(){
   var rg=state.repMode==='year'&&state.tab==='rep'?yearRange(+state.month.slice(0,4)):monthRange(state.month);
   var yr=+state.month.slice(0,4), key=state.tab+'|'+state.month+'|'+state.repMode;
@@ -441,7 +536,10 @@ function init(){
   $('refresh').onclick=load;
   document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){showTab(b.dataset.t);};});
   document.addEventListener('click',function(e){
-    var t=e.target.closest('[data-month],[data-kpi],[data-rep]'); if(!t) return;
+    var t=e.target.closest('[data-month],[data-kpi],[data-rep],[data-dmove],[data-dmode],[data-dlive]'); if(!t) return;
+    if(t.dataset.dmove){dashMove(+t.dataset.dmove);return;}
+    if(t.dataset.dmode){DASH.mode=t.dataset.dmode;load();return;}
+    if(t.dataset.dlive){var tt=today();DASH.y=tt.y;DASH.m=tt.m;DASH.d=tt.d;load();return;}
     if(t.dataset.month) state.month=t.dataset.month;
     if(t.dataset.kpi) state.kpi=+t.dataset.kpi;
     if(t.dataset.rep) state.repMode=t.dataset.rep;

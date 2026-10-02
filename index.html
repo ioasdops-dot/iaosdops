@@ -820,7 +820,7 @@ html{overflow-x:hidden}
         return obj;
       }
 
-      var RPC_DIV={admin_add_signup_empno:1,admin_move_team:1,set_temp_pass_balance:1,increment_temp_pass_balance:1,admin_set_temp_pass_responsible:1};
+      var RPC_DIV={admin_add_signup_empno:1,admin_add_signup_empnos_bulk:1,admin_move_team:1,set_temp_pass_balance:1,increment_temp_pass_balance:1,admin_set_temp_pass_responsible:1};
       async function runRpc(fnName, params){
         try{
           if(RPC_DIV[fnName] && params && params.p_division_id===undefined){
@@ -902,7 +902,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r21-1002-1730</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r23-1002-2130</div>
   </div>
 </div>
 
@@ -6369,10 +6369,16 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
       <div class="pg-hd" style="margin-top:6px"><div><h1 style="font-size:17px">🔑 가입 허용 사번</h1><small>여기 등록된 사번만 가입 신청이 가능합니다</small></div></div>
       <div class="card"><div class="cb">
         <div style="display:flex;gap:8px;margin-bottom:12px">
-          <input type="text" id="regGateNewEmpNo" placeholder="사번" inputmode="numeric" style="flex:1;padding:10px;border:1.5px solid var(--g2);border-radius:8px;font-size:14px">
-          <input type="text" id="regGateNewName" placeholder="이름(선택)" style="flex:1;padding:10px;border:1.5px solid var(--g2);border-radius:8px;font-size:14px">
-          <button onclick="addRegGateEmpNo()" style="padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap">추가</button>
+          <input type="text" id="regGateNewEmpNo" placeholder="사번" inputmode="numeric" style="flex:1 1 0;min-width:0;width:0;padding:10px;border:1.5px solid var(--g2);border-radius:8px;font-size:14px">
+          <input type="text" id="regGateNewName" placeholder="이름(선택)" style="flex:1 1 0;min-width:0;width:0;padding:10px;border:1.5px solid var(--g2);border-radius:8px;font-size:14px">
+          <button onclick="addRegGateEmpNo()" style="flex:none;padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap">추가</button>
         </div>
+        <div style="display:flex;gap:8px;margin-bottom:10px">
+          <button onclick="rgDownloadTemplate()" style="flex:1;padding:10px;background:#fff;color:var(--teal2);border:1.5px solid var(--teal);border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📥 양식 다운로드</button>
+          <button onclick="document.getElementById('rgFile').click()" style="flex:1;padding:10px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📤 엑셀 업로드</button>
+          <input type="file" id="rgFile" accept=".xlsx,.xls" style="display:none" onchange="rgParseFile(this)">
+        </div>
+        <div id="rgPreview" style="display:none;margin-bottom:12px"></div>
         <div id="regGateList"><div style="text-align:center;padding:14px;color:var(--g3);font-size:13px">불러오는 중...</div></div>
       </div></div>
       <div style="height:20px"></div>
@@ -21209,6 +21215,68 @@ async function addRegGateEmpNo(){
     document.getElementById('regGateNewEmpNo').value='';
     document.getElementById('regGateNewName').value='';
     toast('✅ 추가되었습니다');
+    loadRegGateList();
+  });
+}
+
+var RG_ROWS=[];
+function rgDownloadTemplate(){
+  var wb=XLSX.utils.book_new();
+  var ws=XLSX.utils.aoa_to_sheet([['사번','이름(선택)'],['100001','홍길동'],['100002','김철수'],['100003','']]);
+  ws['!cols']=[{wch:16},{wch:16}];
+  for(var r=1;r<=3;r++){var c=ws['A'+(r+1)]; if(c){c.t='s';c.z='@';}}
+  XLSX.utils.book_append_sheet(wb,ws,'사번목록');
+  var g=XLSX.utils.aoa_to_sheet([['안내'],['1. 사번 / 이름 칸에 한 줄에 한 명씩 입력합니다. (예시 3줄은 지우고 작성)'],['2. 이름은 비워도 됩니다.'],['3. 저장 후 [엑셀 업로드]로 올리면 미리보기가 나오고, 확인 후 한 번에 등록됩니다.'],['4. 이미 등록된 사번은 건너뜁니다.']]);
+  g['!cols']=[{wch:80}];
+  XLSX.utils.book_append_sheet(wb,g,'안내');
+  dlSaveWorkbook(wb,'가입허용사번_양식.xlsx');
+}
+async function rgParseFile(inp){
+  var f=inp.files&&inp.files[0]; inp.value=''; if(!f) return;
+  try{
+    var wb=XLSX.read(await f.arrayBuffer(),{type:'array'});
+    var ws=wb.Sheets[wb.SheetNames[0]];
+    var a=XLSX.utils.sheet_to_json(ws,{header:1,raw:false,defval:''});
+    var iE=0,iN=1,start=0;
+    if(a.length){
+      var h=a[0].map(function(x){return String(x||'').replace(/\s/g,'');});
+      var e=h.findIndex(function(x){return x.indexOf('사번')>=0;});
+      if(e>=0){ iE=e; start=1; var n=h.findIndex(function(x){return x.indexOf('이름')>=0;}); iN=n>=0?n:(e===0?1:0); }
+    }
+    var seen={},rows=[],dup=0,blank=0;
+    for(var i=start;i<a.length;i++){
+      var emp=String(a[i][iE]==null?'':a[i][iE]).trim(), nm=String(a[i][iN]==null?'':a[i][iN]).trim();
+      if(!emp&&!nm) continue;
+      if(!emp||emp.length>40){blank++;continue;}
+      if(seen[emp]){dup++;continue;}
+      seen[emp]=1; rows.push({emp_no:emp,name:nm||null});
+    }
+    RG_ROWS=rows; rgRenderPreview(dup,blank);
+  }catch(err){ toast('⚠️ 엑셀을 읽지 못했습니다'); }
+}
+function rgRenderPreview(dup,blank){
+  var el=document.getElementById('rgPreview'); if(!el) return;
+  if(!RG_ROWS.length){ el.style.display='block'; el.innerHTML='<div style="padding:12px;background:var(--danger-bg);color:var(--danger);border-radius:8px;font-size:13px">등록할 사번이 없습니다. 양식의 첫 번째 시트에 사번을 입력했는지 확인하세요.</div>'; return; }
+  var show=RG_ROWS.slice(0,8).map(function(r){return '<div style="padding:4px 0;font-size:13px;border-bottom:1px solid var(--g1)"><b>'+eeEsc(r.emp_no)+'</b> <span style="color:var(--g5)">'+eeEsc(r.name||'')+'</span></div>';}).join('');
+  el.style.display='block';
+  el.innerHTML='<div style="padding:12px;background:var(--teal-bg);border-radius:10px">'
+   +'<div style="font-size:14px;font-weight:800;margin-bottom:4px">📋 '+eeEsc(iaosDN())+' · 등록 대상 '+RG_ROWS.length+'명</div>'
+   +'<div style="font-size:12px;color:var(--g5);margin-bottom:8px">파일 내 중복 '+dup+'건, 사번 없음/오류 '+blank+'건은 제외됨</div>'
+   +show+(RG_ROWS.length>8?'<div style="font-size:12px;color:var(--g5);padding-top:4px">… 외 '+(RG_ROWS.length-8)+'명</div>':'')
+   +'<div style="display:flex;gap:8px;margin-top:10px"><button onclick="rgCancel()" style="flex:1;padding:10px;background:#fff;border:1.5px solid var(--g2);border-radius:8px;font-weight:700;cursor:pointer">취소</button>'
+   +'<button onclick="rgCommit()" style="flex:2;padding:10px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">'+RG_ROWS.length+'명 한 번에 등록</button></div></div>';
+}
+function rgCancel(){ RG_ROWS=[]; var el=document.getElementById('rgPreview'); if(el){el.style.display='none';el.innerHTML='';} }
+function rgCommit(){
+  if(!me||me.role!=='master'){ toast('⚠️ 최고관리자만 가능합니다'); return; }
+  if(!RG_ROWS.length) return;
+  var rows=RG_ROWS.slice();
+  requireAdminAuth('가입 허용 사번 '+rows.length+'명 일괄 등록', async function(pw, errEl){
+    var res=await sb.rpc('admin_add_signup_empnos_bulk',{p_admin_id:me.id,p_admin_password:pw,p_rows:rows,p_division_id:iaosDID()});
+    var d=res.data;
+    if(res.error||!d||d.ok===false){ errEl.textContent='⚠️ '+(res.error?res.error.message:(d&&d.reason==='auth'?'비밀번호를 확인하세요':d&&d.reason==='division'?'사업부를 먼저 선택하세요':d&&d.reason==='size'?'한 번에 2000명까지 가능합니다':'등록 실패')); errEl.style.display='block'; return; }
+    hideM('adminAuthModal'); rgCancel();
+    toast('✅ 신규 '+d.added+'명 · 기존 '+d.exists+'명'+(d.other_division?' · 타 사업부 '+d.other_division+'명':'')+(d.invalid?' · 오류 '+d.invalid+'명':''));
     loadRegGateList();
   });
 }

@@ -769,7 +769,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r7-1002-1640</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r8-1002-1700</div>
   </div>
 </div>
 
@@ -6224,6 +6224,7 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
     <div id="adT4" style="padding:11px 6px;text-align:center;font-size:13px;font-weight:700;color:var(--g5);cursor:pointer;border-top:1px solid var(--g1)" onclick="adTab(4)">다운로드</div>
     <div id="adT5" style="padding:11px 6px;text-align:center;font-size:13px;font-weight:700;color:var(--g5);cursor:pointer;position:relative;border-top:1px solid var(--g1)" onclick="adTab(5)">비번재설정<span id="pwReqBadge" style="display:none;position:absolute;top:6px;right:8px;background:var(--danger);color:white;border-radius:50%;width:15px;height:15px;font-size:10px;font-weight:800;line-height:15px;text-align:center"></span></div>
     <div id="adT6" style="padding:11px 6px;text-align:center;font-size:13px;font-weight:700;color:var(--g5);cursor:pointer;border-top:1px solid var(--g1)" onclick="adTab(6)">💾 저장공간</div>
+    <div id="adT7" style="display:none;padding:11px 6px;text-align:center;font-size:13px;font-weight:700;color:var(--g5);cursor:pointer;border-top:1px solid var(--g1)" onclick="adTab(7)">🏢 사업부</div>
   </div>
   <div id="adP0">
     <div class="pg-hd"><div><h1>가입 승인</h1><small id="pendCount" style="color:var(--danger);font-weight:600"></small></div></div>
@@ -6367,6 +6368,10 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
   </div>
 
   <!-- 저장공간 현황 -->
+  <div id="adP7" style="display:none">
+    <div class="pg-hd"><div><h1>🏢 사업부 관리</h1><small style="color:var(--g4)">사업부 · 팀 · 조 · 구역/건물 편집 (최고관리자 전용)</small></div></div>
+    <div id="dmWrap" style="padding:0 13px 30px"></div>
+  </div>
   <div id="adP6" style="display:none">
     <div class="pg-hd"><div><h1>📎 파일 저장공간</h1><small style="color:var(--g4)">사규·PDF·사진 등 첨부파일 용량</small></div>
       <button onclick="loadStorageUsage();loadDbUsage();" style="padding:7px 13px;background:var(--g1);color:var(--g5);border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer">🔄 새로고침</button>
@@ -10317,6 +10322,7 @@ function iaosApplyDivNames(){
   document.title=nm||'환경미화운영그룹';
   if(id) document.documentElement.setAttribute('data-div',id);
 }
+var _dmCss=document.createElement('style');_dmCss.textContent='.dm-b{padding:9px 14px;background:var(--teal);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap}.dm-b2{padding:8px 12px;background:#fff;border:1.5px solid var(--g2);color:var(--g6);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}';document.head.appendChild(_dmCss);
 function iaosIsGroupRole(){ return !!(me&&['master','admin','group_viewer'].indexOf(me.role)!==-1); }
 function iaosBackToGroup(){ try{sessionStorage.removeItem('iaos_app');}catch(e){} location.href='group.html'; }
 function iaosRouteStart(){
@@ -10338,6 +10344,7 @@ function initDivisionUI(){
     chip.style.display='block';
     iaosApplyDivNames();
     var gc=document.getElementById('groupLinkCard'); if(gc) gc.style.display=iaosIsGroupRole()?'flex':'none';
+    var dt=document.getElementById('adT7'); if(dt) dt.style.display=(me.role==='master')?'block':'none';
     var gb=document.getElementById('groupBackBtn'); if(gb) gb.style.display=iaosIsGroupRole()?'block':'none';
   });
 }
@@ -10361,6 +10368,165 @@ function iaosSwitchDiv(id){
   window.curDivision=id;
   location.reload();
 }
+
+// ══════════ 사업부 관리 (master 전용) — 사업부·팀·조·구역/건물 편집 ══════════
+var DM={div:null,divs:[],teams:[],groups:[],sites:[],selTeam:null,busy:false};
+function dmEsc(v){ return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function dmErr(r,okMsg){
+  if(r&&r.error){
+    var m=r.error.message||'오류';
+    if(/foreign key|violates/i.test(m)) m='연결된 데이터(사용자 등)가 있어 삭제할 수 없습니다. 대신 "사용 안 함"으로 바꿔주세요';
+    else if(/duplicate|unique/i.test(m)) m='같은 이름이 이미 있습니다';
+    else if(/row-level security|permission/i.test(m)) m='권한이 없습니다';
+    toast('⚠️ '+m); return true;
+  }
+  if(okMsg) toast(okMsg);
+  return false;
+}
+function dmInvalidate(){ try{ IAOS_TEAMMAP=null; IAOS_DIVS=[]; }catch(e){} }
+async function dmInit(){
+  if(!me||me.role!=='master'){ var w=document.getElementById('dmWrap'); if(w) w.innerHTML='<div style="padding:30px;text-align:center;color:var(--g4)">최고관리자만 사용할 수 있습니다</div>'; return; }
+  var r=await sb.from('divisions').select('id,name,sort_order,active').order('sort_order',{ascending:true});
+  DM.divs=(r&&r.data||[]).filter(function(d){return d.id!=='ALL';});
+  if(!DM.div||!DM.divs.some(function(d){return d.id===DM.div;})) DM.div=(DM.divs[0]||{}).id||null;
+  await dmLoad();
+}
+async function dmLoad(){
+  if(!DM.div){ dmRender(); return; }
+  var t=await sb.from('teams').select('id,name,sort_order,active').eq('division_id',DM.div).order('sort_order',{ascending:true});
+  DM.teams=(t&&t.data)||[];
+  var ids=DM.teams.map(function(x){return x.id;});
+  DM.groups=[];
+  if(ids.length){ var g=await sb.from('team_groups').select('id,team_id,name,sort_order').in('team_id',ids).order('sort_order',{ascending:true}); DM.groups=(g&&g.data)||[]; }
+  var s=await sb.from('division_sites').select('id,parent_id,kind,name,sort_order,active').eq('division_id',DM.div).order('sort_order',{ascending:true});
+  DM.sites=(s&&s.data)||[];
+  if(DM.selTeam&&!DM.teams.some(function(x){return x.id===DM.selTeam;})) DM.selTeam=null;
+  dmRender();
+}
+function dmPickDiv(id){ DM.div=id; DM.selTeam=null; dmLoad(); }
+function dmRender(){
+  var w=document.getElementById('dmWrap'); if(!w) return;
+  var cur=DM.divs.filter(function(d){return d.id===DM.div;})[0];
+  var h='<div style="display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px">';
+  DM.divs.forEach(function(d){
+    var on=d.id===DM.div;
+    h+='<div onclick="dmPickDiv(\''+d.id+'\')" style="padding:8px 12px;border-radius:18px;font-size:13px;font-weight:800;cursor:pointer;border:1.5px solid '+(on?'var(--teal)':'var(--g2)')+';background:'+(on?'var(--teal-bg)':'#fff')+';color:'+(on?'var(--teal2)':'var(--g5)')+';opacity:'+(d.active===false?'.5':'1')+'">'+dmEsc(d.id)+'</div>';
+  });
+  h+='<div onclick="dmAddDiv()" style="padding:8px 12px;border-radius:18px;font-size:13px;font-weight:800;cursor:pointer;border:1.5px dashed var(--g3);color:var(--g4)">＋ 사업부</div></div>';
+  if(!cur){ w.innerHTML=h+'<div style="padding:20px;text-align:center;color:var(--g4)">사업부가 없습니다</div>'; return; }
+  // 기본 정보
+  h+='<div class="card" style="margin-bottom:12px"><div class="cb" style="padding:14px">'
+   +'<div style="font-size:13px;font-weight:800;color:var(--g6);margin-bottom:8px">기본 정보 <span style="font-weight:600;color:var(--g4)">(코드 '+dmEsc(cur.id)+')</span></div>'
+   +'<div style="display:flex;gap:8px;align-items:center"><input id="dmDivName" class="ri" style="flex:1;margin:0" value="'+dmEsc(cur.name)+'">'
+   +'<label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--g5);white-space:nowrap"><input type="checkbox" id="dmDivActive" '+(cur.active===false?'':'checked')+'>사용</label>'
+   +'<button class="dm-b" onclick="dmSaveDiv()">저장</button></div></div></div>';
+  // 팀·조
+  h+='<div class="card" style="margin-bottom:12px"><div class="cb" style="padding:14px"><div style="font-size:13px;font-weight:800;color:var(--g6);margin-bottom:8px">팀 · 조 <span style="font-weight:600;color:var(--g4)">('+DM.teams.length+'개 팀)</span></div>'
+   +'<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px">';
+  DM.teams.forEach(function(t){
+    var on=t.id===DM.selTeam, n=DM.groups.filter(function(g){return g.team_id===t.id;}).length;
+    h+='<div onclick="dmSelTeam(\''+t.id+'\')" style="padding:8px 2px;text-align:center;border-radius:10px;font-size:13px;font-weight:'+(on?'800':'600')+';cursor:pointer;border:1.5px solid '+(on?'var(--teal)':'var(--g2)')+';background:'+(on?'var(--teal-bg)':'#fff')+';color:'+(t.active===false?'var(--g3)':(on?'var(--teal2)':'var(--g6)'))+'">'+dmEsc(t.name)+'<div style="font-size:10px;font-weight:600;color:var(--g4)">'+n+'개 조</div></div>';
+  });
+  h+='<div onclick="dmAddTeam()" style="padding:8px 2px;text-align:center;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;border:1.5px dashed var(--g3);color:var(--g4)">＋ 팀</div></div>';
+  var st=DM.teams.filter(function(x){return x.id===DM.selTeam;})[0];
+  if(st){
+    var gs=DM.groups.filter(function(g){return g.team_id===st.id;});
+    h+='<div style="margin-top:12px;padding:12px;background:var(--g1);border-radius:12px">'
+     +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:10px"><input id="dmTeamName" class="ri" style="flex:1;margin:0" value="'+dmEsc(st.name)+'">'
+     +'<label style="display:flex;align-items:center;gap:5px;font-size:13px;color:var(--g5);white-space:nowrap"><input type="checkbox" id="dmTeamActive" '+(st.active===false?'':'checked')+'>사용</label>'
+     +'<button class="dm-b" onclick="dmSaveTeam()">저장</button></div>'
+     +'<div style="font-size:12px;font-weight:700;color:var(--g5);margin-bottom:6px">조</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">';
+    gs.forEach(function(g){ h+='<span style="padding:6px 10px;background:#fff;border:1.5px solid var(--g2);border-radius:16px;font-size:13px;font-weight:700">'+dmEsc(g.name)+' <span onclick="dmDelGroup(\''+g.id+'\')" style="color:var(--danger);cursor:pointer;margin-left:4px">✕</span></span>'; });
+    if(!gs.length) h+='<span style="font-size:12px;color:var(--g4)">등록된 조가 없습니다</span>';
+    h+='</div><div style="display:flex;gap:8px"><input id="dmNewGroup" class="ri" style="flex:1;margin:0" placeholder="조 이름 (예: A조)"><button class="dm-b" onclick="dmAddGroup()">조 추가</button></div>'
+     +'<div style="display:flex;gap:8px;margin-top:10px"><button class="dm-b2" onclick="dmMoveTeam(-1)">◀ 앞으로</button><button class="dm-b2" onclick="dmMoveTeam(1)">뒤로 ▶</button><span style="flex:1"></span><button class="dm-b2" style="color:var(--danger)" onclick="dmDelTeam()">팀 삭제</button></div></div>';
+  }
+  h+='</div></div>';
+  // 구역·건물
+  h+='<div class="card" style="margin-bottom:12px"><div class="cb" style="padding:14px"><div style="font-size:13px;font-weight:800;color:var(--g6);margin-bottom:8px">구역 · 건물 · 시설</div>';
+  if(!DM.sites.length) h+='<div style="font-size:12px;color:var(--g4);margin-bottom:8px">등록된 항목이 없습니다</div>';
+  DM.sites.forEach(function(s){
+    var par=DM.sites.filter(function(x){return x.id===s.parent_id;})[0];
+    h+='<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--g1)"><span style="font-size:11px;padding:2px 8px;border-radius:10px;background:var(--teal-bg);color:var(--teal2);font-weight:800">'+dmEsc({zone:'구역',building:'건물',facility:'시설',etc:'기타'}[s.kind]||s.kind)+'</span>'
+     +'<div style="flex:1;font-size:14px;font-weight:700;color:'+(s.active===false?'var(--g3)':'var(--g7)')+'">'+dmEsc(s.name)+(par?' <span style="font-size:11px;color:var(--g4);font-weight:600">· '+dmEsc(par.name)+'</span>':'')+'</div>'
+     +'<span onclick="dmToggleSite(\''+s.id+'\','+(s.active===false?'true':'false')+')" style="font-size:12px;color:var(--g5);cursor:pointer;font-weight:700">'+(s.active===false?'사용 안 함':'사용')+'</span>'
+     +'<span onclick="dmDelSite(\''+s.id+'\')" style="color:var(--danger);cursor:pointer">✕</span></div>';
+  });
+  var zones=DM.sites.filter(function(s){return !s.parent_id;});
+  h+='<div style="display:grid;grid-template-columns:90px 1fr;gap:8px;margin-top:10px"><select id="dmSiteKind" class="ri" style="margin:0"><option value="zone">구역</option><option value="building">건물</option><option value="facility">시설</option><option value="etc">기타</option></select>'
+   +'<input id="dmSiteName" class="ri" style="margin:0" placeholder="이름 (예: L/S 동편, 제1청사)"></div>'
+   +'<div style="display:flex;gap:8px;margin-top:8px"><select id="dmSiteParent" class="ri" style="margin:0;flex:1"><option value="">상위 항목 없음</option>'+zones.map(function(z){return '<option value="'+z.id+'">'+dmEsc(z.name)+' 아래</option>';}).join('')+'</select><button class="dm-b" onclick="dmAddSite()">추가</button></div>'
+   +'</div></div>';
+  w.innerHTML=h;
+}
+function dmSelTeam(id){ DM.selTeam=(DM.selTeam===id?null:id); dmRender(); }
+async function dmSaveDiv(){
+  var name=(document.getElementById('dmDivName').value||'').trim(); if(!name){ toast('이름을 입력해주세요'); return; }
+  var r=await sb.from('divisions').update({name:name,active:document.getElementById('dmDivActive').checked}).eq('id',DM.div);
+  if(dmErr(r,'✅ 저장되었습니다')) return; dmInvalidate(); await dmInit();
+}
+async function dmAddDiv(){
+  var id=(prompt('사업부 코드를 입력하세요 (영문 대문자·숫자 2~10자, 예: T3)')||'').trim().toUpperCase(); if(!id) return;
+  if(!/^[A-Z0-9_]{2,10}$/.test(id)||id==='ALL'){ toast('⚠️ 코드는 영문 대문자·숫자 2~10자(ALL 제외)입니다'); return; }
+  var name=(prompt('사업부 이름을 입력하세요')||'').trim(); if(!name) return;
+  var so=DM.divs.reduce(function(m,d){return Math.max(m,d.sort_order||0);},0)+1;
+  var r=await sb.from('divisions').insert({id:id,name:name,sort_order:so});
+  if(dmErr(r,'✅ 사업부가 추가되었습니다')) return; DM.div=id; dmInvalidate(); await dmInit();
+}
+async function dmAddTeam(){
+  var name=(prompt('팀 이름을 입력하세요 (예: 1팀)')||'').trim(); if(!name) return;
+  var so=DM.teams.reduce(function(m,t){return Math.max(m,t.sort_order||0);},0)+1;
+  var r=await sb.from('teams').insert({division_id:DM.div,name:name,sort_order:so});
+  if(dmErr(r,'✅ 팀이 추가되었습니다')) return; dmInvalidate(); await dmLoad();
+}
+async function dmSaveTeam(){
+  var name=(document.getElementById('dmTeamName').value||'').trim(); if(!name){ toast('이름을 입력해주세요'); return; }
+  var r=await sb.from('teams').update({name:name,active:document.getElementById('dmTeamActive').checked}).eq('id',DM.selTeam);
+  if(dmErr(r,'✅ 저장되었습니다')) return; dmInvalidate(); await dmLoad();
+}
+async function dmDelTeam(){
+  var t=DM.teams.filter(function(x){return x.id===DM.selTeam;})[0]; if(!t) return;
+  if(!confirm(t.name+' 팀을 삭제할까요?\n(조도 함께 삭제됩니다)')) return;
+  var r=await sb.from('teams').delete().eq('id',t.id);
+  if(dmErr(r,'🗑 삭제되었습니다')) return; DM.selTeam=null; dmInvalidate(); await dmLoad();
+}
+async function dmMoveTeam(dir){
+  var i=DM.teams.findIndex(function(x){return x.id===DM.selTeam;}), j=i+dir;
+  if(i<0||j<0||j>=DM.teams.length) return;
+  var a=DM.teams[i], b=DM.teams[j], sa=a.sort_order, sb2=b.sort_order;
+  if(sa===sb2){ sb2=sa+dir; }
+  var r1=await sb.from('teams').update({sort_order:sb2}).eq('id',a.id);
+  var r2=await sb.from('teams').update({sort_order:sa}).eq('id',b.id);
+  if(dmErr(r1)||dmErr(r2)) return; await dmLoad();
+}
+async function dmAddGroup(){
+  var name=(document.getElementById('dmNewGroup').value||'').trim(); if(!name){ toast('조 이름을 입력해주세요'); return; }
+  var so=DM.groups.filter(function(g){return g.team_id===DM.selTeam;}).reduce(function(m,g){return Math.max(m,g.sort_order||0);},0)+1;
+  var r=await sb.from('team_groups').insert({team_id:DM.selTeam,name:name,sort_order:so});
+  if(dmErr(r,'✅ 조가 추가되었습니다')) return; dmInvalidate(); await dmLoad();
+}
+async function dmDelGroup(id){
+  if(!confirm('이 조를 삭제할까요?')) return;
+  var r=await sb.from('team_groups').delete().eq('id',id);
+  if(dmErr(r,'🗑 삭제되었습니다')) return; dmInvalidate(); await dmLoad();
+}
+async function dmAddSite(){
+  var name=(document.getElementById('dmSiteName').value||'').trim(); if(!name){ toast('이름을 입력해주세요'); return; }
+  var so=DM.sites.reduce(function(m,s){return Math.max(m,s.sort_order||0);},0)+1;
+  var par=document.getElementById('dmSiteParent').value||null;
+  var r=await sb.from('division_sites').insert({division_id:DM.div,kind:document.getElementById('dmSiteKind').value,name:name,parent_id:par,sort_order:so});
+  if(dmErr(r,'✅ 추가되었습니다')) return; await dmLoad();
+}
+async function dmToggleSite(id,active){
+  var r=await sb.from('division_sites').update({active:active}).eq('id',id).eq('division_id',DM.div);
+  if(dmErr(r)) return; await dmLoad();
+}
+async function dmDelSite(id){
+  if(!confirm('삭제할까요?')) return;
+  var r=await sb.from('division_sites').delete().eq('id',id).eq('division_id',DM.div);
+  if(dmErr(r,'🗑 삭제되었습니다')) return; await dmLoad();
+}
+
 function doLogout(){
   me=null;
   try{ sessionStorage.removeItem('iaos_app'); }catch(e){}
@@ -13895,7 +14061,8 @@ async function loadHandoverByShift(shift){
   }
 }
 function adTab(n){
-  tabSwitch('ad',n,7);
+  tabSwitch('ad',n,8);
+  if(n===7) dmInit();
   if(n===0) loadPendingUsers();
   if(n===1) loadUserList();
   if(n===5) loadPwResetRequests();

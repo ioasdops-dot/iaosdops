@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#F4F7FD">
+<meta name="theme-color" content="#F3F4F6">
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="group.webmanifest">
@@ -11,7 +11,7 @@
 <meta name="apple-mobile-web-app-title" content="그룹현황">
 <title>그룹 통합 현황</title>
 <style>
-:root{--bg:#F4F7FD;--card:#fff;--ink:#27304A;--mut:#7B86A3;--line:#E6EBF6;--soft:#EEF2FB;--sig:#FFE79A;--up:#E2705F;--dn:#2FA67C}
+:root{--bg:#F3F4F6;--card:#fff;--ink:#2B2F36;--mut:#7A8190;--line:#E3E6EB;--soft:#EDEFF2;--sig:#FFE79A;--up:#E2705F;--dn:#2FA67C}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,"Apple SD Gothic Neo","Noto Sans KR","Noto Sans CJK KR",sans-serif;-webkit-text-size-adjust:100%}
 body{padding:0 0 max(24px,env(safe-area-inset-bottom))}
@@ -19,14 +19,14 @@ button{font:inherit;color:inherit;cursor:pointer}
 .wrap{max-width:560px;margin:0 auto;padding:0 16px}
 .hd{display:flex;justify-content:space-between;align-items:center;padding:calc(14px + env(safe-area-inset-top)) 0 0}
 .hd .bn{display:flex;align-items:center;gap:10px}
-.hd .bn img{width:38px;height:38px;border-radius:50%;box-shadow:0 1px 6px #2b3a6a30;flex:none}
+.hd .bn img{width:38px;height:38px;border-radius:50%;box-shadow:0 1px 6px #2b2f3630;flex:none}
 .hd h1{font-size:16px;margin:0;font-weight:800}
 .hd small{display:block;color:var(--mut);font-size:11px;margin-top:2px}
 .live{display:flex;align-items:center;gap:6px;font-size:11px;color:#3da57f;background:#E3F6EE;padding:5px 10px;border-radius:99px;font-weight:700;border:0}
 .live i{width:7px;height:7px;border-radius:50%;background:#4BC79B}
-.tabs{display:flex;gap:4px;margin:14px 0 0;background:#E8EDF8;border-radius:12px;padding:4px;position:sticky;top:0;z-index:5}
+.tabs{display:flex;gap:4px;margin:14px 0 0;background:#E6E8EC;border-radius:12px;padding:4px;position:sticky;top:0;z-index:5}
 .tabs button{flex:1;padding:9px 0;font-size:13px;color:var(--mut);border:0;background:none;border-radius:9px;font-weight:600}
-.tabs button.on{background:#fff;color:var(--ink);font-weight:800;box-shadow:0 1px 4px #2b3a6a1a}
+.tabs button.on{background:#fff;color:var(--ink);font-weight:800;box-shadow:0 1px 4px #2b2f361a}
 .pane{display:none;padding-top:12px}.pane.on{display:block}
 .card{background:var(--card);border-radius:18px;padding:13px 14px;margin-bottom:10px;border:1px solid var(--line)}
 .card h3{font-size:13px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;font-weight:800}
@@ -74,7 +74,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .br .b i{display:block;height:100%;border-radius:8px;min-width:2px}
 .br em{font-style:normal;text-align:right;color:var(--ink);font-weight:800;font-variant-numeric:tabular-nums}
 .br em s{text-decoration:none;font-weight:700;font-size:10px;margin-left:4px}
-.up{color:var(--up)}.dn{color:var(--dn)}.fl{color:#9aa4bd}
+.up{color:var(--up)}.dn{color:var(--dn)}.fl{color:#9AA0AB}
 .gs{display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:6px}
 .g{text-align:center}.g svg{width:100%;height:auto}
 .g b{display:block;font-size:17px;margin-top:-22px;font-variant-numeric:tabular-nums;font-weight:800}
@@ -82,7 +82,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .g small{display:block;font-size:10px;color:var(--mut)}
 .sp{display:flex;align-items:flex-end;gap:3px;height:30px}.sp i{flex:1;border-radius:3px 3px 1px 1px;min-height:2px}
 /* 리포트 */
-.hero{background:linear-gradient(135deg,#E4EDFC,#E3F6EE);border-radius:20px;padding:16px;border:1px solid var(--line)}
+.hero{background:linear-gradient(135deg,#E9EBEF,#DDE1E6);border-radius:20px;padding:16px;border:1px solid var(--line)}
 .hero p{margin:0;font-size:12px;color:var(--mut);font-weight:600}
 .hero h2{margin:6px 0 0;font-size:21px;line-height:1.4;letter-spacing:-.4px}
 .hero mark{background:linear-gradient(transparent 55%,var(--sig) 55%);color:inherit;padding:0 2px}
@@ -97,10 +97,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 .ex{display:flex;gap:8px;margin-top:12px}
 .ex button{flex:1;padding:11px;border-radius:13px;font-size:13px;font-weight:800;background:var(--ink);color:#fff;border:0}
 .ex button+button{background:#fff;color:var(--ink);border:1px solid var(--line)}
-.note{font-size:11px;color:#9aa4bd;text-align:center;margin-top:10px}
+.note{font-size:11px;color:#9AA0AB;text-align:center;margin-top:10px}
 /* 로그인 */
 #login{max-width:380px;margin:0 auto;padding:calc(60px + env(safe-area-inset-top)) 20px 20px}
-#login .lg1{display:block;width:132px;height:132px;margin:0 auto 18px;border-radius:50%;box-shadow:0 6px 24px #2b3a6a26}
+#login .lg1{display:block;width:132px;height:132px;margin:0 auto 18px;border-radius:50%;box-shadow:0 6px 24px #2b2f3626}
 #login h1{font-size:20px;margin:0 0 4px;text-align:center}
 #login p{margin:0 0 20px;color:var(--mut);font-size:13px;text-align:center}
 #login label{display:block;font-size:12px;color:var(--mut);font-weight:700;margin:12px 0 5px}
@@ -225,7 +225,7 @@ function ringSvg(vals,color){
 }
 function gaugeSvg(pct,color){
   var r=36,L=Math.PI*r,f=Math.max(0,Math.min(pct,100))/100*L;
-  return '<svg viewBox="0 0 100 58" aria-hidden="true"><path d="M14 52 A36 36 0 0 1 86 52" fill="none" stroke="#EEF2FB" stroke-width="10" stroke-linecap="round"/><path d="M14 52 A36 36 0 0 1 86 52" fill="none" stroke="'+color+'" stroke-width="10" stroke-linecap="round" stroke-dasharray="'+f+' '+L+'"/></svg>';
+  return '<svg viewBox="0 0 100 58" aria-hidden="true"><path d="M14 52 A36 36 0 0 1 86 52" fill="none" stroke="#E6E8EC" stroke-width="10" stroke-linecap="round"/><path d="M14 52 A36 36 0 0 1 86 52" fill="none" stroke="'+color+'" stroke-width="10" stroke-linecap="round" stroke-dasharray="'+f+' '+L+'"/></svg>';
 }
 // 색 규칙: 적을수록 좋은 항목(민원·안전사고·폐기물)만 늘면 빨강/줄면 초록, 나머지는 방향만 회색으로 표시
 var GOOD_LOW={voc:1,accident:1,waste_kg:1};

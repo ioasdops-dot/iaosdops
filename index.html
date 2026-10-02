@@ -846,7 +846,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r10-1002-1730</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r12-1002-1710</div>
   </div>
 </div>
 
@@ -10397,8 +10397,11 @@ function iaosApplyDivNames(){
   var nm=iaosDivName(id);
   document.querySelectorAll('.div-nm').forEach(function(e){ e.textContent=nm; });
   document.title=nm||'환경미화운영그룹';
-  var lg=(id==='T1')?'logo-t1.png':'logo.png';
-  document.querySelectorAll('.logo-img img').forEach(function(i){ if(i.getAttribute('src')!==lg) i.setAttribute('src',lg); i.parentNode.classList.toggle('lg-t1',id==='T1'); });
+  var lg={T1:'logo-t1.png',T2:'logo-t2.png',BD:'logo-bd.png'}[id]||'logo.png';
+  document.querySelectorAll('.logo-img img').forEach(function(i){
+    i.onerror=function(){ if(!i._fb){ i._fb=1; i.src='assets/'+lg; } else { i.onerror=null; i.src='logo.png'; i.parentNode.classList.remove('lg-t1'); } };
+    if(i.getAttribute('src')!==lg){ i._fb=0; i.setAttribute('src',lg); }
+    i.parentNode.classList.toggle('lg-t1',lg!=='logo.png'); });
   if(id) document.documentElement.setAttribute('data-div',id);
 }
 var _dmCss=document.createElement('style');_dmCss.textContent='.dm-b{padding:9px 14px;background:var(--teal);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap}.dm-b2{padding:8px 12px;background:#fff;border:1.5px solid var(--g2);color:var(--g6);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}';document.head.appendChild(_dmCss);

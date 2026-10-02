@@ -855,7 +855,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r15-1002-1710</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r16-1002-1710</div>
   </div>
 </div>
 
@@ -6991,17 +6991,12 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
       <div style="font-size:15px;font-weight:700;color:var(--g7);margin-bottom:4px" id="tmUserName">사용자</div>
       <div style="font-size:12px;color:var(--g4);margin-bottom:13px">현재: <span id="tmCurrentTeam">-</span></div>
 
-      <div style="font-size:13px;font-weight:700;color:var(--g4);margin-bottom:6px">소속 팀 *</div>
-      <div style="font-size:12px;font-weight:700;color:var(--teal2);margin-bottom:4px">🌅 오전팀</div>
-      <div class="t-grid" id="tmTeamGrp0"><div class="t-btn" onclick="pickMoveTeam(this)">1팀</div><div class="t-btn" onclick="pickMoveTeam(this)">2팀</div><div class="t-btn" onclick="pickMoveTeam(this)">3팀</div><div class="t-btn" onclick="pickMoveTeam(this)">4팀</div></div>
-      <div style="font-size:12px;font-weight:700;color:var(--teal2);margin:7px 0 4px">☀️ 오후팀</div>
-      <div class="t-grid"><div class="t-btn" onclick="pickMoveTeam(this)">6팀</div><div class="t-btn" onclick="pickMoveTeam(this)">7팀</div><div class="t-btn" onclick="pickMoveTeam(this)">8팀</div><div class="t-btn" onclick="pickMoveTeam(this)">9팀</div></div>
-      <div style="font-size:12px;font-weight:700;color:var(--teal2);margin:7px 0 4px">🌙 야간팀</div>
-      <div class="t-grid"><div class="t-btn" onclick="pickMoveTeam(this)">5팀</div><div class="t-btn" onclick="pickMoveTeam(this)">10팀</div></div>
-      <div style="font-size:12px;font-weight:700;color:var(--teal2);margin:7px 0 4px">🏢 운영팀</div>
-      <div class="t-grid" style="margin-bottom:10px"><div class="t-btn" onclick="pickMoveTeam(this)">T1운영</div></div>
-      <div style="font-size:12px;font-weight:700;color:var(--teal2);margin:7px 0 4px">👁️ 외부(조회전용)</div>
-      <div class="t-grid" style="margin-bottom:10px"><div class="t-btn" onclick="pickMoveTeam(this)">IAOS</div></div>
+      <div id="tmDivWrap" style="margin-bottom:10px">
+        <div style="font-size:13px;font-weight:700;color:var(--g4);margin-bottom:6px">소속 사업부 *</div>
+        <div class="t-grid" id="tmDivGrp" style="grid-template-columns:repeat(3,minmax(0,1fr))"></div>
+      </div>
+      <div style="font-size:13px;font-weight:700;color:var(--g4);margin-bottom:6px">소속 팀 * <span style="font-weight:500;font-size:11px">(관리자 직급은 팀 선택 없이 이동)</span></div>
+      <div class="t-grid t-grid5" id="tmTeamGrp0" style="margin-bottom:10px;grid-template-columns:repeat(5,minmax(0,1fr))"></div>
 
       <div id="tmJoWrap" style="display:none;margin-bottom:4px">
         <div style="font-size:12px;font-weight:700;color:var(--teal2);margin-bottom:5px">조 선택</div>
@@ -7010,15 +7005,14 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
       <div style="height:10px"></div>
 
       <div style="font-size:13px;font-weight:700;color:var(--g4);margin-bottom:6px">직급 *</div>
-      <div class="role-row" id="tmRoleGrp">
-        <div class="r-btn" onclick="pickMoveRole(this)">그룹장</div>
-        <div class="r-btn" onclick="pickMoveRole(this)">본부장</div>
+      <div class="role-row" id="tmRoleGrp" style="flex-wrap:wrap">
+        <div class="r-btn" id="tmRoleAdmin" onclick="pickMoveRole(this)" style="display:none">관리자</div>
         <div class="r-btn" onclick="pickMoveRole(this)">팀장</div>
         <div class="r-btn" onclick="pickMoveRole(this)">조장</div>
         <div class="r-btn" onclick="pickMoveRole(this)">액팅리더</div>
         <div class="r-btn" onclick="pickMoveRole(this)">기타</div>
         <div class="r-btn" onclick="pickMoveRole(this)">차량운행</div>
-        <div class="r-btn" onclick="pickMoveRole(this)">게스트</div>
+        <div class="r-btn" onclick="pickMoveRole(this)">차량운행기록부 게스트</div>
       </div>
       <div class="err" id="tmErr"></div>
 
@@ -21354,31 +21348,48 @@ async function toggleMemberRole(el){
     loadUserList();
   });
 }
-var tmTarget=null, tmSelectedTeam='', tmSelectedRole='';
-var TM_JO_MAP={
-  '1팀':['A조','B조','C조','운전'],'2팀':['A조','B조'],'3팀':['A조','B조'],'4팀':['A조','B조'],
-  '6팀':['A조','B조','C조','운전'],'7팀':['A조','B조'],'8팀':['A조','B조'],'9팀':['A조','B조'],
-  '5팀':['A조','B조'],'10팀':['A조','B조']
-};
-var TM_ROLE_MAP={'팀장':'manager','조장':'leader','액팅리더':'acting_leader','기타':'member','게스트':'member','차량운행':'work_vehicle'};
-function openTeamMove(id, name, currentTeam){
+var tmTarget=null, tmSelectedTeam='', tmSelectedRole='', tmDiv='', tmTeams=[], tmGroups=[], tmTeamId=null;
+var TM_ROLE_MAP={'관리자':'admin','팀장':'manager','조장':'leader','액팅리더':'acting_leader','기타':'member','차량운행':'work_vehicle','차량운행기록부 게스트':'vehicle_guest'};
+function tmNeedsJo(){ return tmSelectedRole==='조장'||tmSelectedRole==='액팅리더'||tmSelectedRole==='차량운행'; }
+async function openTeamMove(id, name, currentTeam){
   if(!(me&&me.role==='master')){ toast('권한이 없습니다'); return; }
   tmTarget={id:id, name:name};
-  tmSelectedTeam=''; tmSelectedRole='';
+  tmSelectedTeam=''; tmSelectedRole=''; tmTeamId=null; tmTeams=[]; tmGroups=[];
+  tmDiv=window.curDivision&&window.curDivision!=='ALL'?window.curDivision:'';
   document.getElementById('tmUserName').textContent=name;
   document.getElementById('tmCurrentTeam').textContent=currentTeam||'-';
-  document.querySelectorAll('#teamMoveModal .t-btn').forEach(function(b){b.classList.remove('on');});
   document.querySelectorAll('#teamMoveModal .r-btn').forEach(function(b){b.classList.remove('on');});
+  document.getElementById('tmRoleAdmin').style.display='';
   document.getElementById('tmJoWrap').style.display='none';
   document.getElementById('tmJoGrp').innerHTML='';
   document.getElementById('tmErr').style.display='none';
   showM('teamMoveModal');
+  try{ await iaosFetchDivisions(); }catch(e){}
+  var dg=document.getElementById('tmDivGrp');
+  dg.innerHTML=(IAOS_DIVS||[]).map(function(d){return '<div class="t-btn'+(d.id===tmDiv?' on':'')+'" data-id="'+d.id+'" onclick="pickMoveDiv(this)" style="padding:9px 4px;font-size:12px">'+d.name.replace('환경미화사업부','')+'</div>';}).join('');
+  await tmLoadTeams();
+}
+async function tmLoadTeams(){
+  var grid=document.getElementById('tmTeamGrp0');
+  if(!tmDiv){ grid.innerHTML='<div style="grid-column:1/-1;font-size:13px;color:var(--g3)">사업부를 먼저 선택해주세요</div>'; return; }
+  grid.innerHTML='<div style="grid-column:1/-1;font-size:13px;color:var(--g3)">팀 불러오는 중...</div>';
+  var tr=await sb.from('teams').select('id,name,sort_order').eq('division_id',tmDiv).order('sort_order',{ascending:true});
+  tmTeams=(tr&&tr.data)||[];
+  tmGroups=[];
+  var ids=tmTeams.map(function(t){return t.id;});
+  if(ids.length){ var gr=await sb.from('team_groups').select('id,team_id,name,sort_order').in('team_id',ids).order('sort_order',{ascending:true}); tmGroups=(gr&&gr.data)||[]; }
+  grid.innerHTML=tmTeams.length?tmTeams.map(function(t){return '<div class="t-btn" data-id="'+t.id+'" onclick="pickMoveTeam(this)">'+t.name+'</div>';}).join(''):'<div style="grid-column:1/-1;font-size:13px;color:var(--danger)">이 사업부에 등록된 팀이 없습니다</div>';
+  tmSelectedTeam=''; tmTeamId=null; tmRefreshJoVisibility();
+}
+function pickMoveDiv(el){
+  document.querySelectorAll('#tmDivGrp .t-btn').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on'); tmDiv=el.getAttribute('data-id'); tmLoadTeams();
 }
 function closeTeamMove(){ hideM('teamMoveModal'); tmTarget=null; }
 function pickMoveTeam(el){
-  document.querySelectorAll('#teamMoveModal .t-btn').forEach(function(b){b.classList.remove('on');});
+  document.querySelectorAll('#tmTeamGrp0 .t-btn').forEach(function(b){b.classList.remove('on');});
   el.classList.add('on');
-  tmSelectedTeam=el.textContent.trim();
+  tmSelectedTeam=el.textContent.trim(); tmTeamId=el.getAttribute('data-id');
   tmRefreshJoVisibility();
 }
 function pickMoveRole(el){
@@ -21390,16 +21401,11 @@ function pickMoveRole(el){
 function tmRefreshJoVisibility(){
   var joWrap=document.getElementById('tmJoWrap');
   var joGrp=document.getElementById('tmJoGrp');
-  if(!tmSelectedTeam || tmSelectedTeam==='T1운영' || tmSelectedTeam==='IAOS'){ joWrap.style.display='none'; joGrp.innerHTML=''; return; }
-  var needsJo=(tmSelectedRole==='조장'||tmSelectedRole==='액팅리더'||tmSelectedRole==='차량운행');
-  var jos=TM_JO_MAP[tmSelectedTeam]||[];
-  if(!needsJo || !jos.length){ joWrap.style.display='none'; joGrp.innerHTML=''; return; }
-  // 기존 선택 유지 시도
+  var jos=tmGroups.filter(function(g){return g.team_id===tmTeamId;});
+  if(!tmTeamId || !tmNeedsJo() || !jos.length){ joWrap.style.display='none'; joGrp.innerHTML=''; return; }
   var prevOn=joGrp.querySelector('.t-btn.on');
-  var prevVal=prevOn?prevOn.textContent.trim():null;
-  joGrp.innerHTML=jos.map(function(j){ return '<div class="t-btn" onclick="pickMoveJo(this)" style="flex:none;padding:8px 16px'+(j===prevVal?' on':'')+'">'+j+'</div>'; }).join('');
-  // on 클래스가 style에 섞여 들어간 것 보정
-  Array.from(joGrp.children).forEach(function(b){ if(b.textContent.trim()===prevVal) b.classList.add('on'); });
+  var prevVal=prevOn?prevOn.getAttribute('data-id'):null;
+  joGrp.innerHTML=jos.map(function(j){ return '<div class="t-btn'+(j.id===prevVal?' on':'')+'" data-id="'+j.id+'" onclick="pickMoveJo(this)" style="flex:none;padding:8px 16px">'+j.name+'</div>'; }).join('');
   joWrap.style.display='block';
 }
 function pickMoveJo(el){
@@ -21411,23 +21417,23 @@ async function saveTeamMove(){
   if(!tmTarget){ toast('대상자 정보가 없습니다'); return; }
   var err=document.getElementById('tmErr');
   err.style.display='none';
-  if(!tmSelectedTeam){ err.textContent='⚠️ 소속 팀을 선택해주세요'; err.style.display='block'; return; }
-  if(!tmSelectedRole){ err.textContent='⚠️ 직급을 선택해주세요'; err.style.display='block'; return; }
-  var needsJo=(tmSelectedRole==='조장'||tmSelectedRole==='액팅리더'||tmSelectedRole==='차량운행');
-  var jos=TM_JO_MAP[tmSelectedTeam]||[];
+  var bad=function(m){ err.textContent='⚠️ '+m; err.style.display='block'; };
+  if(!tmDiv) return bad('소속 사업부를 선택해주세요');
+  if(!tmSelectedRole) return bad('직급을 선택해주세요');
+  var isAdminRole=(tmSelectedRole==='관리자');
+  if(!isAdminRole && !tmTeamId) return bad('소속 팀을 선택해주세요');
   var joEl=document.querySelector('#tmJoGrp .t-btn.on');
-  var jo=joEl?joEl.textContent.trim():'';
-  if(needsJo && jos.length && !jo){ err.textContent='⚠️ 조를 선택해주세요'; err.style.display='block'; return; }
-  var fullTeam=(tmSelectedTeam!=='T1운영' && tmSelectedTeam!=='IAOS' && jo) ? tmSelectedTeam+' '+jo : tmSelectedTeam;
-  var isT1=(tmSelectedTeam==='T1운영');
-  var isIAOS=(tmSelectedTeam==='IAOS');
-  var isExecSelectTM=false;
-  var finalRole = isExecSelectTM ? TM_ROLE_MAP[tmSelectedRole] : (isT1 ? 'admin' : (isIAOS ? 'member' : (TM_ROLE_MAP[tmSelectedRole]||'member')));
+  var joId=joEl?joEl.getAttribute('data-id'):null;
+  var hasJos=tmGroups.some(function(g){return g.team_id===tmTeamId;});
+  if(!isAdminRole && tmNeedsJo() && hasJos && !joId) return bad('조를 선택해주세요');
+  var finalRole=TM_ROLE_MAP[tmSelectedRole]||'member';
+  var teamLabel=isAdminRole?'(팀 없음)':(tmSelectedTeam+(joEl?' '+joEl.textContent.trim():''));
   requireAdminAuth(tmTarget.name+'님 팀 이동', async function(pw, errEl){
-    var res=await sb.rpc('admin_move_team', {p_admin_id:me.id, p_admin_password:pw, p_target_id:tmTarget.id, p_team:fullTeam, p_role:finalRole});
+    var res=await sb.rpc('admin_move_team', {p_admin_id:me.id, p_admin_password:pw, p_target_id:tmTarget.id,
+      p_team_id:isAdminRole?null:tmTeamId, p_team_group_id:(isAdminRole||!tmNeedsJo())?null:joId, p_role:finalRole, p_division_id:tmDiv});
     if(res.error || res.data===false){ errEl.textContent='⚠️ '+(res.error?res.error.message:'이동 실패 (비밀번호 확인)'); errEl.style.display='block'; return; }
     hideM('adminAuthModal');
-    toast('✅ '+tmTarget.name+'님 → '+fullTeam+' · '+tmSelectedRole+' 이동 완료');
+    toast('✅ '+tmTarget.name+'님 → '+iaosDivName(tmDiv)+' '+teamLabel+' · '+tmSelectedRole+' 이동 완료');
     closeTeamMove();
     loadUserList();
   });

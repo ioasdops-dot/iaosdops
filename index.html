@@ -478,7 +478,7 @@ html{overflow-x:hidden}
       _rtSyncAuth();
       try{
         _rtMpChannel = c.channel('mp_data_changes')
-          .on('postgres_changes', {event:'*', schema:'public', table:'mp_data'}, function(){
+          .on('postgres_changes', {event:'*', schema:'public', table:'mp_cells'}, function(){
             // 한꺼번에 여러 줄이 바뀌어도(예: 여러 조 동시 저장) 갱신을 0.5초 모아서 한 번만 실행 — 중복 호출 방지
             if(_rtMpDebounce) clearTimeout(_rtMpDebounce);
             _rtMpDebounce=setTimeout(function(){ if(typeof loadMpFromDB==='function') loadMpFromDB(); }, 500);
@@ -528,6 +528,80 @@ html{overflow-x:hidden}
         };
       };
 
+      // ══ 인력현황 호환 계층 (IAOSDopS) ══
+      // 화면 코드는 예전 mp_data(가로로 긴 한 줄) 형식을 그대로 쓰고, 여기서 새 DB의 mp_cells(칸마다 한 줄)로 변환한다.
+      //   category 'v' : 층별 입력 행렬(values) → cell_key 'r{행}c{열}'
+      //   category 'x' : 구역·층별 세부 칸(ls_east_toilet_1f 등) → cell_key = 칸 이름
+      var MP_FLOORS=['b2f','b1f','1f','2f','3f','4f'];
+      var MP_SPLIT_ALL=(function(){ var a=['jh_collect','jh_drive','office','goods']; ['ls_east','ls_west','as_east','as_west'].forEach(function(p){ ['toilet','both','common'].forEach(function(t){ MP_FLOORS.forEach(function(f){ a.push(p+'_'+t+'_'+f); }); }); }); return a; })();
+      var MP_RESERVED={id:1,date:1,shift:1,team_code:1,values:1,writer:1,proxy_writer:1,created_at:1,updated_at:1,category:1};
+      function _mpRenameParams(params){
+        var out={};
+        Object.keys(params||{}).forEach(function(k){
+          if(k==='select'||k==='order'||k==='limit'||k==='offset') return;
+          out[k==='date'?'work_date':k]=params[k];
+        });
+        return out;
+      }
+      function _mpPivot(cells){
+        var map={}, order=[];
+        cells.forEach(function(c){
+          var k=c.work_date+'|'+c.shift+'|'+c.team_code, r=map[k];
+          if(!r){ r={id:null,date:c.work_date,shift:c.shift,team_code:c.team_code,category:null,writer:null,proxy_writer:null,created_at:c.created_at,updated_at:c.updated_at,_vm:[]}; MP_SPLIT_ALL.forEach(function(n){ r[n]=0; }); map[k]=r; order.push(k); }
+          if(c.writer&&!r.writer) r.writer=c.writer;
+          if(c.proxy_writer&&!r.proxy_writer) r.proxy_writer=c.proxy_writer;
+          if(c.category==='v'){ var m=/^r(\d+)c(\d+)$/.exec(c.cell_key); if(m) r._vm.push([+m[1],+m[2],Number(c.qty)||0]); }
+          else if(c.category==='x'){ r[c.cell_key]=Number(c.qty)||0; }
+        });
+        return order.map(function(k){
+          var r=map[k], nr=4; r._vm.forEach(function(e){ if(e[0]+1>nr) nr=e[0]+1; });
+          var vals=[]; for(var i=0;i<nr;i++) vals.push([0,0,0,0,0,0,0]);
+          r._vm.forEach(function(e){ if(e[1]<7) vals[e[0]][e[1]]=e[2]; });
+          r.values=vals; delete r._vm; return r;
+        });
+      }
+      function _mpToCells(p){
+        var base={work_date:p.date,shift:p.shift,team_code:p.team_code,writer:p.writer||null,proxy_writer:p.proxy_writer||null};
+        var cells=[Object.assign({category:'v',cell_key:'__row__',qty:0},base)];
+        var vals=p.values; if(typeof vals==='string'){ try{ vals=JSON.parse(vals); }catch(e){ vals=null; } }
+        if(Array.isArray(vals)) vals.forEach(function(row,ri){ if(Array.isArray(row)) row.forEach(function(v,ci){ var n=Math.round(Number(v)||0); if(n!==0) cells.push(Object.assign({category:'v',cell_key:'r'+ri+'c'+ci,qty:n},base)); }); });
+        Object.keys(p).forEach(function(k){ if(MP_RESERVED[k]) return; var n=Math.round(Number(p[k])||0); if(n!==0&&isFinite(n)) cells.push(Object.assign({category:'x',cell_key:k,qty:n},base)); });
+        return cells;
+      }
+      async function _mpCompat(method, params, body){
+        params=params||{};
+        if(method==='GET'){
+          var f=_mpRenameParams(params), all=[], off=0, PAGE=1000;
+          for(;;){
+            var q=Object.assign({}, f, {select:'*', order:'work_date.asc,shift.asc,team_code.asc,category.asc,cell_key.asc', limit:PAGE, offset:off});
+            var r=await run('GET','mp_cells',q,null,null);
+            if(r.error) return r;
+            var d=r.data||[]; all=all.concat(d);
+            if(d.length<PAGE) break; off+=PAGE;
+            if(off>200000) break;
+          }
+          var rows=_mpPivot(all);
+          if(params.order){ var m=/^([a-z_]+)\.(asc|desc)$/.exec(params.order); if(m){ var col=m[1], dir=m[2]==='desc'?-1:1; rows.sort(function(a,b){ return (a[col]>b[col]?1:a[col]<b[col]?-1:0)*dir; }); } }
+          var o=parseInt(params.offset||0,10)||0, l=params.limit!==undefined?parseInt(params.limit,10):rows.length;
+          return {data:rows.slice(o,o+l), error:null};
+        }
+        if(method==='DELETE'){
+          var fd=_mpRenameParams(params);
+          return await run('DELETE','mp_cells',fd,null,null);
+        }
+        if(method==='POST'||method==='PATCH'){
+          var list=Array.isArray(body)?body:[body], bad=null;
+          for(var i=0;i<list.length;i++){
+            var p=list[i]; if(!p||!p.date||!p.shift||!p.team_code){ continue; }
+            var del=await run('DELETE','mp_cells',{work_date:'eq.'+p.date,shift:'eq.'+p.shift,team_code:'eq.'+p.team_code},null,null);
+            if(del.error){ bad=del.error; break; }
+            var ins=await run('POST','mp_cells',{},_mpToCells(p),null);
+            if(ins.error){ bad=ins.error; break; }
+          }
+          return bad?{data:null,error:bad}:{data:[],error:null};
+        }
+        return {data:null,error:{message:'지원하지 않는 요청',code:'mp_compat'}};
+      }
       var DIV_FREE={users:1,divisions:1,teams:1,team_groups:1,push_subscriptions:1,pw_reset_requests:1,user_read_marks:1,user_signatures:1};
       function _divScope(table){
         if(DIV_FREE[table]) return null;
@@ -535,6 +609,7 @@ html{overflow-x:hidden}
         return null;
       }
       async function run(method, table, params, body, upsertCol){
+        if(table==='mp_data') return await _mpCompat(method, params, body);
         try{
           var _dv=_divScope(table);
           // 사용자 목록(승인대기·사용자)은 선택한 사업부 소속만 표시 (본인 조회는 제외)
@@ -769,7 +844,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r8-1002-1700</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r9-1002-1730</div>
   </div>
 </div>
 
@@ -20701,7 +20776,7 @@ async function confirmDeleteAllPwReq(){
 }
 var DB_TOTAL_BYTES = 500*1024*1024; // Supabase Free 플랜 기준 DB 500MB
 var DB_TABLE_LABELS={
-  'mp_data':'인력현황 입력값', 'handover':'인수인계', 'mgr_attendance':'관리자 출근기록',
+  'mp_data':'인력현황 입력값','mp_cells':'인력현황 입력값', 'handover':'인수인계', 'mgr_attendance':'관리자 출근기록',
   'mgr_leave_schedule':'관리자 일정등록(출장·교육·연차 외)', 'mgr_status_log':'관리자 출근 변경이력',
   'facility_data':'시설물 현황', 'facility_files':'시설물 첨부파일', 'facility_menu_views':'시설현황 메뉴 조회기록',
   'joint_work_data':'공동작업', 'joint_work_schedule':'공동작업 일정', 'jw_year_teams':'공동작업 연도별 팀',

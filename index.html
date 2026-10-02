@@ -606,11 +606,40 @@ html{overflow-x:hidden}
       }
       var UPS_KEYS={worklog_daily:'division_id,log_date,team_no',floor_report_snapshots:'division_id,report_date,slot',leaders:'division_id,shift,team',jw_year_teams:'division_id,year',night_special_data:'division_id,date,team_code',kpi_data:'division_id,year,month',mgr_attendance:'division_id,date,team,name',iso9001_files:'division_id,name,cert_type',companynews_files:'division_id,name',safety_files:'division_id,name',operation_manual_files:'division_id,name',risk_assessment_files:'division_id,name',training_material_files:'division_id,name',regulation_files:'division_id,name'};
       var DIV_FREE={users:1,divisions:1,teams:1,team_groups:1,push_subscriptions:1,pw_reset_requests:1,user_read_marks:1,user_signatures:1};
+      // 모든 사업부가 함께 보는 공통 자료 (등록·수정·삭제는 최고관리자만, 사업부 코드는 ALL)
+      var COMMON_TABLES={regulation_files:1,iso9001_files:1,iso_cert_types:1,companynews_files:1,companynews_posts:1,safety_files:1,risk_assessment_files:1,training_material_files:1};
+      var COMMON_BUCKETS={'iso9001':1,'regulations':1,'companynews':1,'safety-procedures':1,'riskassessment':1,'trainingmaterial':1};
       function _divScope(table){
-        if(DIV_FREE[table]) return null;
+        if(DIV_FREE[table]||COMMON_TABLES[table]) return null;
         try{ if(typeof me!=='undefined'&&me&&(me.role==='master'||me.role==='group_viewer')&&window.curDivision) return window.curDivision; }catch(e){}
         return null;
       }
+      // 파일 저장소: 경로 맨 앞에 사업부 코드 폴더를 자동으로 붙임 (업로드·조회·삭제 공통)
+      (function(){
+        var _of=window.fetch.bind(window), _pre=SUPABASE_URL+'/storage/v1/object/';
+        window.fetch=function(input, init){
+          try{
+            var u=(typeof input==='string')?input:(input&&input.url);
+            if(u && u.indexOf(_pre)===0){
+              var rest=u.slice(_pre.length);
+              if(rest.indexOf('sign/')!==0 && rest.indexOf('public/')!==0 && rest.indexOf('authenticated/')!==0){
+                var i=rest.indexOf('/');
+                if(i>0){
+                  var bucket=rest.slice(0,i), path=rest.slice(i+1);
+                  var div=null;
+                  try{ var multi=me&&(me.role==='master'||me.role==='group_viewer'); div=(multi?window.curDivision:(me&&me.division_id)); }catch(e){}
+                  if(COMMON_BUCKETS[bucket]) div='ALL';
+                  if(div && /^(T1|T2|BD|ALL)$/.test(div) && path.indexOf(div+'/')!==0){
+                    var nu=_pre+bucket+'/'+div+'/'+path;
+                    input=(typeof input==='string')?nu:new Request(nu,input);
+                  }
+                }
+              }
+            }
+          }catch(e){}
+          return _of(input, init);
+        };
+      })();
       async function run(method, table, params, body, upsertCol){
         if(table==='mp_data') return await _mpCompat(method, params, body);
         try{
@@ -633,6 +662,13 @@ html{overflow-x:hidden}
             if(table==='iso9001_files' && body){
               var _ct=function(o){ if(o&&typeof o==='object'&&o.cert_type===undefined&&o.iso_category) o=Object.assign({cert_type:o.iso_category},o); return o; };
               body=Array.isArray(body)?body.map(_ct):_ct(body);
+            }
+          }
+          if(COMMON_TABLES[table] && method!=='GET'){
+            if(!(me&&me.role==='master')) return { data:null, error:{ message:'공통 자료는 최고관리자만 등록·수정·삭제할 수 있습니다', code:'common_master_only' } };
+            if(method==='POST' && body){
+              var _addAll=function(o){ if(o&&typeof o==='object'&&o.division_id===undefined) o=Object.assign({division_id:'ALL'},o); return o; };
+              body=Array.isArray(body)?body.map(_addAll):_addAll(body);
             }
           }
           if(_sbAccessToken) await sbAuthEnsureFresh();
@@ -866,7 +902,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r18-1002-1730</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r20-1002-1730</div>
   </div>
 </div>
 

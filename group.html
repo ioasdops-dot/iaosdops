@@ -64,6 +64,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .gl{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;text-align:center;font-size:12px;font-weight:700;margin-top:6px}
 .lg{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;font-size:11px;color:var(--mut);margin-top:8px;font-weight:600}
 .lg i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+s{text-decoration:none}
 /* 현황판 */
 .dp{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}
 .dp .nv{display:flex;align-items:center;gap:4px}
@@ -94,6 +95,13 @@ button{font:inherit;color:inherit;cursor:pointer}
 .hb span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .hb .b{height:11px;background:var(--soft);border-radius:7px;overflow:hidden}.hb .b i{display:block;height:100%;border-radius:7px;min-width:2px}
 .hb em{font-style:normal;text-align:right;color:var(--ink);font-weight:800}
+.sg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.sc{text-align:left;background:#fff;border:1px solid var(--line);border-radius:16px;padding:11px 12px}
+.sc.on{border-color:var(--ink);box-shadow:0 0 0 1px var(--ink) inset}
+.sc small{display:block;font-size:11px;color:var(--mut);font-weight:700}
+.sc b{display:block;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;margin:3px 0 2px}
+.sc s{text-decoration:none;font-size:11px;font-weight:700}
+.sc b i{font-style:normal;font-size:11px;color:var(--mut);font-weight:600;margin-left:2px}
 /* 통계 */
 .chips{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
 .chips button{padding:6px 13px;border-radius:99px;background:#fff;border:1px solid var(--line);font-size:12px;color:var(--mut);font-weight:700}
@@ -377,7 +385,6 @@ var METRICS=[
   {k:'joint_people',label:'공동작업',unit:'명'},
   {k:'headcount_avg',label:'일평균 근무 인원',unit:'명'}
 ];
-function statMap(rows){var o={};rows.forEach(function(r){o[r.division_id+'|'+r.metric]={cur:Number(r.cur)||0,prev:Number(r.prev)||0};});return o;}
 function metricCard(mt,sm){
   var vals=divs.map(function(d){return (sm[d.id+'|'+mt.k]||{cur:0,prev:0});});
   var max=Math.max.apply(null,vals.map(function(v){return v.cur;}).concat([1]));
@@ -414,11 +421,75 @@ function intakeCard(rows){
   }).join('');
   return '<div class="card"><h3>최근 7일 접수 <small>인수인계·민원·사고 · 마지막 막대가 오늘</small></h3>'+body+'</div>';
 }
+/* 통계 탭: 기간(일/월/연) + 합산 카드 + 펼침 세부 */
+var STAT={mode:'month',y:0,m:0,d:0,open:null,last:null};
+var SCARDS=[
+  {id:'mp',k:'headcount_avg',label:'인력현황',unit:'명',sub:'일평균 근무'},
+  {id:'ho',k:'handover',label:'인수인계',unit:'건',det:'ho_status',dl:'확인 현황',color:'#6FA0EC'},
+  {id:'lost',k:'lost',label:'습득물',unit:'건',det:'lost_status',dl:'처리 상태',color:'#E3A04C'},
+  {id:'acc',k:'accident',label:'안전사고',unit:'건',det:'acc_type',dl:'재해형태',color:'#E2705F'},
+  {id:'voc',k:'voc',label:'민원',unit:'건',det:'voc_cat',dl:'민원 유형',color:'#B69AE8'},
+  {id:'waste',k:'waste_kg',label:'폐기물',unit:'kg',det:'waste',dl:'종류별',color:'#4DBDB2'},
+  {id:'jw',k:'joint_people',label:'공동작업',unit:'명',det:'jw_cat',dl:'분류별 건수',color:'#7DC7D6'}
+];
+function statInit(){var t=today(); if(!STAT.y){STAT.y=t.y;STAT.m=t.m;STAT.d=t.d;}}
+function statRange(){
+  statInit(); var t=today(), r;
+  if(STAT.mode==='day'){
+    var f=ymd(STAT.y,STAT.m,STAT.d), x=new Date(Date.UTC(STAT.y,STAT.m-1,STAT.d-1)), pv=x.getUTCFullYear()+'-'+pad(x.getUTCMonth()+1)+'-'+pad(x.getUTCDate());
+    r={from:f,to:f,pFrom:pv,pTo:pv,label:(f===ymd(t.y,t.m,t.d)?'오늘':f),cmp:'전날'};
+  }else if(STAT.mode==='month'){ r=monthRange(STAT.y+'-'+pad(STAT.m)); r.label=r.label; r.cmp='지난달 같은 일수'; }
+  else { r=yearRange(STAT.y); r.cmp='작년 같은 기간'; }
+  return r;
+}
+function statMove(n){
+  var t=today();
+  if(STAT.mode==='day'){var x=new Date(Date.UTC(STAT.y,STAT.m-1,STAT.d+n));STAT.y=x.getUTCFullYear();STAT.m=x.getUTCMonth()+1;STAT.d=x.getUTCDate();}
+  else if(STAT.mode==='month'){STAT.m+=n;if(STAT.m<1){STAT.m=12;STAT.y--;}if(STAT.m>12){STAT.m=1;STAT.y++;}}
+  else STAT.y+=n;
+  if(ymd(STAT.y,STAT.mode==='year'?1:STAT.m,STAT.mode==='day'?STAT.d:1)>ymd(t.y,t.m,t.d)){STAT.y=t.y;STAT.m=t.m;STAT.d=t.d;}
+  load();
+}
+function statMap(rows){var o={};rows.forEach(function(r){o[r.division_id+'|'+r.metric]={cur:Number(r.cur)||0,prev:Number(r.prev)||0};});return o;}
+function detMap(rows){var o={};rows.forEach(function(r){var v=Number(r.v)||0; if(v<=0)return; var m=(o[r.metric]=o[r.metric]||{}); m[r.k]=(m[r.k]||0)+v;});return o;}
+function sumCard(c,sm){
+  var cur=0,prev=0; divs.forEach(function(d){var v=sm[d.id+'|'+c.k]||{cur:0,prev:0};cur+=v.cur;prev+=v.prev;});
+  if(c.k==='headcount_avg'){cur=Math.round(cur);prev=Math.round(prev);}
+  return {cur:cur,prev:prev};
+}
+function statDetail(c,sm,det){
+  var rows=divs.map(function(d){return sm[d.id+'|'+c.k]||{cur:0,prev:0};});
+  var mx=Math.max.apply(null,rows.map(function(v){return v.cur;}).concat([1]));
+  var h='<div style="font-size:12px;font-weight:800;margin:2px 0 4px">사업부별 비교 <span style="color:var(--mut);font-weight:600">· 전기간 대비</span></div>'
+    +divs.map(function(d,i){return '<div class="br"><span>'+esc(d.short)+'</span><div class="b"><i style="width:'+(rows[i].cur/mx*100)+'%;background:'+d.color+'"></i></div><em>'+n0(rows[i].cur)+delta(rows[i].cur,rows[i].prev,c.k)+'</em></div>';}).join('');
+  if(c.det){
+    h+='<div style="font-size:12px;font-weight:800;margin:12px 0 4px">'+c.dl+' <span style="color:var(--mut);font-weight:600">· 전 사업부 합산</span></div>'+hbars(det[c.det]||{},c.color,'내역이 없어요');
+  }
+  return h;
+}
 function renderStat(data){
-  var el=$('p-stat');
-  var rg=monthRange(state.month), sm=statMap(data.stats);
-  var chips='<div class="chips">'+lastMonths(3).map(function(m){return '<button type="button" data-month="'+m+'" class="'+(state.month===m?'on':'')+'">'+(+m.slice(5))+'월</button>';}).join('')+'</div>';
-  el.innerHTML=chips+METRICS.map(function(mt){return metricCard(mt,sm);}).join('')+kpiCard(data.kpi,data.kpiT,+state.month.slice(0,4))+intakeCard(data.intake);
+  STAT.data=data; var el=$('p-stat'), rg=statRange(), sm=statMap(data.stats), det=detMap(data.detail);
+  STAT.last={rg:rg,sm:sm,det:det};
+  var nav='<div class="dp"><div class="nv"><button type="button" data-smove="-1" aria-label="이전">◀</button><b>'+esc(rg.label)+'</b><button type="button" data-smove="1" aria-label="다음">▶</button></div>'
+    +'<div class="md">'+[['day','일간'],['month','월간'],['year','연간']].map(function(x){return '<button type="button" data-smode="'+x[0]+'" class="'+(STAT.mode===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div></div>';
+  var cards=SCARDS.map(function(c){
+    var v=sumCard(c,sm), open=(STAT.open===c.id);
+    return '<button type="button" class="sc'+(open?' on':'')+'" data-sopen="'+c.id+'"><small>'+c.label+(c.sub?' · '+c.sub:'')+'</small><b>'+n0(v.cur)+'<i>'+c.unit+'</i></b>'+delta(v.cur,v.prev,c.k)+'</button>';
+  }).join('');
+  var openC=SCARDS.filter(function(c){return c.id===STAT.open;})[0];
+  var detail=openC?'<div class="card" style="margin-top:8px"><h3>'+openC.label+' 상세 <small>'+esc(rg.label)+'</small></h3>'+statDetail(openC,sm,det)+'</div>':'<div class="note" style="margin:2px 0 10px">카드를 누르면 사업부별 비교와 세부 내역이 열려요</div>';
+  el.innerHTML=nav+'<div class="sg">'+cards+'</div>'+detail
+    +kpiCard(data.kpi,data.kpiT,STAT.y)+intakeCard(data.intake)
+    +'<button class="dl" id="statXl" type="button">📥 엑셀 다운로드 (사업부별)</button><div class="note">전기간 = '+esc(rg.cmp)+'</div>';
+  var xb=$('statXl'); if(xb) xb.onclick=statExcel;
+}
+function statExcel(){
+  var L=STAT.last; if(!L||!window.XLSX) return;
+  var aoa=[['환경미화운영그룹 통계', L.rg.label+' ('+L.rg.from+(L.rg.from!==L.rg.to?' ~ '+L.rg.to:'')+') · 비교: '+L.rg.cmp],[],['항목','단위'].concat(divs.map(function(d){return d.name+' 현재';})).concat(divs.map(function(d){return d.name+' 이전';}))];
+  SCARDS.forEach(function(c){aoa.push([c.label,c.unit].concat(divs.map(function(d){return (L.sm[d.id+'|'+c.k]||{cur:0}).cur;})).concat(divs.map(function(d){return (L.sm[d.id+'|'+c.k]||{prev:0}).prev;})));});
+  var ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[{wch:16},{wch:6}].concat(new Array(divs.length*2).fill({wch:18}));
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'그룹 통계');
+  try{XLSX.writeFile(wb,'그룹_통계_'+L.rg.from+(L.rg.from!==L.rg.to?'~'+L.rg.to:'')+'.xlsx');}catch(e){}
 }
 
 /* ---------- 리포트 탭 ---------- */
@@ -439,33 +510,140 @@ function highlights(sm,d,kr,kt){
   if(k&&tg) txt.push('KPI1 '+Math.round(Number(k.kpi1)/tg*100)+'%');
   return txt.length?txt.join(', '):'비교할 데이터가 아직 부족해요';
 }
+/* 리포트 탭: 월간/연간 + 요약·상세 */
+var REP={mode:'month',y:0,m:0,sub:'sum',item:'voc',data:null,last:null};
+var RITEMS=[
+  {id:'mp',k:'headcount_avg',label:'인력현황',unit:'명',per:'일평균 근무'},
+  {id:'ho',k:'handover',label:'인수인계',unit:'건',det:'ho_status',dl:'확인 현황',color:'#6FA0EC'},
+  {id:'acc',k:'accident',label:'안전사고',unit:'건',det:'acc_type',dl:'재해형태',color:'#E2705F'},
+  {id:'voc',k:'voc',label:'민원',unit:'건',det:'voc_cat',dl:'민원 유형',color:'#B69AE8'},
+  {id:'jw',k:'joint_people',label:'공동작업',unit:'명',det:'jw_cat',dl:'분류별 건수',color:'#7DC7D6'},
+  {id:'lost',k:'lost',label:'습득물',unit:'건',det:'lost_status',dl:'처리 상태',color:'#E3A04C'},
+  {id:'waste',k:'waste_kg',label:'폐기물',unit:'kg',det:'waste',dl:'종류별(kg)',color:'#4DBDB2'},
+  {id:'veh',k:'vehicle',label:'공사차량',unit:'건'}
+];
+function repInit(){if(!REP.y){var t=lastMonths(1)[0];REP.y=+t.slice(0,4);REP.m=+t.slice(5,7);}}
+function repRange(){
+  repInit(); var r=REP.mode==='year'?yearRange(REP.y):monthRange(REP.y+'-'+pad(REP.m));
+  r.cmp=REP.mode==='year'?'작년 같은 기간':'지난달 같은 일수';
+  r.days=Math.max(1,Math.round((new Date(r.to)-new Date(r.from))/86400000)+1);
+  return r;
+}
+function repMove(n){
+  var t=today();
+  if(REP.mode==='year') REP.y+=n; else {REP.m+=n; if(REP.m<1){REP.m=12;REP.y--;} if(REP.m>12){REP.m=1;REP.y++;}}
+  if(REP.y>t.y||(REP.mode!=='year'&&REP.y===t.y&&REP.m>t.m)){REP.y=t.y;REP.m=t.m;}
+  load();
+}
+function repVal(sm,k,d){return sm[d.id+'|'+k]||{cur:0,prev:0};}
+function repFmt(v,unit){return unit==='kg'?(v>=1000?((Math.round(v/100)/10)+'t'):(n0(v)+'kg')):(n0(v)+unit);}
+function repAnalysis(it,sm){
+  var tot=0,prev=0,rows=divs.map(function(d){var v=repVal(sm,it.k,d);tot+=v.cur;prev+=v.prev;return {d:d,cur:v.cur,prev:v.prev};});
+  if(it.id==='acc'){
+    if(tot===0) return '이 기간에는 안전사고가 없었어요.';
+    var w=rows.filter(function(r){return r.cur>0;});
+    if(w.length===1) return w[0].d.short+'에서만 '+n0(w[0].cur)+'건 발생했어요.';
+  }
+  if(tot===0) return '기록된 내역이 없어요.';
+  var best=null;
+  rows.forEach(function(r){ if(r.prev>=3&&r.cur!==r.prev){var w=Math.abs(r.cur-r.prev)/r.prev; if(!best||w>best.w) best={w:w,r:r};} });
+  if(best) return best.r.d.short+'의 '+it.label+'이(가) '+(REP.mode==='year'?'작년':'전기간')+'보다 '+Math.round(best.w*100)+'% '+(best.r.cur>best.r.prev?'늘었어요.':'줄었어요.');
+  var top=rows.slice().sort(function(a,b){return b.cur-a.cur;})[0];
+  return top.cur>0?('가장 많은 사업부는 '+top.d.short+'('+Math.round(top.cur/tot*100)+'%)이에요.'):'전기간과 비슷한 수준이에요.';
+}
+function repCard(it,sm,rg){
+  var cur=0,prev=0; divs.forEach(function(d){var v=repVal(sm,it.k,d);cur+=v.cur;prev+=v.prev;});
+  var isAvg=it.k==='headcount_avg'; if(isAvg){cur=Math.round(cur);prev=Math.round(prev);}
+  var dayAvg=isAvg?null:Math.round(cur/rg.days*10)/10;
+  var share=divs.map(function(d){var v=repVal(sm,it.k,d).cur;return '<i style="width:'+(cur?v/cur*100:0)+'%;background:'+d.color+'"></i>';}).join('');
+  var legend=divs.map(function(d){var v=repVal(sm,it.k,d).cur;return '<span><i style="background:'+d.color+'"></i>'+esc(d.short)+' '+repFmt(isAvg?Math.round(v):v,it.unit)+'</span>';}).join('');
+  return '<div class="card"><h3>'+it.label+(it.per?' · '+it.per:'')+'<small>'+esc(rg.label)+'</small></h3>'
+    +'<div style="display:flex;align-items:baseline;gap:6px"><b style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums">'+repFmt(cur,it.unit)+'</b>'+pctTxt(cur,prev,it.k)+'</div>'
+    +(dayAvg!==null?'<div style="font-size:11px;color:var(--mut);margin-top:2px">일평균 '+(it.unit==='kg'?n0(cur/rg.days)+'kg':dayAvg+it.unit)+'</div>':'')
+    +'<div class="share" style="height:10px;margin-top:9px">'+share+'</div><div class="lg" style="justify-content:flex-start;margin-top:6px">'+legend+'</div>'
+    +'<div style="margin-top:9px;background:var(--soft);border-radius:10px;padding:8px 10px;font-size:12px;line-height:1.5">💡 '+esc(repAnalysis(it,sm))+'</div></div>';
+}
+var RSPEC={
+  acc:[['acc_hour','⏰ 시간대별 발생','ord',['00~06시','06~12시','12~18시','18~24시'],'#E2705F'],['acc_shift','근무조별 사고 건수','ord',['오전','오후','야간'],'#E2705F'],['acc_team','발생 팀별 (사업부 표시)','rank',null,'#E2705F'],['acc_loc','발생 위치별','rank',null,'#E2705F']],
+  voc:[['voc_shift','근무조별 접수 건수','ord',['오전','오후','야간'],'#B69AE8'],['voc_channel','접수 경로별','rank',null,'#B69AE8'],['voc_loc','위치별','rank',null,'#B69AE8']],
+  ho:[['ho_team','고장 신고 팀별 (사업부 표시)','rank',null,'#6FA0EC'],['ho_loc','고장 장소별','rank',null,'#6FA0EC']],
+  waste:[['waste_team','팀별 배출량 kg (사업부 표시)','rank',null,'#4DBDB2']],
+  jw:[['jw_team','참여 팀별 건수 (사업부 표시)','rank',null,'#7DC7D6']]
+};
+function rankMap(rows){
+  var o={}; rows.forEach(function(r){
+    var v=Number(r.v)||0; if(!(v>0)) return;
+    var d=divs.filter(function(x){return x.id===r.division_id;})[0], key=r.k;
+    if(/_team$/.test(r.metric)&&d) key=d.short+' '+r.k;
+    (o[r.metric]=o[r.metric]||{})[key]=((o[r.metric]||{})[key]||0)+Math.round(v*10)/10;
+  });
+  return o;
+}
+function rankHtml(id,rk){
+  var sp=RSPEC[id]; if(!sp) return '';
+  var h='';
+  sp.forEach(function(x){
+    var data=rk[x[0]]||{}, body;
+    if(x[2]==='ord'){
+      var mx=Math.max.apply(null,x[3].map(function(k){return data[k]||0;}).concat([1]));
+      body=x[3].map(function(k){return '<div class="hb"><span>'+k+'</span><div class="b"><i style="width:'+((data[k]||0)/mx*100)+'%;background:'+x[4]+'"></i></div><em>'+n0(data[k]||0)+'</em></div>';}).join('');
+    } else body=hbars(data,x[4],'내역이 없어요');
+    h+='<div style="font-size:12px;font-weight:800;margin:12px 0 4px">'+x[1]+'</div>'+body;
+  });
+  if(id==='voc'){
+    var av=rk.voc_avgdays&&rk.voc_avgdays[''];
+    // 평균 처리기간은 사업부별 평균의 단순 평균으로 표시
+    if(REP.avgDays!=null) h='<div style="font-size:12px;margin:8px 0 0">평균 처리기간 <b>'+REP.avgDays+'일</b> <span style="color:var(--mut)">(사업부 평균의 평균)</span></div>'+h;
+  }
+  return h;
+}
+function repDetail(it,sm,det,rg){
+  var rows=divs.map(function(d){return repVal(sm,it.k,d);});
+  var mx=Math.max.apply(null,rows.map(function(v){return v.cur;}).concat([1]));
+  var h='<div class="card"><h3>'+it.label+' 상세<small>'+esc(rg.label)+'</small></h3>'
+    +'<div style="font-size:12px;font-weight:800;margin:2px 0 4px">사업부별 순위</div>'
+    +divs.map(function(d,i){return {d:d,v:rows[i]};}).sort(function(a,b){return b.v.cur-a.v.cur;}).map(function(x){return '<div class="br"><span>'+esc(x.d.short)+'</span><div class="b"><i style="width:'+(x.v.cur/mx*100)+'%;background:'+x.d.color+'"></i></div><em>'+n0(x.v.cur)+delta(x.v.cur,x.v.prev,it.k)+'</em></div>';}).join('');
+  if(it.det) h+='<div style="font-size:12px;font-weight:800;margin:12px 0 4px">'+it.dl+' <span style="color:var(--mut);font-weight:600">· 전 사업부 합산</span></div>'+hbars(det[it.det]||{},it.color,'내역이 없어요');
+  return h+rankHtml(it.id,REP.rank||{})+'</div>';
+}
 function renderRep(data){
-  var el=$('p-rep'), rg=state.repMode==='year'?yearRange(+state.month.slice(0,4)):monthRange(state.month);
-  var sm=statMap(data.stats);
-  var hc=sumMetric(sm,'headcount_avg','cur'), acc=sumMetric(sm,'accident','cur'), ho=sumMetric(sm,'handover','cur'), voc=sumMetric(sm,'voc','cur');
-  var waste=sumMetric(sm,'waste_kg','cur'), jp=sumMetric(sm,'joint_people','cur');
-  var wasteTxt=waste>=1000?(Math.round(waste/100)/10)+'t':n0(waste)+'kg';
-  var chips='<div class="chips"><button type="button" data-rep="month" class="'+(state.repMode==='month'?'on':'')+'">월간</button><button type="button" data-rep="year" class="'+(state.repMode==='year'?'on':'')+'">연간</button></div>';
+  REP.data=data; REP.rank=rankMap(data.rank||[]); var av=(data.rank||[]).filter(function(r){return r.metric==='voc_avgdays'&&Number(r.v)>0;}).map(function(r){return Number(r.v);}); REP.avgDays=av.length?Math.round(av.reduce(function(a,b){return a+b;},0)/av.length*10)/10:null; var el=$('p-rep'), rg=repRange(), sm=statMap(data.stats), det=detMap(data.detail);
+  REP.last={rg:rg,sm:sm};
+  var hc=sumMetric(sm,'headcount_avg','cur'), acc=sumMetric(sm,'accident','cur');
+  var nav='<div class="dp"><div class="nv"><button type="button" data-rmove="-1" aria-label="이전">◀</button><b>'+esc(rg.label)+'</b><button type="button" data-rmove="1" aria-label="다음">▶</button></div>'
+    +'<div class="md">'+[['month','월간'],['year','연간']].map(function(x){return '<button type="button" data-rmode="'+x[0]+'" class="'+(REP.mode===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div></div>';
+  var hero='<div class="hero"><p>'+rg.label+(rg.span?' · '+rg.span:'')+'</p><h2>하루 평균 <mark>'+n0(hc)+'명</mark>이 근무했고, 안전사고는 <mark>'+n0(acc)+'건</mark>이에요</h2></div>';
+  var tabs='<div class="chips" style="margin-top:12px">'+[['sum','요약'],['det','상세']].map(function(x){return '<button type="button" data-rsub="'+x[0]+'" class="'+(REP.sub===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div>';
+  var body;
+  if(REP.sub==='sum') body=RITEMS.map(function(it){return repCard(it,sm,rg);}).join('');
+  else{
+    var chips='<div class="chips">'+RITEMS.map(function(it){return '<button type="button" data-ritem="'+it.id+'" class="'+(REP.item===it.id?'on':'')+'">'+it.label+'</button>';}).join('')+'</div>';
+    var cur=RITEMS.filter(function(it){return it.id===REP.item;})[0]||RITEMS[0];
+    body=chips+repDetail(cur,sm,det,rg);
+  }
   var pts=divs.map(function(d){
     return '<div class="pt" style="background:'+d.soft+'"><div class="ic" style="background:'+d.color+'">'+esc(d.short.length>3?d.short.slice(0,2):d.short)+'</div><div><b>'+esc(d.name)+'</b>'+esc(highlights(sm,d,data.kpi,data.kpiT))+'</div></div>';
   }).join('');
-  el.innerHTML=chips
-   +'<div class="hero"><p>'+rg.label+(rg.span?' · '+rg.span:'')+'</p><h2>하루 평균 <mark>'+n0(hc)+'명</mark>이 근무했고, 안전사고는 <mark>'+n0(acc)+'건</mark>이에요</h2></div>'
-   +'<div class="kp">'
-   +'<div><small>인수인계</small><b>'+n0(ho)+'건</b>'+pctTxt(ho,sumMetric(sm,'handover','prev'),'handover')+'</div>'
-   +'<div><small>민원</small><b>'+n0(voc)+'건</b>'+pctTxt(voc,sumMetric(sm,'voc','prev'),'voc')+'</div>'
-   +'<div><small>폐기물</small><b>'+wasteTxt+'</b>'+pctTxt(waste,sumMetric(sm,'waste_kg','prev'),'waste_kg')+'</div>'
-   +'<div><small>공동작업</small><b>'+n0(jp)+'명</b>'+pctTxt(jp,sumMetric(sm,'joint_people','prev'),'joint_people')+'</div></div>'
-   +pts
+  el.innerHTML=nav+hero+tabs+body+(REP.sub==='sum'?'<div class="card"><h3>사업부별 한 줄 요약</h3>'+pts.replace(/class="pt"/g,'class="pt" data-x="1"')+'</div>':'')
    +'<div class="ex"><button type="button" id="pdfBtn">PDF로 저장</button><button type="button" id="imgBtn">이미지로 저장</button></div>'
-   +'<div class="note">전기간 = '+(state.repMode==='year'?'작년 같은 기간':'지난달 같은 일수')+'</div>';
+   +'<button class="dl" id="repXl" type="button">📥 엑셀 다운로드 (사업부별)</button>'
+   +'<div class="note">전기간 = '+esc(rg.cmp)+'</div>';
   $('pdfBtn').onclick=function(){window.print();};
   $('imgBtn').onclick=saveImage;
+  $('repXl').onclick=repExcel;
+}
+function repExcel(){
+  var L=REP.last; if(!L||!window.XLSX) return;
+  var aoa=[['환경미화운영그룹 리포트', L.rg.label+' ('+L.rg.from+' ~ '+L.rg.to+') · 비교: '+L.rg.cmp],[],['항목','단위'].concat(divs.map(function(d){return d.name+' 현재';})).concat(divs.map(function(d){return d.name+' 이전';}))];
+  RITEMS.forEach(function(it){aoa.push([it.label,it.unit].concat(divs.map(function(d){return repVal(L.sm,it.k,d).cur;})).concat(divs.map(function(d){return repVal(L.sm,it.k,d).prev;})));});
+  var ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[{wch:16},{wch:6}].concat(new Array(divs.length*2).fill({wch:18}));
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'그룹 리포트');
+  try{XLSX.writeFile(wb,'그룹_리포트_'+L.rg.from+'~'+L.rg.to+'.xlsx');}catch(e){}
 }
 function saveImage(){
   function go(){
     window.html2canvas(el$('p-rep'),{backgroundColor:'#F4F7FD',scale:2}).then(function(c){
-      var a=document.createElement('a');a.download='그룹현황_'+state.month+'.png';a.href=c.toDataURL('image/png');a.click();});
+      var a=document.createElement('a');a.download='그룹리포트_'+REP.y+(REP.mode==='year'?'':'-'+pad(REP.m))+'.png';a.href=c.toDataURL('image/png');a.click();});
   }
   function el$(i){return document.getElementById(i);}
   if(window.html2canvas) return go();
@@ -487,9 +665,30 @@ function loadStats(){
     if(state.tab==='stat') renderStat(data); else renderRep(data);
   });
 }
+function loadRep(){
+  var rg=repRange(), yr=REP.y;
+  return Promise.all([
+    rpc('group_stats',{p_from:rg.from,p_to:rg.to,p_prev_from:rg.pFrom,p_prev_to:rg.pTo}),
+    rpc('group_stats_detail',{p_from:rg.from,p_to:rg.to}).catch(function(){return [];}),
+    rpc('group_kpi',{p_year:yr}), rpc('group_kpi_targets',{p_year:yr}),
+    rpc('group_stats_rank',{p_from:rg.from,p_to:rg.to}).catch(function(){return [];})
+  ]).then(function(r){
+    renderRep({stats:r[0],detail:r[1],kpi:r[2].map(function(x){x.month=+x.month;return x;}),kpiT:r[3].map(function(x){x.idx=+x.idx;return x;}),rank:r[4]});
+  });
+}
+function loadStat(){
+  var rg=statRange(), yr=STAT.y;
+  return Promise.all([
+    rpc('group_stats',{p_from:rg.from,p_to:rg.to,p_prev_from:rg.pFrom,p_prev_to:rg.pTo}),
+    rpc('group_stats_detail',{p_from:rg.from,p_to:rg.to}).catch(function(){return [];}),
+    rpc('group_kpi',{p_year:yr}), rpc('group_kpi_targets',{p_year:yr}), rpc('group_daily_intake',{p_days:7})
+  ]).then(function(r){
+    renderStat({stats:r[0],detail:r[1],kpi:r[2].map(function(x){x.month=+x.month;return x;}),kpiT:r[3].map(function(x){x.idx=+x.idx;return x;}),intake:r[4]});
+  });
+}
 function load(){
   stamp();
-  var p = state.tab==='now' ? loadNow() : loadStats();
+  var p = state.tab==='now' ? loadNow() : (state.tab==='stat' ? loadStat() : loadRep());
   return p.catch(function(e){
     var msg=(e&&e.message)||'알 수 없는 오류';
     $('p-'+state.tab).innerHTML='<div class="card empty">데이터를 불러오지 못했어요.<br>'+esc(msg)+'<br>잠시 후 새로고침을 눌러 주세요.</div>';
@@ -536,7 +735,14 @@ function init(){
   $('refresh').onclick=load;
   document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){showTab(b.dataset.t);};});
   document.addEventListener('click',function(e){
-    var t=e.target.closest('[data-month],[data-kpi],[data-rep],[data-dmove],[data-dmode],[data-dlive]'); if(!t) return;
+    var t=e.target.closest('[data-month],[data-kpi],[data-rep],[data-dmove],[data-dmode],[data-dlive],[data-smove],[data-smode],[data-sopen],[data-rmove],[data-rmode],[data-rsub],[data-ritem]'); if(!t) return;
+    if(t.dataset.rmove){repMove(+t.dataset.rmove);return;}
+    if(t.dataset.rmode){REP.mode=t.dataset.rmode;load();return;}
+    if(t.dataset.rsub){REP.sub=t.dataset.rsub;if(REP.data)renderRep(REP.data);return;}
+    if(t.dataset.ritem){REP.item=t.dataset.ritem;if(REP.data)renderRep(REP.data);return;}
+    if(t.dataset.smove){statMove(+t.dataset.smove);return;}
+    if(t.dataset.smode){STAT.mode=t.dataset.smode;load();return;}
+    if(t.dataset.sopen){STAT.open=(STAT.open===t.dataset.sopen?null:t.dataset.sopen);if(STAT.data){renderStat(STAT.data);}return;}
     if(t.dataset.dmove){dashMove(+t.dataset.dmove);return;}
     if(t.dataset.dmode){DASH.mode=t.dataset.dmode;load();return;}
     if(t.dataset.dlive){var tt=today();DASH.y=tt.y;DASH.m=tt.m;DASH.d=tt.d;load();return;}

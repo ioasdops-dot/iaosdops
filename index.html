@@ -846,7 +846,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r12-1002-1710</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r13-1002-1710</div>
   </div>
 </div>
 
@@ -10399,8 +10399,9 @@ function iaosApplyDivNames(){
   document.title=nm||'환경미화운영그룹';
   var lg={T1:'logo-t1.png',T2:'logo-t2.png',BD:'logo-bd.png'}[id]||'logo.png';
   document.querySelectorAll('.logo-img img').forEach(function(i){
-    i.onerror=function(){ if(!i._fb){ i._fb=1; i.src='assets/'+lg; } else { i.onerror=null; i.src='logo.png'; i.parentNode.classList.remove('lg-t1'); } };
-    if(i.getAttribute('src')!==lg){ i._fb=0; i.setAttribute('src',lg); }
+    i.onerror=function(){ if(!i._fb){ i._fb=1; i.src='assets/'+lg+'?v=r13'; } else { i.onerror=null; i.src='logo.png'; i.parentNode.classList.remove('lg-t1'); } };
+    var want=(lg==='logo.png')?lg:lg+'?v=r13';
+    if(i.getAttribute('src')!==want){ i._fb=0; i.setAttribute('src',want); }
     i.parentNode.classList.toggle('lg-t1',lg!=='logo.png'); });
   if(id) document.documentElement.setAttribute('data-div',id);
 }

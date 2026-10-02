@@ -12,6 +12,7 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
+<script>try{var _m=JSON.parse(localStorage.getItem("t1_me")||"null");var _d=_m?((_m.role==="master"||_m.role==="group_viewer")?localStorage.getItem("iaos_div"):_m.division_id):null;document.documentElement.setAttribute("data-div",_d||"ALL");}catch(e){document.documentElement.setAttribute("data-div","ALL");}</script>
 <title>환경미화운영그룹</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -33,6 +34,16 @@
   --r:14px;--r2:10px;
   --font:"IBM Plex Sans KR",-apple-system,BlinkMacSystemFont,"Noto Sans KR",sans-serif;
 }
+
+:root{--teal-rgb:0,169,157;--teal2-rgb:0,122,114}
+html[data-div="T2"]{--teal:#2F7DE1;--teal2:#1B5CB8;--teal-bg:#E8F1FD;--teal-soft:#C6DDFA;--navy:#17407A;--navy2:#0E2A55;--navy-bg:#EAF1FB;--teal-rgb:47,125,225;--teal2-rgb:27,92,184}
+html[data-div="BD"]{--teal:#F08A24;--teal2:#C2631A;--teal-bg:#FFF1E3;--teal-soft:#FAD9B8;--navy:#8A4512;--navy2:#5C2D0C;--navy-bg:#FBEFE4;--teal-rgb:240,138,36;--teal2-rgb:194,99,26}
+html[data-div="ALL"]{--teal:#6B7684;--teal2:#4B5563;--teal-bg:#EEF0F3;--teal-soft:#D5D9DF;--navy:#3A4250;--navy2:#272D38;--navy-bg:#EEF0F3;--teal-rgb:107,118,132;--teal2-rgb:75,85,99}
+.app-hd .logo-w{min-width:0;flex:1}.app-hd .logo-t{min-width:0}.app-hd .logo-t h2,.app-hd .logo-t p{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#divChip{flex-shrink:0}
+html[data-div="ALL"] #sLogin{background:linear-gradient(145deg,#272D38,#363E4B 50%,#59616E)}
+html[data-div="T2"] #sLogin{background:linear-gradient(145deg,#0E2A55,#17407A 50%,#2F7DE1)}
+html[data-div="BD"] #sLogin{background:linear-gradient(145deg,#5C2D0C,#8A4512 50%,#C2631A)}
 html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 body{font-family:var(--font);background:var(--g1);color:var(--g6);font-size:16px;line-height:1.5;min-height:100vh;overflow-x:hidden;word-break:keep-all;overflow-wrap:normal}
 html{overflow-x:hidden}
@@ -218,7 +229,7 @@ html{overflow-x:hidden}
 .f-ta.show{display:block}
 .rp-ord{display:none;position:absolute;top:-7px;right:-7px;min-width:16px;height:16px;border-radius:50%;background:#047a6d;color:#fff;font-size:10.5px;font-weight:800;line-height:16px;text-align:center}
 .rp.on .rp-ord{display:inline-block}
-.btn-prim{width:100%;padding:14px;background:linear-gradient(135deg,var(--teal),var(--teal2));color:white;border:none;border-radius:var(--r2);font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(0,169,157,.25)}
+.btn-prim{width:100%;padding:14px;background:linear-gradient(135deg,var(--teal),var(--teal2));color:white;border:none;border-radius:var(--r2);font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(var(--teal-rgb),.25)}
 
 /* ─ 인수인계 카드 ─ */
 .ho-card{background:white;border-radius:var(--r);margin:0 13px 11px;box-shadow:0 2px 8px rgba(0,0,0,.07);border:1px solid var(--g2);overflow:hidden}
@@ -362,7 +373,7 @@ html{overflow-x:hidden}
   .modal-bg{-webkit-backdrop-filter:blur(8px) saturate(140%);backdrop-filter:blur(8px) saturate(140%);background:rgba(15,36,72,.38)}
   .modal{background:rgba(255,255,255,.88);-webkit-backdrop-filter:blur(22px) saturate(180%);backdrop-filter:blur(22px) saturate(180%);border:1px solid rgba(255,255,255,.55)}
   .mh-tabbar{background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);border-top:1px solid rgba(255,255,255,.6)}
-  .btn-prim{background:linear-gradient(135deg,rgba(0,169,157,.92),rgba(0,122,114,.92));-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 6px 18px rgba(0,122,114,.28),inset 0 1px 0 rgba(255,255,255,.35)}
+  .btn-prim{background:linear-gradient(135deg,rgba(var(--teal-rgb),.92),rgba(var(--teal2-rgb),.92));-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 6px 18px rgba(var(--teal2-rgb),.28),inset 0 1px 0 rgba(255,255,255,.35)}
 }
 </style>
 <script>
@@ -755,7 +766,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r4-1002-1600</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r5-1002-1610</div>
   </div>
 </div>
 
@@ -835,7 +846,7 @@ html{overflow-x:hidden}
   <div class="app-hd">
     <div class="logo-w" onclick="window.open('https://gw.airportos.co.kr/index.jsp','_blank')" style="cursor:pointer" title="인천공항운영서비스 그룹웨어 바로가기"><div class="logo-img"><img src="logo.png" alt="logo"></div><div class="logo-t"><h2 class="div-nm">T1 환경미화사업부</h2><p>환경미화운영그룹</p></div></div>
     <!-- 알림 벨 -->
-    <div id="divChip" onclick="openDivPicker()" style="display:none;background:rgba(255,255,255,.18);color:#fff;border-radius:14px;padding:4px 10px;font-size:12px;font-weight:700;margin-right:8px;white-space:nowrap;max-width:112px;overflow:hidden;text-overflow:ellipsis"></div>
+    <div id="divChip" onclick="openDivPicker()" style="display:none;background:rgba(255,255,255,.18);color:#fff;border-radius:14px;padding:4px 10px;font-size:12px;font-weight:700;margin-right:8px;white-space:nowrap;flex-shrink:0"></div>
     <div id="bellBtn" style="position:relative;cursor:pointer;margin-right:8px;padding:4px" onclick="openNotifDrawer()">
       <svg width="22" height="22" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 0 1-3.46 0"/>
@@ -1513,7 +1524,7 @@ html{overflow-x:hidden}
           <span style="font-size:13px;font-weight:700;color:var(--navy)">L/S 소계</span>
           <span style="font-size:23px;font-weight:900;color:var(--navy)">0<span style="font-size:12px;color:var(--g4)">명</span></span>
         </div>
-        <div style="background:var(--teal-bg);border-radius:var(--r2);padding:11px 13px;border:1px solid rgba(0,169,157,.15);display:flex;justify-content:space-between;align-items:center">
+        <div style="background:var(--teal-bg);border-radius:var(--r2);padding:11px 13px;border:1px solid rgba(var(--teal-rgb),.15);display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;font-weight:700;color:var(--teal2)">A/S 소계</span>
           <span style="font-size:23px;font-weight:900;color:var(--teal2)">0<span style="font-size:12px;color:var(--g4)">명</span></span>
         </div>
@@ -1539,7 +1550,7 @@ html{overflow-x:hidden}
           <span style="font-size:13px;font-weight:700;color:var(--navy)">L/S 소계</span>
           <span style="font-size:23px;font-weight:900;color:var(--navy)">0<span style="font-size:12px;color:var(--g4)">명</span></span>
         </div>
-        <div style="background:var(--teal-bg);border-radius:var(--r2);padding:11px 13px;border:1px solid rgba(0,169,157,.15);display:flex;justify-content:space-between;align-items:center">
+        <div style="background:var(--teal-bg);border-radius:var(--r2);padding:11px 13px;border:1px solid rgba(var(--teal-rgb),.15);display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;font-weight:700;color:var(--teal2)">A/S 소계</span>
           <span style="font-size:23px;font-weight:900;color:var(--teal2)">0<span style="font-size:12px;color:var(--g4)">명</span></span>
         </div>
@@ -1564,7 +1575,7 @@ html{overflow-x:hidden}
           <span style="font-size:13px;font-weight:700;color:var(--navy)">L/S 소계</span>
           <span style="font-size:23px;font-weight:900;color:var(--navy)">0<span style="font-size:12px;color:var(--g4)">명</span></span>
         </div>
-        <div style="background:var(--teal-bg);border-radius:var(--r2);padding:11px 13px;border:1px solid rgba(0,169,157,.15);display:flex;justify-content:space-between;align-items:center">
+        <div style="background:var(--teal-bg);border-radius:var(--r2);padding:11px 13px;border:1px solid rgba(var(--teal-rgb),.15);display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;font-weight:700;color:var(--teal2)">A/S 소계</span>
           <span style="font-size:23px;font-weight:900;color:var(--teal2)">0<span style="font-size:12px;color:var(--g4)">명</span></span>
         </div>
@@ -1589,7 +1600,7 @@ html{overflow-x:hidden}
           <span style="font-size:13px;font-weight:700;color:var(--navy)">L/S 소계</span>
           <span style="font-size:23px;font-weight:900;color:var(--navy)">0<span style="font-size:12px;color:var(--g4)">명</span></span>
         </div>
-        <div style="background:var(--teal-bg);border-radius:var(--r2);padding:11px 13px;border:1px solid rgba(0,169,157,.15);display:flex;justify-content:space-between;align-items:center">
+        <div style="background:var(--teal-bg);border-radius:var(--r2);padding:11px 13px;border:1px solid rgba(var(--teal-rgb),.15);display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;font-weight:700;color:var(--teal2)">A/S 소계</span>
           <span style="font-size:23px;font-weight:900;color:var(--teal2)">0<span style="font-size:12px;color:var(--g4)">명</span></span>
         </div>
@@ -1614,7 +1625,7 @@ html{overflow-x:hidden}
           <span style="font-size:13px;font-weight:700;color:var(--navy)">L/S 소계</span>
           <span style="font-size:23px;font-weight:900;color:var(--navy)">0<span style="font-size:12px;color:var(--g4)">명</span></span>
         </div>
-        <div style="background:var(--teal-bg);border-radius:var(--r2);padding:11px 13px;border:1px solid rgba(0,169,157,.15);display:flex;justify-content:space-between;align-items:center">
+        <div style="background:var(--teal-bg);border-radius:var(--r2);padding:11px 13px;border:1px solid rgba(var(--teal-rgb),.15);display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;font-weight:700;color:var(--teal2)">A/S 소계</span>
           <span style="font-size:23px;font-weight:900;color:var(--teal2)">0<span style="font-size:12px;color:var(--g4)">명</span></span>
         </div>
@@ -1639,7 +1650,7 @@ html{overflow-x:hidden}
           <span style="font-size:13px;font-weight:700;color:var(--navy)">L/S 소계</span>
           <span style="font-size:23px;font-weight:900;color:var(--navy)">0<span style="font-size:12px;color:var(--g4)">명</span></span>
         </div>
-        <div style="background:var(--teal-bg);border-radius:var(--r2);padding:11px 13px;border:1px solid rgba(0,169,157,.15);display:flex;justify-content:space-between;align-items:center">
+        <div style="background:var(--teal-bg);border-radius:var(--r2);padding:11px 13px;border:1px solid rgba(var(--teal-rgb),.15);display:flex;justify-content:space-between;align-items:center">
           <span style="font-size:13px;font-weight:700;color:var(--teal2)">A/S 소계</span>
           <span style="font-size:23px;font-weight:900;color:var(--teal2)">0<span style="font-size:12px;color:var(--g4)">명</span></span>
         </div>
@@ -10297,6 +10308,7 @@ function iaosApplyDivNames(){
   var nm=iaosDivName(id);
   document.querySelectorAll('.div-nm').forEach(function(e){ e.textContent=nm; });
   document.title=nm||'환경미화운영그룹';
+  if(id) document.documentElement.setAttribute('data-div',id);
 }
 function initDivisionUI(){
   var chip=document.getElementById('divChip'); if(!chip||!me) return;
@@ -10336,6 +10348,7 @@ function iaosSwitchDiv(id){
 }
 function doLogout(){
   me=null;
+  try{ document.documentElement.setAttribute('data-div','ALL'); }catch(e){}
   try{ var _dc=document.getElementById('divChip'); if(_dc) _dc.style.display='none'; }catch(e){}
   try{ if(typeof msClearCache==='function') msClearCache(); }catch(e){}
   try{localStorage.removeItem('t1_me');}catch(e){}

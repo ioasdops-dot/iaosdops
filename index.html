@@ -404,6 +404,9 @@ html{overflow-x:hidden}
       _sbAccessToken=null; _sbRefreshToken=null; _sbTokenExpiresAt=0;
       try{ localStorage.removeItem('t1_auth'); }catch(e){}
     }
+    function _iaosAuthUid(){
+      try{ var t=(_sbAccessToken||'').split('.')[1].replace(/-/g,'+').replace(/_/g,'/'); return JSON.parse(atob(t)).sub||''; }catch(e){ return ''; }
+    }
     function iaosEmail(id){
       id=String(id||'').trim();
       if(id.indexOf('@')!==-1) return id;            // 마스터 등: 전체 이메일 그대로
@@ -535,7 +538,7 @@ html{overflow-x:hidden}
         try{
           var _dv=_divScope(table);
           // 사용자 목록(승인대기·사용자)은 선택한 사업부 소속만 표시 (본인 조회는 제외)
-          if(!_dv && table==='users' && method==='GET' && params && params.id===undefined && params.email===undefined){
+          if(!_dv && table==='users' && method==='GET' && params && params.id===undefined && params.email===undefined && params.auth_uid===undefined){
             try{ if(me&&(me.role==='master'||me.role==='group_viewer')&&window.curDivision){ params=Object.assign({}, params, {division_id:'eq.'+window.curDivision}); } }catch(e){}
           }
           if(_dv){
@@ -766,7 +769,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r5-1002-1610</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r6-1002-1620</div>
   </div>
 </div>
 
@@ -9622,7 +9625,8 @@ async function doLogin(){
     }
     try{ sb.rpc('reset_my_login_failure'); }catch(e){}
     // 인증된 세션으로 내 프로필(users) 행 조회
-    var uRes=await sb.from('users').select('id,name,role,email,permissions,font_scale,favorite_menus,employee_id,status,division_id,team_id,team_group_id').eq('email', id).maybeSingle();
+    var uRes=await sb.from('users').select('id,name,role,email,permissions,font_scale,favorite_menus,employee_id,status,division_id,team_id,team_group_id').eq('auth_uid', _iaosAuthUid()).maybeSingle();
+    if(!uRes.error&&!uRes.data){ uRes=await sb.from('users').select('id,name,role,email,permissions,font_scale,favorite_menus,employee_id,status,division_id,team_id,team_group_id').eq('email', id).maybeSingle(); }
     if(uRes.error||!uRes.data){ toast('로그인 오류: 사용자 정보를 불러오지 못했습니다'); _sbClearAuth(); return; }
     var u=uRes.data;
     try{ await iaosResolveProfile(u); }catch(e){ console.warn('profile resolve',e); }

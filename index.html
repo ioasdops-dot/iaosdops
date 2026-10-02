@@ -637,7 +637,7 @@ html{overflow-x:hidden}
           }
           if(_sbAccessToken) await sbAuthEnsureFresh();
           // ★ 게스트(조회 전용) 계정은 GET 이외 모든 DB 쓰기 차단
-          if(method !== 'GET' && typeof me !== 'undefined' && me && me.role === 'guest'){
+          if(method !== 'GET' && typeof me !== 'undefined' && me && iaosRO()){
             console.warn('[게스트 차단]', method, table);
             return { data: null, error: { message: '조회 전용 계정입니다', code: 'guest_readonly' } };
           }
@@ -855,7 +855,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r14-1002-1710</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r15-1002-1710</div>
   </div>
 </div>
 
@@ -7166,6 +7166,7 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
 
 <script>
 let me=null,wdT=null,indData=[],indEditId=null;
+function iaosRO(){ return !!(me&&(me.role==='guest'||me.role==='group_viewer')); } // 조회 전용(그룹 조회 계정 포함)
 function isExecRole(r){return r==='master';} // ★ 그룹장/본부장은 관리자급 권한(쓰기/관리기능) 제외 — 조회만 가능. master만 유지
 function canAdcManage(){ return !!(me && (me.role==='master'||me.role==='admin'||me.role==='manager')); } // 관리자 확인사항: master/admin/manager만 (그 외 전원 불가)
 function canDeleteWorkItem(){
@@ -7847,7 +7848,7 @@ var WL_SAFE=['작업 전 스트레칭 실시 및 근로자 건강 상태는 양�
 var WL_REP_CATS=['습득물/유실물','시설물 장애/파손','방치물품 의심','여객/테러 위험','인명구조','화재','비정상 상황','기타'];
 var WL_DOW=['일','월','화','수','목','금','토'];
 function wlEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-function wlCanRead(){ return !!(me&&['leader','group_leader','manager','admin','master'].indexOf(me.role)>=0); }
+function wlCanRead(){ return !!(me&&['leader','manager','admin','master','group_viewer'].indexOf(me.role)>=0); }
 function wlIsAdm(){ return !!(me&&(me.role==='admin'||me.role==='master')); }
 function wlSeeWf(){ return !!(me&&['leader','manager','admin','master'].indexOf(me.role)>=0); } // group_leader는 wf_* 조회 불가 → 저장된 스냅샷만
 function wlCanWrite(){ return !!(me&&((wlIsAdm()&&!(WL.adminRO&&!WL.editOn))||(me.role==='manager'&&me.team===WL.team))); }
@@ -9138,7 +9139,7 @@ function go(name){
     }
     if(!window._memberAllowedScreens[name]) return;
   }
-  if(name==='execdash'&&(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='group_leader'||me.role==='division_head'||isExecRole(me.role)))){ toast('⚠️ 팀장 이상만 접근할 수 있습니다'); return; }
+  if(name==='execdash'&&(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='group_viewer'||isExecRole(me.role)))){ toast('⚠️ 팀장 이상만 접근할 수 있습니다'); return; }
   if(name==='emproster'&&(!me||!(me.role==='admin'||me.role==='master'))){ toast('⚠️ admin·master만 접근할 수 있습니다'); return; }
   if(name==='training'&&(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||isExecRole(me.role)))){ toast('⚠️ 조장 이상만 접근할 수 있습니다'); return; }
   if(name==='admin'&&(!me||me.role!=='master')){ toast('⚠️ 최고관리자만 접근할 수 있습니다'); return; }
@@ -10180,7 +10181,7 @@ function frInit(){
 }
 function showInfo(){
   if(!me) return;
-  var roleLabel=me.role==='master'?'최고관리자':me.role==='admin'?'관리자':me.role==='group_leader'?'그룹장':me.role==='division_head'?'본부장':me.role==='manager'?'팀장':me.role==='leader'?'조장':me.role==='acting_leader'?'액팅리더':me.role==='guest'?'게스트(조회전용)':me.role==='member'?'열람전용':me.role==='work_vehicle'?'차량운행':'팀원';
+  var roleLabel=me.role==='master'?'최고관리자':me.role==='admin'?'관리자':me.role==='group_viewer'?'그룹 조회':me.role==='manager'?'팀장':me.role==='leader'?'조장':me.role==='acting_leader'?'액팅리더':iaosRO()?'게스트(조회전용)':me.role==='member'?'열람전용':me.role==='work_vehicle'?'차량운행':'팀원';
   var html='<div style="padding:20px 17px">'
     +'<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">'
     +'<div style="width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--teal),var(--navy));display:flex;align-items:center;justify-content:center;font-size:23px;font-weight:900;color:white">'+me.initial+'</div>'
@@ -13760,13 +13761,13 @@ var userPerms={};
 function facilityCanEdit(){ return !!(me&&(me.role==='master'||me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader')); }
 function facilityCanDelete(){ return !!(me&&(me.role==='master'||me.role==='admin'||me.role==='manager'||me.role==='leader')); }
 function canWrite(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return false;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return false;}
   var p=me?userPerms[me.id]:null;
   if(p&&p.write===false){toast('⚠️ 쓰기 권한이 없습니다');return false;}
   return true;
 }
 function canDownload(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return false;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return false;}
   var p=me?userPerms[me.id]:null;
   if(p&&p.download===false){toast('⚠️ 다운로드 권한이 없습니다');return false;}
   return true;
@@ -14650,7 +14651,7 @@ function openIndCmpEdit(){
 }
 function closeIndCmpEdit(){hideM('indCmpModal');}
 async function saveIndCmp(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     var v=parseInt(document.getElementById('indCmpInput').value)||0;
   indPrevYear=v;
   // Supabase notices 테이블에 key=ind_prev_year 로 공유 저장
@@ -19327,7 +19328,7 @@ function loadKpiInputForm(y, m){
 }
 
 function saveKpi(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;} if(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||isExecRole(me.role))){
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;} if(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||isExecRole(me.role))){
     toast('⚠️ 조장 이상만 가능합니다');return;
   }
   var y=document.getElementById('kpiYear').value;
@@ -20675,7 +20676,7 @@ async function checkRegGate(){
   }
 }
 async function subReg(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
   if(!regGatePassedEmpNo){ toast('⚠️ 먼저 사번을 확인해주세요'); goLogin(); go('reg'); return; }
     var nm=document.getElementById('rNm').value.trim();
   var em=document.getElementById('rEm').value.trim();
@@ -21195,7 +21196,7 @@ async function loadUserList(){
       {role:'leader', label:'🏷️ 조장'},
       {role:'acting_leader', label:'🔄 액팅리더'},
       {role:'work_vehicle', label:'🚗 차량운행'},
-      {role:'guest', label:'👤 게스트'},
+      {role:'group_viewer', label:'🌐 그룹 조회'},
       {role:'vehicle_guest', label:'🚙 차량운행기록부 게스트'},
       {role:'member', label:'📖 열람전용'}
     ];
@@ -21337,7 +21338,7 @@ async function toggleMemberRole(el){
   var payload;
   if(isCur){
     // 해제: 백업해둔 원래 역할로 복원
-    var restoreRole=prevRole||'staff';
+    var restoreRole=prevRole||'member';
     if(!confirm(name+'님을 열람전용에서 해제하고, 원래 직급("'+restoreRole+'")으로 되돌릴까요?')) return;
     payload={role:restoreRole, prev_role:null};
   }else{
@@ -21359,7 +21360,7 @@ var TM_JO_MAP={
   '6팀':['A조','B조','C조','운전'],'7팀':['A조','B조'],'8팀':['A조','B조'],'9팀':['A조','B조'],
   '5팀':['A조','B조'],'10팀':['A조','B조']
 };
-var TM_ROLE_MAP={'팀장':'manager','조장':'leader','액팅리더':'acting_leader','기타':'staff','게스트':'guest','차량운행':'work_vehicle','그룹장':'group_leader','본부장':'division_head'};
+var TM_ROLE_MAP={'팀장':'manager','조장':'leader','액팅리더':'acting_leader','기타':'member','게스트':'member','차량운행':'work_vehicle'};
 function openTeamMove(id, name, currentTeam){
   if(!(me&&me.role==='master')){ toast('권한이 없습니다'); return; }
   tmTarget={id:id, name:name};
@@ -21420,8 +21421,8 @@ async function saveTeamMove(){
   var fullTeam=(tmSelectedTeam!=='T1운영' && tmSelectedTeam!=='IAOS' && jo) ? tmSelectedTeam+' '+jo : tmSelectedTeam;
   var isT1=(tmSelectedTeam==='T1운영');
   var isIAOS=(tmSelectedTeam==='IAOS');
-  var isExecSelectTM=(tmSelectedRole==='그룹장'||tmSelectedRole==='본부장');
-  var finalRole = isExecSelectTM ? TM_ROLE_MAP[tmSelectedRole] : (isT1 ? 'admin' : (isIAOS ? 'guest' : (TM_ROLE_MAP[tmSelectedRole]||'staff')));
+  var isExecSelectTM=false;
+  var finalRole = isExecSelectTM ? TM_ROLE_MAP[tmSelectedRole] : (isT1 ? 'admin' : (isIAOS ? 'member' : (TM_ROLE_MAP[tmSelectedRole]||'member')));
   requireAdminAuth(tmTarget.name+'님 팀 이동', async function(pw, errEl){
     var res=await sb.rpc('admin_move_team', {p_admin_id:me.id, p_admin_password:pw, p_target_id:tmTarget.id, p_team:fullTeam, p_role:finalRole});
     if(res.error || res.data===false){ errEl.textContent='⚠️ '+(res.error?res.error.message:'이동 실패 (비밀번호 확인)'); errEl.style.display='block'; return; }
@@ -21467,7 +21468,7 @@ function openPermEdit(btn, userName, userId){
 function closePermEdit(){ hideM('permModal'); }
 
 async function savePermEdit(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
   if(!me||!(me.role==='admin'||me.role==='master')){ toast('⚠️ 관리자만 권한을 변경할 수 있습니다'); return; }
   var perms={};
   ['read','write','edit','download'].forEach(function(p){
@@ -21652,7 +21653,7 @@ async function loadAdminNoticeList(targetId){
 }
 
 async function deleteNotice(btn){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     if(!me||me.role!=='master'){toast('⚠️ 최고관리자만 삭제할 수 있습니다');return;}
   if(!confirm('이 공지사항을 삭제하시겠습니까?')) return;
   var id=btn.getAttribute('data-id');
@@ -21689,7 +21690,7 @@ function openEditNotice(btn){
 }
 
 async function saveEditNotice(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
   if(!me||!(me.role==='admin'||isExecRole(me.role))){toast('⚠️ 공지 수정 권한이 없습니다');return;}
     var t=document.getElementById('nT').value.trim();
   var b=document.getElementById('nB').value.trim();
@@ -21714,7 +21715,7 @@ async function saveEditNotice(){
 }
 
 async function saveNoticeDB(noticeContent){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     try{
     // 공지는 항상 새 행으로 insert (누적)
     var res=await sb.from('notices').insert({
@@ -22159,7 +22160,7 @@ async function updateAccComplaintCount(){
 
 
 async function deleteHo(btn){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
   if(!canDeleteWorkItem()){toast('⚠️ 삭제 권한이 없습니다');return;}
   if(!confirm('이 인수인계를 삭제하시겠습니까?')) return;
   var id=btn.getAttribute('data-id');
@@ -22193,7 +22194,7 @@ function parseFacilityText(str){
   return out;
 }
 function editHo(btn){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;} if(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||isExecRole(me.role))){toast('⚠️ 조장 이상만 수정할 수 있습니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;} if(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||isExecRole(me.role))){toast('⚠️ 조장 이상만 수정할 수 있습니다');return;}
   var id=btn.getAttribute('data-id');
   var r=(hoAll||[]).find(function(x){return String(x.id)===String(id);});
   if(!r){toast('데이터를 찾을 수 없습니다');return;}
@@ -22621,7 +22622,7 @@ function initVocForm(){
 }
 
 async function saveVoc(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;} if(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||isExecRole(me.role))){
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;} if(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||isExecRole(me.role))){
     toast('⚠️ 조장 이상만 입력 가능합니다'); return;
   }
   var date=document.getElementById('vocDate').value;
@@ -22715,7 +22716,7 @@ async function confirmVocComplete(){
 }
 
 async function deleteVoc(id){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
   if(!canDeleteWorkItem()){toast('⚠️ 삭제 권한이 없습니다');return;}
   if(!confirm('이 민원 기록을 삭제하시겠습니까?')) return;
   try{
@@ -23058,7 +23059,7 @@ function pickLostCompleteType(el){
 }
 
 async function saveLost(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;} if(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||isExecRole(me.role))){
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;} if(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||isExecRole(me.role))){
     toast('⚠️ 조장 이상만 입력 가능합니다'); return;
   }
   var location=document.getElementById('lostLocation').value.trim();
@@ -23506,7 +23507,7 @@ async function confirmLostComplete(){
 }
 
 async function deleteLost(id){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
   if(!canDeleteWorkItem()){toast('⚠️ 삭제 권한이 없습니다');return;}
   if(!confirm('이 습득물 기록을 삭제하시겠습니까?')) return;
   try{
@@ -23882,7 +23883,7 @@ function previewEquipmentFile(input){
 }
 
 async function uploadEquipmentData(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     if(!me||me.role!=='master'){toast('⚠️ 최고관리자만 업로드(기존 데이터 교체)할 수 있습니다');return;}
   if(!window._eqPendingData){ toast('파일을 먼저 선택해주세요'); return; }
   var btn=document.querySelector('#eqP2 .btn-prim');
@@ -26738,7 +26739,7 @@ function ncfPrintDoc(id){
 
 function facEditorTag(){
   if(!me) return '';
-  var roleLabel=me.role==='master'?'최고관리자':me.role==='admin'?'관리자':me.role==='group_leader'?'그룹장':me.role==='division_head'?'본부장':me.role==='manager'?'팀장':me.role==='leader'?'조장':me.role==='acting_leader'?'액팅리더':me.role==='guest'?'게스트':me.role==='member'?'열람전용':me.role==='work_vehicle'?'차량운행':'팀원';
+  var roleLabel=me.role==='master'?'최고관리자':me.role==='admin'?'관리자':me.role==='group_viewer'?'그룹 조회':me.role==='manager'?'팀장':me.role==='leader'?'조장':me.role==='acting_leader'?'액팅리더':iaosRO()?'게스트':me.role==='member'?'열람전용':me.role==='work_vehicle'?'차량운행':'팀원';
   return (me.team?me.team+' ':'')+me.name+' '+roleLabel;
 }
 function facUpdatedDateShort(iso){
@@ -29524,7 +29525,7 @@ async function viewIso(path, name, id){
 }
 
 function handleIsoUpload(files){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     _isoUploadFiles=_validateFileList(files, ['.pdf'], 20);
   var listWrap=document.getElementById('isoFileList');
   var items=document.getElementById('isoFileItems');
@@ -29539,7 +29540,7 @@ function handleIsoUpload(files){
 
 async function uploadIsoFiles(){
   var isoCategory=isoGetUploadCategory();
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     if(!_isoUploadFiles.length){ toast('파일을 선택해 주세요'); return; }
   var prog=document.getElementById('isoUploadProgress');
   var progText=document.getElementById('isoProgressText');
@@ -29623,7 +29624,7 @@ async function loadIsoManage(){
 }
 
 function deleteIsoById(btn){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     var id=btn.getAttribute('data-id');
   var path=decodeURIComponent(btn.getAttribute('data-path'));
   deleteIso(id, path);
@@ -29793,7 +29794,7 @@ function newsStartNewPost(){
   newsTab(3);
 }
 async function submitNewsPost(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
   var titleEl=document.getElementById('newsPostTitle');
   var title=(titleEl&&titleEl.value||'').trim();
   var contentEl=document.getElementById('newsPostContent');
@@ -29958,7 +29959,7 @@ function closeNewsPostDetail(){
   if(panel) panel.style.display='none';
 }
 function handleNewsUpload(files){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
   _newsUploadFiles=_validateFileList(files, ['.pdf'], 20);
   var listWrap=document.getElementById('newsFileList');
   var items=document.getElementById('newsFileItems');
@@ -29971,7 +29972,7 @@ function handleNewsUpload(files){
   if(btn){ btn.disabled=false; btn.style.background='var(--teal)'; btn.style.cursor='pointer'; }
 }
 async function uploadNewsFiles(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
   if(!_newsUploadFiles.length){ toast('파일을 선택해 주세요'); return; }
   var prog=document.getElementById('newsUploadProgress');
   var progText=document.getElementById('newsProgressText');
@@ -30056,7 +30057,7 @@ async function loadNewsManage(){
   }catch(e){}
 }
 function deleteNewsById(btn){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
   var id=btn.getAttribute('data-id');
   var path=decodeURIComponent(btn.getAttribute('data-path'));
   deleteNews(id, path);
@@ -30165,7 +30166,7 @@ function handleSafetyUpload(files){
 }
 
 async function uploadSafetyFiles(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     if(!_safetyUploadFiles.length){ toast('파일을 선택해 주세요'); return; }
   var prog=document.getElementById('safetyUploadProgress');
   var progText=document.getElementById('safetyProgressText');
@@ -30249,7 +30250,7 @@ async function loadSafetyManage(){
 }
 
 function deleteSafetyById(btn){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     var id=btn.getAttribute('data-id');
   var path=decodeURIComponent(btn.getAttribute('data-path'));
   deleteSafety(id, path);
@@ -30351,7 +30352,7 @@ function handleManualUpload(files){
 }
 
 async function uploadManualFiles(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     if(!_manualUploadFiles.length){ toast('파일을 선택해 주세요'); return; }
   var prog=document.getElementById('manualUploadProgress');
   var progText=document.getElementById('manualProgressText');
@@ -30435,7 +30436,7 @@ async function loadManualManage(){
 }
 
 function deleteManualById(btn){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     var id=btn.getAttribute('data-id');
   var path=decodeURIComponent(btn.getAttribute('data-path'));
   deleteManual(id, path);
@@ -30537,7 +30538,7 @@ function handleRiskUpload(files){
 }
 
 async function uploadRiskFiles(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     if(!_riskUploadFiles.length){ toast('파일을 선택해 주세요'); return; }
   var prog=document.getElementById('riskUploadProgress');
   var progText=document.getElementById('riskProgressText');
@@ -30621,7 +30622,7 @@ async function loadRiskManage(){
 }
 
 function deleteRiskById(btn){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     var id=btn.getAttribute('data-id');
   var path=decodeURIComponent(btn.getAttribute('data-path'));
   deleteRisk(id, path);
@@ -30868,7 +30869,7 @@ function resetAccForm(){
 }
 
 async function subAcc(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
   var errEl=document.getElementById('accErr');
   var teamBtn=document.querySelector('#accTeamGrp .t-btn.on');
   var victim=document.getElementById('accVictim').value.trim();
@@ -31161,7 +31162,7 @@ async function fetchChatLastRead(){
   }catch(e){}
 }
 async function pollGroupChatBadge(){
-  if(!me||me.role==='guest') return;
+  if(!me||iaosRO()) return;
   if(_chatLastReadServer===null) await fetchChatLastRead(); // 아직 서버값을 못 받아왔으면 먼저 받아온 뒤 계산
   try{
     var res=await sb.from('chat_messages').select('*').order('created_at',{ascending:true}).limit(200);
@@ -31266,7 +31267,7 @@ function renderGroupChat(){
 }
 
 async function sendGroupChat(){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
   if(!me){toast('로그인이 필요합니다');return;}
   var input=document.getElementById('gcInput');
   var msg=input?input.value.trim():'';
@@ -31907,7 +31908,7 @@ function deleteRegById(btn){
   deleteReg(id, path);
 }
 async function deleteReg(id, path){
-  if(me&&me.role==='guest'){toast('⚠️ 조회 전용 계정입니다');return;}
+  if(me&&iaosRO()){toast('⚠️ 조회 전용 계정입니다');return;}
     if(!me||me.role!=='master'){toast('⚠️ 최고관리자만 삭제할 수 있습니다');return;}
   if(!confirm('이 사규를 삭제하시겠습니까?')) return;
   try{
@@ -32325,7 +32326,7 @@ async function loadActiveUsers(){
     var onlineCount=rows.filter(function(r){return r._online;}).length;
     if(sumEl) sumEl.textContent='🟢 온라인 '+onlineCount+'명  ·  전체 '+rows.length+'명';
     var roleLabelFn=function(role){
-      return role==='master'?'최고관리자':role==='admin'?'관리자':role==='group_leader'?'그룹장':role==='division_head'?'본부장':role==='manager'?'팀장':role==='leader'?'조장':role==='acting_leader'?'액팅리더':role==='guest'?'게스트':role==='member'?'열람전용':role==='work_vehicle'?'차량운행':'팀원';
+      return role==='master'?'최고관리자':role==='admin'?'관리자':role==='group_viewer'?'그룹 조회':role==='manager'?'팀장':role==='leader'?'조장':role==='acting_leader'?'액팅리더':role==='guest'?'게스트':role==='member'?'열람전용':role==='work_vehicle'?'차량운행':'팀원';
     };
     var h='';
     rows.forEach(function(r){

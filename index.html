@@ -604,6 +604,7 @@ html{overflow-x:hidden}
         }
         return {data:null,error:{message:'지원하지 않는 요청',code:'mp_compat'}};
       }
+      var UPS_KEYS={worklog_daily:'division_id,log_date,team_no',floor_report_snapshots:'division_id,report_date,slot',leaders:'division_id,shift,team',jw_year_teams:'division_id,year',night_special_data:'division_id,date,team_code',kpi_data:'division_id,year,month',mgr_attendance:'division_id,date,team,name',iso9001_files:'division_id,name,cert_type',companynews_files:'division_id,name',safety_files:'division_id,name',operation_manual_files:'division_id,name',risk_assessment_files:'division_id,name',training_material_files:'division_id,name',regulation_files:'division_id,name'};
       var DIV_FREE={users:1,divisions:1,teams:1,team_groups:1,push_subscriptions:1,pw_reset_requests:1,user_read_marks:1,user_signatures:1};
       function _divScope(table){
         if(DIV_FREE[table]) return null;
@@ -624,6 +625,14 @@ html{overflow-x:hidden}
             else if(method==='POST' && body){
               var _addDv=function(o){ if(o&&typeof o==='object'&&o.division_id===undefined) o=Object.assign({division_id:_dv},o); return o; };
               body=Array.isArray(body)?body.map(_addDv):_addDv(body);
+            }
+          }
+          // upsert 충돌 기준: 새 DB는 사업부별 고유키(division_id 포함) → 호출부는 그대로 두고 여기서 보정
+          if(upsertCol && UPS_KEYS[table]){
+            upsertCol=UPS_KEYS[table];
+            if(table==='iso9001_files' && body){
+              var _ct=function(o){ if(o&&typeof o==='object'&&o.cert_type===undefined&&o.iso_category) o=Object.assign({cert_type:o.iso_category},o); return o; };
+              body=Array.isArray(body)?body.map(_ct):_ct(body);
             }
           }
           if(_sbAccessToken) await sbAuthEnsureFresh();
@@ -846,7 +855,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r13-1002-1710</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r14-1002-1710</div>
   </div>
 </div>
 

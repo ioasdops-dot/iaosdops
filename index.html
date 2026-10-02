@@ -523,6 +523,10 @@ html{overflow-x:hidden}
       async function run(method, table, params, body, upsertCol){
         try{
           var _dv=_divScope(table);
+          // 사용자 목록(승인대기·사용자)은 선택한 사업부 소속만 표시 (본인 조회는 제외)
+          if(!_dv && table==='users' && method==='GET' && params && params.id===undefined && params.email===undefined){
+            try{ if(me&&(me.role==='master'||me.role==='group_viewer')&&window.curDivision){ params=Object.assign({}, params, {division_id:'eq.'+window.curDivision}); } }catch(e){}
+          }
           if(_dv){
             params=Object.assign({}, params||{});
             if(method==='GET'||method==='PATCH'||method==='DELETE'){ if(params['division_id']===undefined) params['division_id']='eq.'+_dv; }

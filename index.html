@@ -809,7 +809,18 @@ html{overflow-x:hidden}
 
       return {
         from: function(table){ return builder(table); },
-        rpc: function(fnName, params){ return runRpc(fnName, params); }
+        rpc: function(fnName, params){ return runRpc(fnName, params); },
+        functions: {
+          invoke: async function(name, opts){
+            try{
+              if(_sbAccessToken) await sbAuthEnsureFresh();
+              var resp=await fetch(BASE.replace('/rest/v1','')+'/functions/v1/'+name, {method:'POST', headers:H(), body:JSON.stringify((opts&&opts.body)||{})});
+              var t=await resp.text(); var d=null; try{ d=t?JSON.parse(t):null; }catch(e){}
+              if(!resp.ok) return {data:null, error:{message:(d&&(d.error||d.message))||('HTTP '+resp.status)}};
+              return {data:d, error:null};
+            }catch(e){ return {data:null, error:{message:String(e.message||e)}}; }
+          }
+        }
       };
     })();
   </script>
@@ -855,7 +866,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r17-1002-1730</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r18-1002-1730</div>
   </div>
 </div>
 
@@ -12392,6 +12403,7 @@ async function confirmSendEmail(){
     toast('⚠️ 받는 이메일 주소를 올바르게 입력해주세요');
     return;
   }
+  toast('⚠️ 이메일 발송 기능은 보안상 폐지되었습니다'); return;
   var btn=document.getElementById('emailSendConfirmBtn');
   if(btn){ btn.disabled=true; btn.textContent='발송 중...'; }
   try{
@@ -40597,7 +40609,7 @@ if('serviceWorker' in navigator){
 }
 
 // ── 푸시 알림 (앱이 꺼져있어도 소리로 수신) ──
-var PUSH_VAPID_PUBLIC_KEY = 'BCnXRJ8baISf3XJlLGXlS90o-hiT2YTEgXNlWA67sy-SvlyFk40fk1FVt5pNtOxQLxVUeFMrSL8FCzlAkmb7oNk';
+var PUSH_VAPID_PUBLIC_KEY = 'BE29j6zbX9hjKhvmIkG1_Bq2ZPmDigcGVtTA5DPgaxl2fOHMHUiKSiQdrV57A-bh5w_8dJdvTGCA-bozWWgbF5o';
 var PUSH_TOPICS = ['handover','notice','companynews','lost_found','campaign','edu','chat','floor_report'];
 function pushUrlB64ToUint8Array(base64String){
   var padding='='.repeat((4-base64String.length%4)%4);
@@ -40662,7 +40674,7 @@ async function pushOptInEnable(){
   }catch(e){ toast('알림 설정 실패: '+(e&&_safeErrMsg(e)?_safeErrMsg(e):e)); }
 }
 async function pushSendNotification(topic, title, body, url){
-  try{ await sb.functions.invoke('send-push', { body: { topic:topic, title:title, body:body||'', url:url||'./index.html' } }); }
+  try{ await sb.functions.invoke('send-push', { body: { topic:topic, title:title, body:body||'', url:url||'./index.html', division_id:iaosDID() } }); }
   catch(e){ /* 알림 발송 실패해도 원 작업은 유지 */ }
 }
 </script>

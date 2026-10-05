@@ -927,7 +927,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r24-1005-tops-merge</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r24-1005-step2</div>
   </div>
 </div>
 
@@ -1151,6 +1151,18 @@ html{overflow-x:hidden}
         <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -6" /><path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -10" /><path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -14" /><path d="M4 20h14" /></svg></span>
         <div class="menu-title">과업평가지표<span id="notifBadge_kpi"></span></div>
         <div class="menu-desc">분기 수검 지표 월별 기록</div>
+        <span class="menu-arrow">입력하기 →</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="menu-cat" id="menuCat_hazard" style="display:none">
+    <div class="sec-lbl" style="padding:14px 13px 6px">⛑️ 위험작업 (부대건물)</div>
+    <div class="menu-grid">
+      <button class="menu-btn" onclick="go('hazard')">
+        <span class="menu-icon" style="background:var(--danger-bg);color:var(--danger)"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l9 16H3z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg></span>
+        <div class="menu-title">고소·유리조 작업</div>
+        <div class="menu-desc">고소작업 · 유리조작업 현황 입력</div>
         <span class="menu-arrow">입력하기 →</span>
       </button>
     </div>
@@ -2766,6 +2778,37 @@ html{overflow-x:hidden}
     <div style="height:20px"></div>
   </div>
 
+</div>
+
+<!-- ══ 위험작업(고소·유리조) — 부대건물 ══ -->
+<div id="sHazard" class="scr" style="display:none">
+  <div class="pg-hd">
+    <div><h1>⛑️ 고소·유리조 작업</h1><small>위험작업 현황 입력 (그룹 화면에 합산 표시)</small></div>
+    <button onclick="go('main')" style="padding:6px 12px;background:var(--g2);color:var(--g5);border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer">← 메인</button>
+  </div>
+  <div style="padding:12px 13px">
+    <div id="hzForm" class="card"><div class="cb" style="padding:14px">
+      <div style="font-size:14px;font-weight:800;color:var(--g7);margin-bottom:10px" id="hzFormTitle">작업 등록</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+        <input type="date" id="hzDate" style="padding:10px;border:1.5px solid var(--g2);border-radius:var(--r2);font-size:14px">
+        <select id="hzKind" style="padding:10px;border:1.5px solid var(--g2);border-radius:var(--r2);font-size:14px;background:#fff"><option>고소작업</option><option>유리조작업</option></select>
+      </div>
+      <input type="text" id="hzPlace" placeholder="장소 (예: 본관 3층 로비)" style="width:100%;padding:10px;border:1.5px solid var(--g2);border-radius:var(--r2);font-size:14px;margin-bottom:8px;box-sizing:border-box">
+      <input type="number" id="hzPeople" min="0" inputmode="numeric" placeholder="작업 인원(명)" style="width:100%;padding:10px;border:1.5px solid var(--g2);border-radius:var(--r2);font-size:14px;margin-bottom:8px;box-sizing:border-box">
+      <textarea id="hzContent" rows="2" placeholder="작업내용" style="width:100%;padding:10px;border:1.5px solid var(--g2);border-radius:var(--r2);font-size:14px;margin-bottom:8px;box-sizing:border-box;font-family:inherit"></textarea>
+      <textarea id="hzSafety" rows="2" placeholder="안전조치 (안전대 착용, 하부 통제 등)" style="width:100%;padding:10px;border:1.5px solid var(--g2);border-radius:var(--r2);font-size:14px;margin-bottom:10px;box-sizing:border-box;font-family:inherit"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="btn-prim" onclick="hzSave()" style="flex:1" id="hzSaveBtn">저장</button>
+        <button onclick="hzReset()" style="padding:0 16px;background:var(--g2);color:var(--g5);border:none;border-radius:var(--r2);font-weight:700;cursor:pointer">초기화</button>
+      </div>
+    </div></div>
+    <div style="display:flex;gap:8px;align-items:center;margin:4px 0 8px">
+      <input type="month" id="hzMonth" onchange="hzLoad()" style="flex:1;padding:9px 10px;border:1.5px solid var(--g2);border-radius:var(--r2);font-size:14px;background:#fff">
+      <select id="hzFilter" onchange="hzRender()" style="padding:9px 10px;border:1.5px solid var(--g2);border-radius:var(--r2);font-size:14px;background:#fff"><option value="">전체</option><option>고소작업</option><option>유리조작업</option></select>
+    </div>
+    <div id="hzSummary" style="margin-bottom:8px"></div>
+    <div id="hzList"></div>
+  </div>
 </div>
 
 <!-- ══ 습득물 관리 ══ -->
@@ -7443,7 +7486,7 @@ window.addEventListener('popstate', function(e){
 });
 
 // ─ 화면 전환 (단순! display:block/none만 사용) ─
-const SCREENS=['sLogin','sReg','sMain','sMp','sHo','sChat','sIso9001','sNews','sSafety','sManual','sRisk','sTraining','sAccident','sGroupChat','sAdmin','sVeh','sKpi','sFacility','sVoc','sLost','sEquipment','sWaste','sNotice','sStatsDash','sMReport','sExecDash','sDownloadCenter','sWorkVeh','sJointWork','sToiletMgmt','sShowerMgmt','sSmokingMgmt','sRestMgmt','sStorageMgmt','sBabyMgmt','sOfficeMgmt','sActiveUsers','sPerf','sDeleteLogs','sAdc','sEduEvent','sEduAttend','sWorkforce','sWorkSchedule','sSpecialWork','sWorkLog','sCampaign','sCampaignDetail','sEmpRoster','sNcf','sMtg','sMtgWeekDetail','sMtgMonthDetail','sMtgWeekWrite','sMtgMonthWrite','sMtgWeekReport','sMtgMonthReport','sMtgMonthItemEdit','sMtgWeekItemEdit'];
+const SCREENS=['sLogin','sReg','sMain','sMp','sHo','sChat','sIso9001','sNews','sSafety','sManual','sRisk','sTraining','sAccident','sGroupChat','sAdmin','sVeh','sKpi','sFacility','sVoc','sLost','sEquipment','sWaste','sNotice','sStatsDash','sMReport','sExecDash','sDownloadCenter','sWorkVeh','sJointWork','sToiletMgmt','sShowerMgmt','sSmokingMgmt','sRestMgmt','sStorageMgmt','sBabyMgmt','sOfficeMgmt','sActiveUsers','sPerf','sDeleteLogs','sAdc','sEduEvent','sEduAttend','sWorkforce','sWorkSchedule','sSpecialWork','sWorkLog','sCampaign','sCampaignDetail','sEmpRoster','sNcf','sMtg','sMtgWeekDetail','sMtgMonthDetail','sMtgWeekWrite','sMtgMonthWrite','sMtgWeekReport','sMtgMonthReport','sMtgMonthItemEdit','sMtgWeekItemEdit','sHazard'];
 function goStatsDash(){
   go('statsdash');
   loadMonthlyStats();
@@ -9512,6 +9555,7 @@ function go(name){
   }
   if(name==='execdash'&&(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='group_viewer'||isExecRole(me.role)))){ toast('⚠️ 팀장 이상만 접근할 수 있습니다'); return; }
   if(name==='emproster'&&(!me||!(me.role==='admin'||me.role==='master'))){ toast('⚠️ admin·master만 접근할 수 있습니다'); return; }
+  if(name==='hazard'&&(!me||me.role==='guest'||me.role==='member'||me.role==='work_vehicle')){ toast('⚠️ 접근 권한이 없습니다'); return; }
   if(name==='training'&&(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||isExecRole(me.role)))){ toast('⚠️ 조장 이상만 접근할 수 있습니다'); return; }
   if(name==='admin'&&(!me||me.role!=='master')){ toast('⚠️ 최고관리자만 접근할 수 있습니다'); return; }
   if(name==='activeUsers'&&(!me||!(me.role==='admin'||me.role==='master'))){ toast('⚠️ 관리자 이상만 접근할 수 있습니다'); return; }
@@ -9532,7 +9576,7 @@ function go(name){
   _curScreenName=name;
   if(typeof FACILITY_MENU_KEYS!=='undefined'&&FACILITY_MENU_KEYS.indexOf(name)!==-1) bumpFacilityMenuView(name);
   updateIosBackBtn();
-  const map={login:'sLogin',reg:'sReg',main:'sMain',mp:'sMp',ho:'sHo',chat:'sChat',iso9001:'sIso9001',news:'sNews',safety:'sSafety',manual:'sManual',risk:'sRisk',training:'sTraining',accident:'sAccident',groupchat:'sGroupChat',admin:'sAdmin',veh:'sVeh',kpi:'sKpi',facility:'sFacility',voc:'sVoc',lost:'sLost',equipment:'sEquipment',waste:'sWaste',notice:'sNotice',statsdash:'sStatsDash',mreport:'sMReport',execdash:'sExecDash',downloadcenter:'sDownloadCenter',workveh:'sWorkVeh',jointwork:'sJointWork',toilet:'sToiletMgmt',shower:'sShowerMgmt',smoking:'sSmokingMgmt',rest:'sRestMgmt',storage:'sStorageMgmt',baby:'sBabyMgmt',office:'sOfficeMgmt',activeUsers:'sActiveUsers',perf:'sPerf',deleteLogs:'sDeleteLogs',admconfirm:'sAdc',eduevent:'sEduEvent',eduattend:'sEduAttend',workforce:'sWorkforce',workschedule:'sWorkSchedule',specialwork:'sSpecialWork',worklog:'sWorkLog',campaign:'sCampaign',campaigndetail:'sCampaignDetail',emproster:'sEmpRoster',noticeconfirm:'sNcf',mtgmaterial:'sMtg',mtgweekdetail:'sMtgWeekDetail',mtgmonthdetail:'sMtgMonthDetail',mtgweekwrite:'sMtgWeekWrite',mtgmonthwrite:'sMtgMonthWrite',mtgweekreport:'sMtgWeekReport',mtgmonthreport:'sMtgMonthReport',mtgmonthitemedit:'sMtgMonthItemEdit',mtgweekitemedit:'sMtgWeekItemEdit'};
+  const map={hazard:'sHazard',login:'sLogin',reg:'sReg',main:'sMain',mp:'sMp',ho:'sHo',chat:'sChat',iso9001:'sIso9001',news:'sNews',safety:'sSafety',manual:'sManual',risk:'sRisk',training:'sTraining',accident:'sAccident',groupchat:'sGroupChat',admin:'sAdmin',veh:'sVeh',kpi:'sKpi',facility:'sFacility',voc:'sVoc',lost:'sLost',equipment:'sEquipment',waste:'sWaste',notice:'sNotice',statsdash:'sStatsDash',mreport:'sMReport',execdash:'sExecDash',downloadcenter:'sDownloadCenter',workveh:'sWorkVeh',jointwork:'sJointWork',toilet:'sToiletMgmt',shower:'sShowerMgmt',smoking:'sSmokingMgmt',rest:'sRestMgmt',storage:'sStorageMgmt',baby:'sBabyMgmt',office:'sOfficeMgmt',activeUsers:'sActiveUsers',perf:'sPerf',deleteLogs:'sDeleteLogs',admconfirm:'sAdc',eduevent:'sEduEvent',eduattend:'sEduAttend',workforce:'sWorkforce',workschedule:'sWorkSchedule',specialwork:'sSpecialWork',worklog:'sWorkLog',campaign:'sCampaign',campaigndetail:'sCampaignDetail',emproster:'sEmpRoster',noticeconfirm:'sNcf',mtgmaterial:'sMtg',mtgweekdetail:'sMtgWeekDetail',mtgmonthdetail:'sMtgMonthDetail',mtgweekwrite:'sMtgWeekWrite',mtgmonthwrite:'sMtgMonthWrite',mtgweekreport:'sMtgWeekReport',mtgmonthreport:'sMtgMonthReport',mtgmonthitemedit:'sMtgMonthItemEdit',mtgweekitemedit:'sMtgWeekItemEdit'};
   const id=map[name]||name;
   SCREENS.forEach(s=>{
     const el=document.getElementById(s);
@@ -9549,6 +9593,7 @@ function go(name){
   if(gtb) gtb.style.setProperty('max-width', tbWidthMap[id]||'720px', 'important');
   window.scrollTo(0,0);
   if(name==='worklog') wlEnter();
+  if(name==='hazard') hzEnter();
   if(name==='activeUsers') loadActiveUsers();
   if(name==='deleteLogs') loadDeleteLogs();
   // 화면 진입 시 자동 새로고침
@@ -10787,8 +10832,97 @@ function iaosApplyDivNames(){
     if(i.getAttribute('src')!==want){ i._fb=0; i.setAttribute('src',want); }
     i.parentNode.classList.toggle('lg-t1',lg!=='logo.png'); });
   if(id) document.documentElement.setAttribute('data-div',id);
+  try{ hzApplyVisibility(); }catch(e){}
 }
 var _dmCss=document.createElement('style');_dmCss.textContent='.dm-b{padding:9px 14px;background:var(--teal);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;white-space:nowrap}.dm-b2{padding:8px 12px;background:#fff;border:1.5px solid var(--g2);color:var(--g6);border-radius:10px;font-size:13px;font-weight:700;cursor:pointer}';document.head.appendChild(_dmCss);
+
+// ══════════ 위험작업(고소·유리조) — 부대건물 입력 ══════════
+var HZ={rows:[],editId:null};
+function hzIsBD(){ try{ var multi=me&&(me.role==='master'||me.role==='group_viewer'); return (multi?window.curDivision:(me&&me.division_id))==='BD'; }catch(e){ return false; } }
+function hzCanWrite(){ return !!(me&&['master','admin','manager','leader','acting_leader'].indexOf(me.role)>=0); }
+function hzApplyVisibility(){ var c=document.getElementById('menuCat_hazard'); if(c) c.style.display=(me&&hzIsBD()&&me.role!=='guest'&&me.role!=='member')?'block':'none'; }
+function hzEnter(){
+  if(!hzIsBD()){ toast('⚠️ 부대건물환경미화사업부 전용 메뉴입니다'); go('main'); return; }
+  var f=document.getElementById('hzForm'); if(f) f.style.display=hzCanWrite()?'block':'none';
+  var m=document.getElementById('hzMonth'); if(m&&!m.value) m.value=kstDate().slice(0,7);
+  hzReset(); hzLoad();
+}
+function hzReset(){
+  HZ.editId=null;
+  var d=document.getElementById('hzDate'); if(d) d.value=kstDate();
+  ['hzPlace','hzPeople','hzContent','hzSafety'].forEach(function(i){ var e=document.getElementById(i); if(e) e.value=''; });
+  var k=document.getElementById('hzKind'); if(k) k.selectedIndex=0;
+  var t=document.getElementById('hzFormTitle'); if(t) t.textContent='작업 등록';
+  var b=document.getElementById('hzSaveBtn'); if(b) b.textContent='저장';
+}
+async function hzLoad(){
+  var m=(document.getElementById('hzMonth')||{}).value||kstDate().slice(0,7);
+  var y=+m.slice(0,4), mo=+m.slice(5,7), last=new Date(y,mo,0).getDate();
+  var r=await sb.from('hazard_work').select('*').gte('work_date',m+'-01').lte('work_date',m+'-'+String(last).padStart(2,'0')).order('work_date',{ascending:false}).order('id',{ascending:false});
+  if(r.error){ toast('⚠️ 불러오기 실패: '+(r.error.message||r.error)); HZ.rows=[]; } else HZ.rows=r.data||[];
+  hzRender();
+}
+function hzRender(){
+  var f=(document.getElementById('hzFilter')||{}).value||'';
+  var all=HZ.rows, rows=f?all.filter(function(x){return x.kind===f;}):all;
+  var cnt={'고소작업':0,'유리조작업':0}, ppl={'고소작업':0,'유리조작업':0};
+  all.forEach(function(x){ if(cnt[x.kind]!==undefined){ cnt[x.kind]++; ppl[x.kind]+=Number(x.people)||0; } });
+  var sm=document.getElementById('hzSummary');
+  if(sm) sm.innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+    +['고소작업','유리조작업'].map(function(k){ return '<div style="background:var(--g1);border-radius:12px;padding:10px;text-align:center"><div style="font-size:12px;color:var(--g5);font-weight:700">'+k+'</div><div style="font-size:22px;font-weight:900;color:var(--navy)">'+cnt[k]+'<span style="font-size:12px;font-weight:700">건</span></div><div style="font-size:11px;color:var(--g4)">연인원 '+ppl[k]+'명</div></div>'; }).join('')+'</div>';
+  var el=document.getElementById('hzList'); if(!el) return;
+  if(!rows.length){ el.innerHTML='<div style="text-align:center;padding:24px;color:var(--g4);font-size:13px">등록된 작업이 없습니다</div>'; return; }
+  var w=hzCanWrite();
+  el.innerHTML=rows.map(function(x){
+    var own=w&&(me.role==='master'||me.role==='admin'||x.writer===me.name);
+    return '<div class="card" style="margin-bottom:8px"><div class="cb" style="padding:12px 13px">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:5px"><span style="font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;background:'+(x.kind==='고소작업'?'var(--warn-bg)':'var(--navy-bg)')+';color:'+(x.kind==='고소작업'?'var(--warn)':'var(--navy)')+'">'+eeEsc(x.kind)+'</span><b style="font-size:14px;color:var(--g7)">'+eeEsc(x.place||'')+'</b><span style="margin-left:auto;font-size:12px;color:var(--g4)">'+eeEsc(String(x.work_date).slice(0,10))+'</span></div>'
+      +'<div style="font-size:13px;color:var(--g6);line-height:1.5">👷 '+(Number(x.people)||0)+'명'+(x.content?' · '+eeEsc(x.content):'')+'</div>'
+      +(x.safety?'<div style="font-size:12px;color:var(--g5);margin-top:3px">🦺 '+eeEsc(x.safety)+'</div>':'')
+      +'<div style="display:flex;align-items:center;margin-top:6px"><span style="font-size:11px;color:var(--g4)">작성 '+eeEsc(x.writer||'')+'</span>'
+      +(own?'<span style="margin-left:auto;display:flex;gap:6px"><button onclick="hzEdit('+x.id+')" style="padding:4px 10px;background:var(--g1);border:1px solid var(--g2);border-radius:8px;font-size:12px;cursor:pointer">수정</button><button onclick="hzDelete('+x.id+')" style="padding:4px 10px;background:#FFF0F0;color:var(--danger);border:1px solid var(--danger);border-radius:8px;font-size:12px;cursor:pointer">삭제</button></span>':'')
+      +'</div></div></div>';
+  }).join('');
+}
+function hzEdit(id){
+  var x=HZ.rows.filter(function(r){return r.id===id;})[0]; if(!x) return;
+  HZ.editId=id;
+  document.getElementById('hzDate').value=String(x.work_date).slice(0,10);
+  document.getElementById('hzKind').value=x.kind;
+  document.getElementById('hzPlace').value=x.place||'';
+  document.getElementById('hzPeople').value=x.people==null?'':x.people;
+  document.getElementById('hzContent').value=x.content||'';
+  document.getElementById('hzSafety').value=x.safety||'';
+  document.getElementById('hzFormTitle').textContent='작업 수정';
+  document.getElementById('hzSaveBtn').textContent='수정 저장';
+  window.scrollTo(0,0);
+}
+async function hzSave(){
+  if(!hzCanWrite()){ toast('⚠️ 입력 권한이 없습니다'); return; }
+  var row={
+    work_date:document.getElementById('hzDate').value,
+    kind:document.getElementById('hzKind').value,
+    place:document.getElementById('hzPlace').value.trim(),
+    people:parseInt(document.getElementById('hzPeople').value,10)||0,
+    content:document.getElementById('hzContent').value.trim(),
+    safety:document.getElementById('hzSafety').value.trim()
+  };
+  if(!row.work_date){ toast('⚠️ 작업일을 선택해주세요'); return; }
+  if(!row.place){ toast('⚠️ 장소를 입력해주세요'); return; }
+  if(row.people<=0){ toast('⚠️ 작업 인원을 입력해주세요'); return; }
+  var res;
+  if(HZ.editId){ row.updated_at=new Date().toISOString(); res=await sb.from('hazard_work').update(row).eq('id',HZ.editId); }
+  else { row.writer=me?me.name:''; res=await sb.from('hazard_work').insert(row); }
+  if(res.error){ toast('⚠️ 저장 실패: '+(res.error.message||res.error)); return; }
+  toast(HZ.editId?'✅ 수정되었습니다':'✅ 저장되었습니다');
+  hzReset(); hzLoad();
+}
+async function hzDelete(id){
+  if(!confirm('이 작업 기록을 삭제할까요?')) return;
+  var r=await sb.from('hazard_work').delete().eq('id',id);
+  if(r.error){ toast('⚠️ 삭제 실패: '+(r.error.message||r.error)); return; }
+  toast('삭제했습니다'); hzLoad();
+}
 function iaosIsGroupRole(){ return !!(me&&['master','admin','group_viewer'].indexOf(me.role)!==-1); }
 function iaosBackToGroup(){ try{sessionStorage.removeItem('iaos_app');}catch(e){} location.href='group.html'; }
 function iaosRouteStart(){

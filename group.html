@@ -169,6 +169,13 @@ s{text-decoration:none}
 .dv-flr{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:13px}.dv-flr b{min-width:38px}.dv-flr .b{flex:1;height:10px;background:#EDEFF2;border-radius:6px;overflow:hidden}.dv-flr .b i{display:block;height:100%;border-radius:6px}.dv-flr em{font-style:normal;min-width:78px;text-align:right;font-variant-numeric:tabular-nums;font-weight:700}.dv-flr s{text-decoration:none;font-size:11px;font-weight:700;margin-left:3px}
 .dv-tg{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.dv-tg div{background:#F5F6F8;border-radius:12px;padding:8px 4px;text-align:center;font-size:11px;color:var(--mut);font-weight:700}.dv-tg b{display:block;font-size:17px;color:var(--ink);font-variant-numeric:tabular-nums}
 .dv-hz{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}.dv-hz div{border-radius:14px;padding:10px;text-align:center;font-size:12px;font-weight:700;color:#8A4512;background:#FFF1E3}.dv-hz b{display:block;font-size:22px;color:#5C2D0C}
+.tabs button{font-size:12.5px}
+.sp-item{display:block;width:100%;text-align:left;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px 13px;margin-bottom:8px}
+.sp-item b{font-size:14px}.sp-item small{display:block;color:var(--mut);font-size:11px;margin-top:3px}
+.sp-ch{display:inline-flex;gap:4px;margin-top:7px;flex-wrap:wrap}.sp-ch span{font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:#F0F1F4;color:#9AA0AB}.sp-ch span.on{color:#2B2F36}
+.sp-tbl{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}.sp-tbl th{font-size:11px;color:var(--mut);font-weight:700;padding:6px 3px;border-bottom:1px solid var(--line);text-align:right}.sp-tbl th:first-child,.sp-tbl td:first-child{text-align:left}.sp-tbl td{padding:6px 3px;border-bottom:1px solid #F0F1F4;text-align:right}.sp-tbl tr.tot td{font-weight:800;background:#FAFAFB}.sp-tbl td.sm{font-weight:800}
+.sp-in{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:14px;margin-bottom:8px;background:#fff}
+.sp-btn{border:0;border-radius:12px;padding:10px 14px;font-weight:800;font-size:13px;background:#2B2F36;color:#fff}.sp-btn.g{background:#E6E8EC;color:var(--ink)}.sp-btn.r{background:#FDE9ED;color:#C0485F}
 @media print{.tabs,.ex,.live,.chips,#logout{display:none!important}.pane{display:block!important}body{background:#fff}.card,.hero,.kp div,.pt{break-inside:avoid}}
 @media (prefers-reduced-motion:no-preference){.gcol div,.share i,.br .b i{transition:all .5s ease}}
 </style>
@@ -205,6 +212,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
   <div class="tabs" role="tablist">
     <button class="on" data-t="now" role="tab">현황판</button>
     <button data-t="div" role="tab">사업부</button>
+    <button data-t="sp" role="tab">특별근무</button>
     <button data-t="stat" role="tab">통계</button>
     <button data-t="rep" role="tab">리포트</button>
   </div>
@@ -212,6 +220,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
   <div id="goBar" class="gobar"></div>
   <section class="pane on" id="p-now"></section>
   <section class="pane" id="p-div"></section>
+  <section class="pane" id="p-sp"></section>
   <section class="pane" id="p-stat"></section>
   <section class="pane" id="p-rep"></section>
 </div>
@@ -509,6 +518,88 @@ function dvGo(i){ if(!divs.length) return; DV.idx=(i+divs.length)%divs.length; r
   document.addEventListener('touchstart',function(e){ on=(state.tab==='div'&&!!e.target.closest('#p-div')&&!e.target.closest('select,input')); if(on){sx=e.touches[0].clientX;sy=e.touches[0].clientY;} },{passive:true});
   document.addEventListener('touchend',function(e){ if(!on) return; on=false; var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy; if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5) dvGo(DV.idx+(dx<0?1:-1)); },{passive:true});
 })();
+
+/* ---------- 특별근무 합산 (성수기·명절·비상) ---------- */
+var SP={view:'list',list:[],avail:[],detail:null,ed:null};
+function spMaster(){return state.role==='master';}
+function spPeriod(links){
+  var a=links.filter(function(l){return l.start_date;}).map(function(l){return String(l.start_date).slice(0,10);}).sort();
+  var b=links.filter(function(l){return l.end_date;}).map(function(l){return String(l.end_date).slice(0,10);}).sort();
+  return a.length?(a[0].slice(5)+' ~ '+b[b.length-1].slice(5)):'기간 미정';
+}
+function spChips(links){
+  return '<div class="sp-ch">'+divs.map(function(d){var on=links.some(function(l){return l.division_id===d.id;});return '<span class="'+(on?'on':'')+'" style="'+(on?'background:'+d.soft:'')+'">'+esc(d.short)+(on?' ✓':' 미연결')+'</span>';}).join('')+'</div>';
+}
+function spList(){
+  var h='<div class="card"><h3>특별근무 (성수기·명절·비상) <small>3개 사업부 합산</small></h3>';
+  if(spMaster()) h+='<button type="button" class="sp-btn" data-spnew="1" style="width:100%">＋ 그룹 행사 만들기·연결</button>';
+  else h+='<div class="note" style="margin:0">그룹 행사 연결은 최고관리자만 설정할 수 있어요.</div>';
+  h+='</div>';
+  if(!SP.list.length) return h+'<div class="card empty">연결된 그룹 행사가 없어요.<br>최고관리자가 사업부 행사를 묶으면 여기에 합산됩니다.</div>';
+  return h+SP.list.map(function(g){return '<button type="button" class="sp-item" data-spopen="'+esc(g.id)+'"><b>'+esc(g.title)+'</b><small>'+esc(spPeriod(g.links))+(g.memo?' · '+esc(g.memo):'')+'</small>'+spChips(g.links)+'</button>';}).join('');
+}
+function spDetail(){
+  var D=SP.detail, rows=D.rows||[], dates={}, by={};
+  rows.forEach(function(r){var d=String(r.work_date).slice(0,10); dates[d]=1; by[d]=by[d]||{}; by[d][r.division_id]=(by[d][r.division_id]||0)+Number(r.headcount||0);});
+  var ds=Object.keys(dates).sort(), cols=divs.filter(function(d){return D.links.some(function(l){return l.division_id===d.id;});});
+  var totD={}, grand=0, peak=0, peakD='';
+  ds.forEach(function(d){var t=0; cols.forEach(function(c){var v=by[d][c.id]||0; totD[c.id]=(totD[c.id]||0)+v; t+=v;}); grand+=t; if(t>peak){peak=t;peakD=d;} by[d]._t=t;});
+  var h='<div style="display:flex;gap:6px;margin-bottom:8px"><button type="button" class="sp-btn g" data-spback="1">← 목록</button>'
+    +(spMaster()?'<button type="button" class="sp-btn g" data-spedit="'+esc(D.id)+'">연결 수정</button>':'')+'</div>'
+    +'<div class="card"><h3>'+esc(D.title)+' <small>'+esc(spPeriod(D.links))+'</small></h3>'+spChips(D.links)
+    +'<div class="kg" style="margin-top:10px">'+kcell('연인원 합계',n0(grand),'명')+kcell('일 평균',ds.length?n0(grand/ds.length):0,'명')+kcell('최대 투입일',peak?peakD.slice(5):'–',peak?' '+n0(peak)+'명':'')+'</div></div>';
+  if(!ds.length) return h+'<div class="card empty">연결된 행사에 입력된 날짜별 편성이 없어요.</div>';
+  var mx=Math.max.apply(null,cols.map(function(c){return totD[c.id]||0;}).concat([1]));
+  h+='<div class="card"><h3>사업부별 비교 <small>연인원</small></h3>'+cols.map(function(c){return '<div class="hb"><span>'+esc(c.short)+'</span><div class="b"><i style="width:'+((totD[c.id]||0)/mx*100)+'%;background:'+c.color+'"></i></div><em>'+n0(totD[c.id]||0)+'</em></div>';}).join('')+'</div>';
+  h+='<div class="card" style="overflow-x:auto"><h3>날짜별 투입 인원 <small>편성 기준</small></h3><table class="sp-tbl"><tr><th>날짜</th>'+cols.map(function(c){return '<th style="color:'+c.color+'">'+esc(c.short)+'</th>';}).join('')+'<th>합계</th></tr>'
+    +ds.map(function(d){return '<tr><td>'+d.slice(5)+'</td>'+cols.map(function(c){return '<td>'+n0(by[d][c.id]||0)+'</td>';}).join('')+'<td class="sm">'+n0(by[d]._t)+'</td></tr>';}).join('')
+    +'<tr class="tot"><td>합계</td>'+cols.map(function(c){return '<td>'+n0(totD[c.id]||0)+'</td>';}).join('')+'<td>'+n0(grand)+'</td></tr></table></div>';
+  return h;
+}
+function spEdit(){
+  var E=SP.ed;
+  var h='<div style="display:flex;gap:6px;margin-bottom:8px"><button type="button" class="sp-btn g" data-spback="1">← 취소</button></div>'
+    +'<div class="card"><h3>'+(E.id?'그룹 행사 수정':'그룹 행사 만들기')+'</h3>'
+    +'<input class="sp-in" id="spTitle" placeholder="그룹 행사 이름 (예: 2026 추석 특별근무)" value="'+esc(E.title)+'">'
+    +'<input class="sp-in" id="spMemo" placeholder="메모 (선택)" value="'+esc(E.memo)+'">'
+    +'<div style="font-size:12px;font-weight:800;margin:6px 0">사업부 행사 연결</div>'
+    +divs.map(function(d){
+      var opts=SP.avail.filter(function(a){return a.division_id===d.id;});
+      return '<div style="font-size:12px;color:var(--mut);margin:4px 0 2px;font-weight:700"><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+d.color+';margin-right:4px"></i>'+esc(d.short)+'</div>'
+        +'<select class="sp-in" data-splink="'+esc(d.id)+'"><option value="">연결 안 함</option>'+opts.map(function(o){return '<option value="'+esc(o.event_id)+'"'+(E.links[d.id]===o.event_id?' selected':'')+'>'+esc(o.title)+' ('+esc(String(o.start_date).slice(5,10))+'~'+esc(String(o.end_date).slice(5,10))+')</option>';}).join('')+'</select>';
+    }).join('')
+    +'<div style="display:flex;gap:6px;margin-top:6px"><button type="button" class="sp-btn" data-spsave="1" style="flex:1">저장</button>'
+    +(E.id?'<button type="button" class="sp-btn r" data-spdel="'+esc(E.id)+'">삭제</button>':'')+'</div></div>';
+  return h;
+}
+function renderSp(){
+  var el=$('p-sp');
+  if(!divs.length){el.innerHTML='<div class="card empty">등록된 사업부가 없어요.</div>';return;}
+  el.innerHTML=SP.view==='detail'?spDetail():SP.view==='edit'?spEdit():spList();
+}
+function loadSp(){
+  return rpc('group_special_list').then(function(r){SP.list=Array.isArray(r)?r:[];
+    if(SP.view==='detail'&&SP.detail) return rpc('group_special_detail',{p_id:SP.detail.id}).then(function(d){SP.detail=d;});
+  }).then(renderSp);
+}
+function spOpen(id){return rpc('group_special_detail',{p_id:id}).then(function(d){SP.detail=d;SP.view='detail';renderSp();window.scrollTo(0,0);}).catch(function(e){alert('불러오지 못했어요: '+((e&&e.message)||''));});}
+function spStartEdit(g){
+  return rpc('group_special_available').then(function(a){
+    SP.avail=Array.isArray(a)?a:[];
+    var links={}; (g?g.links:[]).forEach(function(l){links[l.division_id]=l.event_id;});
+    SP.ed={id:g?g.id:null,title:g?g.title:'',memo:g?(g.memo||''):'',links:links}; SP.view='edit'; renderSp(); window.scrollTo(0,0);
+  }).catch(function(e){alert('불러오지 못했어요: '+((e&&e.message)||''));});
+}
+function spSave(){
+  var title=($('spTitle').value||'').trim(), memo=($('spMemo').value||'').trim(), links=[];
+  document.querySelectorAll('[data-splink]').forEach(function(s){ if(s.value) links.push({division_id:s.dataset.splink,event_id:s.value}); });
+  if(!title){alert('행사 이름을 입력해주세요.');return;}
+  rpc('group_special_save',{p_id:SP.ed.id,p_title:title,p_memo:memo,p_links:links}).then(function(id){SP.view='list';return loadSp();}).catch(function(e){alert('저장하지 못했어요: '+((e&&e.message)||''));});
+}
+function spDelete(id){
+  if(!confirm('이 그룹 행사 연결을 삭제할까요?\n(사업부의 특별근무 데이터는 지워지지 않습니다)')) return;
+  rpc('group_special_delete',{p_id:id}).then(function(){SP.view='list';SP.detail=null;return loadSp();}).catch(function(e){alert('삭제하지 못했어요: '+((e&&e.message)||''));});
+}
 function dashExcel(){
   var L=DASH.last; if(!L||!window.XLSX){return;}
   var aoa=[['환경미화운영그룹 현황판', L.rg.label+' ('+L.rg.from+(L.rg.from!==L.rg.to?' ~ '+L.rg.to:'')+')'+(L.rg.avg?' · 일평균':'')],[],
@@ -833,7 +924,7 @@ function loadStat(){
 }
 function load(){
   stamp();
-  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : (state.tab==='stat' ? loadStat() : loadRep()));
+  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='sp' ? loadSp() : (state.tab==='stat' ? loadStat() : loadRep()));
   return p.catch(function(e){
     var msg=(e&&e.message)||'알 수 없는 오류';
     $('p-'+state.tab).innerHTML='<div class="card empty">데이터를 불러오지 못했어요.<br>'+esc(msg)+'<br>잠시 후 새로고침을 눌러 주세요.</div>';
@@ -842,7 +933,7 @@ function load(){
 function showTab(t){
   state.tab=t;
   document.querySelectorAll('.tabs button').forEach(function(b){var on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
-  ['now','div','stat','rep'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
+  ['now','div','sp','stat','rep'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
   load();
 }
 
@@ -881,6 +972,11 @@ function init(){
   document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){showTab(b.dataset.t);};});
   document.addEventListener('change',function(e){var s=e.target.closest('[data-mgrset]'); if(s) mgrSet(s);});
   document.addEventListener('click',function(e){
+    var sp=e.target.closest('[data-spnew],[data-spopen],[data-spback],[data-spedit],[data-spsave],[data-spdel]');
+    if(sp){var dd=sp.dataset;
+      if(dd.spnew){spStartEdit(null);} else if(dd.spopen){spOpen(dd.spopen);} else if(dd.spback){SP.view=(SP.view==='edit'&&SP.detail&&SP.ed&&SP.ed.id)?'detail':'list';renderSp();}
+      else if(dd.spedit){var g=SP.list.filter(function(x){return x.id===dd.spedit;})[0]||SP.detail; spStartEdit(g);} else if(dd.spsave){spSave();} else if(dd.spdel){spDelete(dd.spdel);}
+      return;}
     var dvb=e.target.closest('[data-dvidx]'); if(dvb){dvGo(+dvb.dataset.dvidx);return;}
     var mo=e.target.closest('[data-mgropen]'); if(mo){var k=mo.dataset.mgropen; MGR.open[k]=!MGR.open[k]; mgrPaint(); return;}
     var t=e.target.closest('[data-month],[data-kpi],[data-rep],[data-dmove],[data-dmode],[data-dlive],[data-smove],[data-smode],[data-sopen],[data-rmove],[data-rmode],[data-rsub],[data-ritem]'); if(!t) return;

@@ -532,7 +532,7 @@ function atPicker(){
   var P=AT.pick; if(!P) return '';
   var it=atFind(P.div,P.team,P.key); if(!it) return '';
   var st=it.eff?it.eff.st:'미체크';
-  return '<div class="at-sheet" data-atclose="1"><div class="at-sh" onclick="event.stopPropagation()"><h3>'+esc(it.person&&it.key!==it.person?it.key+' · '+it.person:it.key)+' <small>'+esc(P.team)+' · 현재 '+esc(st)+'</small></h3>'
+  return '<div class="at-sheet" data-atclose="1"><div class="at-sh"><h3>'+esc(it.person&&it.key!==it.person?it.key+' · '+it.person:it.key)+' <small>'+esc(P.team)+' · 현재 '+esc(st)+'</small></h3>'
     +(atCanEdit()?'<div class="at-btns">'+AT_ST.map(function(s){return '<button type="button" class="sp-btn'+(st===s?'':' g')+'" data-atset="'+esc(s)+'">'+esc(s)+'</button>';}).join('')+'<button type="button" class="sp-btn r" data-atset="">미체크로</button></div>':'')
     +'<button type="button" class="sp-btn" data-athist="1" style="width:100%;margin-top:8px">🕘 근태 이력 보기</button><button type="button" class="sp-btn g" data-atclose="1" style="width:100%;margin-top:6px">닫기</button></div></div>';
 }
@@ -1425,7 +1425,7 @@ function init(){
     if(rp){ if(rp.dataset.rpage){repOpen(rp.dataset.rpage);} else if(rp.dataset.rback){repBack();} else if(rp.dataset.rrf){REP.rf=rp.dataset.rrf;REP.rn=30;renderRep(REP.data);} else if(rp.dataset.rmore){REP.rn+=50;renderRep(REP.data);} return; }
     var dvb=e.target.closest('[data-dvidx]'); if(dvb){dvGo(+dvb.dataset.dvidx);return;}
     var at=e.target.closest('[data-atmove],[data-atpick],[data-atclose],[data-athist],[data-atset],[data-atme],[data-atback],[data-athmode],[data-athmove],[data-atleave],[data-atlsave],[data-atldel],[data-atosave],[data-goat]');
-    if(at){ atAct(at.dataset); return; }
+    if(at){ if(at.classList.contains('at-sheet')&&e.target!==at) return; atAct(at.dataset); return; }
     var t=e.target.closest('[data-month],[data-kpi],[data-rep],[data-dmove],[data-dmode],[data-dlive],[data-smove],[data-smode],[data-sopen],[data-rmove],[data-rmode],[data-rsub],[data-ritem]'); if(!t) return;
     if(t.dataset.rmove){repMove(+t.dataset.rmove);return;}
     if(t.dataset.rmode){REP.mode=t.dataset.rmode;load();return;}

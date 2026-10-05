@@ -16,7 +16,7 @@
 <title>환경미화운영그룹</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Nanum+Pen+Script&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 :root{
@@ -118,6 +118,19 @@ html{overflow-x:hidden}
   #sExecDash #edShiftRow>div{box-shadow:0 2px 6px rgba(20,30,60,.05)!important}
 }
 
+/* ═══ PC 넓은 화면(1024px+) 전용 — 폰/태블릿 세로는 영향 없음 ═══ */
+@media (min-width:1024px){
+  .scr{max-width:1100px}
+  #sChat.scr,#sGroupChat.scr{max-width:720px}
+  .mh-tabbar,#hoAlertBanner{max-width:1100px!important;margin:0 auto!important}
+  /* 메인 운영현황: 카드 4열 */
+  #mhPanelDash{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:0 13px 114px;align-content:start}
+  #mhPanelDash>*{grid-column:1/-1;margin-left:0!important;margin-right:0!important}
+  #mhPanelDash>.stat-row:not(#prfHomeRow){display:contents}
+  #mhPanelDash>.stat-row:not(#prfHomeRow)>*{grid-column:span 1;margin:0!important;min-width:0}
+  #mhPanelDash>.stat-row[style*="grid-template-columns:minmax(0,1fr)"]:not(#prfHomeRow)>*{grid-column:span 2}
+  #mhPanelDash>.stat-row>*{margin-top:0!important}
+}
 /* ─ 화면 ─ */
 .scr{display:none;padding-bottom:112px;overflow-x:hidden}
 .scr.on{display:block}
@@ -377,6 +390,18 @@ html{overflow-x:hidden}
   .mh-tabbar{background:rgba(255,255,255,.72);-webkit-backdrop-filter:blur(20px) saturate(180%);backdrop-filter:blur(20px) saturate(180%);border-top:1px solid rgba(255,255,255,.6)}
   .btn-prim{background:linear-gradient(135deg,rgba(var(--teal-rgb),.92),rgba(var(--teal2-rgb),.92));-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 6px 18px rgba(var(--teal2-rgb),.28),inset 0 1px 0 rgba(255,255,255,.35)}
 }
+
+/* 필기체 이름 도장 (서명 대체) */
+.sgst{position:relative;display:inline-block;vertical-align:middle;width:44px;height:44px;transform:rotate(-3deg)}
+.sgst.lg{width:84px;height:84px}
+.sgst .sgi{position:absolute;left:0;top:0;width:88px;height:88px;box-sizing:border-box;border:3px solid #c0392b;border-radius:50%;background:#fff;color:#c0392b;transform-origin:0 0;transform:scale(.5)}
+.sgst.lg .sgi{transform:scale(.9545)}
+.sgst .sgi b{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;padding-top:3px;font-family:'Nanum Pen Script','Noto Sans KR',cursive;font-weight:400;line-height:1;letter-spacing:-1px;white-space:nowrap}
+.sgst .sgi i{position:absolute;left:50%;top:50%;width:8px;height:10px;margin:-5px 0 0 -4px;font:700 8px/10px 'Noto Sans KR',sans-serif;font-style:normal;text-align:center}
+
+
+
+
 </style>
 <script>
     const SUPABASE_URL = 'https://ydheycuffbeefljgxemm.supabase.co';
@@ -604,7 +629,7 @@ html{overflow-x:hidden}
         }
         return {data:null,error:{message:'지원하지 않는 요청',code:'mp_compat'}};
       }
-      var UPS_KEYS={worklog_daily:'division_id,log_date,team_no',floor_report_snapshots:'division_id,report_date,slot',leaders:'division_id,shift,team',jw_year_teams:'division_id,year',night_special_data:'division_id,date,team_code',kpi_data:'division_id,year,month',mgr_attendance:'division_id,date,team,name',iso9001_files:'division_id,name,cert_type',companynews_files:'division_id,name',safety_files:'division_id,name',operation_manual_files:'division_id,name',risk_assessment_files:'division_id,name',training_material_files:'division_id,name',regulation_files:'division_id,name'};
+      var UPS_KEYS={wf_quarter_start:'division_id,quarter',worklog_daily:'division_id,log_date,team_no',floor_report_snapshots:'division_id,report_date,slot',leaders:'division_id,shift,team',jw_year_teams:'division_id,year',night_special_data:'division_id,date,team_code',kpi_data:'division_id,year,month',mgr_attendance:'division_id,date,team,name',iso9001_files:'division_id,name,cert_type',companynews_files:'division_id,name',safety_files:'division_id,name',operation_manual_files:'division_id,name',risk_assessment_files:'division_id,name',training_material_files:'division_id,name',regulation_files:'division_id,name'};
       var DIV_FREE={users:1,divisions:1,teams:1,team_groups:1,push_subscriptions:1,pw_reset_requests:1,user_read_marks:1,user_signatures:1};
       // 모든 사업부가 함께 보는 공통 자료 (등록·수정·삭제는 최고관리자만, 사업부 코드는 ALL)
       var COMMON_TABLES={regulation_files:1,iso9001_files:1,iso_cert_types:1,companynews_files:1,companynews_posts:1,safety_files:1,risk_assessment_files:1,training_material_files:1};
@@ -902,7 +927,7 @@ html{overflow-x:hidden}
     </div>
     <button class="btn-out" onclick="goReg()">가입 신청</button>
     <div class="login-note">※ 승인된 구성원만 로그인 가능합니다</div>
-    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r23-1002-2130</div>
+    <div style="text-align:center;font-size:11px;color:#9aa5b8;margin-top:8px">build r24-1005-tops-merge</div>
   </div>
 </div>
 
@@ -3344,7 +3369,7 @@ textarea.rpt-edit{resize:vertical;min-height:36px}
   <div id="adcP2" style="display:none;padding:13px">
     <div class="card"><div class="cb">
       <div style="font-size:14px;font-weight:700;color:var(--g6);margin-bottom:4px">✍️ 내 서명 정보 등록</div>
-      <div style="font-size:12.5px;color:var(--g4);margin-bottom:13px;line-height:1.6">한 번 등록해두면 확인서 서명 시 자동으로 채워집니다.</div>
+      <div style="font-size:12.5px;color:var(--g4);margin-bottom:13px;line-height:1.6">소속·직책·사번을 한 번 등록해두면 확인서 서명 시 이름과 일시 도장이 자동으로 찍힙니다.</div>
       <div id="adcSigTargetBox" style="display:none;margin-bottom:14px;padding:12px;background:var(--teal-bg);border-radius:var(--r2);border:1px solid var(--teal)">
         <div style="font-size:12.5px;font-weight:700;color:var(--teal2);margin-bottom:6px">👤 서명 등록 대상 (최고관리자 전용 — 비워두면 본인)</div>
         <input type="text" id="adcSigTargetInput" class="ri" placeholder="직원 이름 검색" oninput="adcSigTargetSearch()" style="margin-bottom:6px">
@@ -3356,7 +3381,8 @@ textarea.rpt-edit{resize:vertical;min-height:36px}
       <div class="fg"><label class="f-lbl">소속</label><input type="text" id="adcMyDept" class="ri" value=""></div>
       <div class="fg"><label class="f-lbl">직책</label><input type="text" id="adcMyPosition" class="ri" placeholder="예: 과장, 팀장, 사원"></div>
       <div class="fg"><label class="f-lbl">사번</label><input type="text" id="adcMyEmpId" class="ri" placeholder="사번 입력"></div>
-      <div class="fg">
+      <div style="margin-bottom:13px;padding:11px 12px;background:var(--teal-bg);border-radius:var(--r2);font-size:12.5px;color:var(--g6);line-height:1.6">서명은 <b>필기체 이름 + 일시 도장</b>으로 자동 표시됩니다. 서명 이미지를 따로 올리거나 그릴 필요가 없습니다.</div>
+      <div class="fg" style="display:none">
         <label class="f-lbl">서명 이미지</label>
         <div style="display:flex;gap:6px;margin-bottom:8px">
           <button type="button" id="adcSigModeUploadBtn" onclick="adcSigMode('upload')" style="flex:1;padding:9px;border-radius:8px;border:1.5px solid var(--teal);background:var(--teal2);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer">📁 이미지 업로드</button>
@@ -3667,6 +3693,7 @@ textarea.rpt-edit{resize:vertical;min-height:36px}
 </div></div></div>
 
 <!-- 공지 확인서 기한·대상 수정 모달 (자동생성된 확인서를 나중에 조정할 때 사용) -->
+<div id="ncfUnsignedModal" class="modal-bg"><div class="modal"><div class="m-hd" style="background:linear-gradient(135deg,var(--navy),var(--teal2))"><h3>📋 확인 서명 현황</h3><button class="m-x" onclick="hideM('ncfUnsignedModal')">×</button></div><div id="ncfUnsignedModalBody" style="padding:15px 17px;max-height:70vh;overflow-y:auto"></div></div></div>
 <div id="ncfEditMetaModal" class="modal-bg"><div class="modal"><div class="m-hd" style="background:linear-gradient(135deg,var(--navy),var(--teal2))"><h3>✏️ 확인기한·대상 수정</h3><button class="m-x" onclick="hideM('ncfEditMetaModal')">×</button></div><div style="padding:15px 17px">
   <div class="fg"><label class="f-lbl">공개범위(대상)</label><div id="ncfEditTargetGrp" style="display:flex;flex-wrap:wrap;gap:6px"></div></div>
   <div class="fg"><label class="f-lbl">확인기한</label><input type="date" id="ncfEditDue" class="ri"></div>
@@ -4147,6 +4174,13 @@ textarea.rpt-edit{resize:vertical;min-height:36px}
       <select id="wfErpMonth" style="padding:8px 10px;border:1.5px solid var(--g2);border-radius:8px;font-size:13px"></select>
       <button onclick="wfDownloadErp()" style="padding:9px 14px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">📥 ERP 다운로드</button>
     </div>
+    <div id="wfQStartBar" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:10px;padding:8px 10px;background:#f0fdfa;border:1.5px solid var(--g2);border-radius:8px;font-size:13px">
+      <span id="wfQStartLbl" style="font-weight:700;color:var(--g6)"></span>
+      <input type="date" id="wfQStartInp" style="padding:6px 8px;border:1.5px solid var(--g2);border-radius:8px;font-size:13px;display:none">
+      <button id="wfQStartSave" onclick="wfSaveQStart()" style="display:none;padding:7px 12px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">저장</button>
+      <button id="wfQStartClear" onclick="wfClearQStart()" style="display:none;padding:7px 12px;background:white;border:1.5px solid var(--g2);border-radius:8px;font-size:13px;font-weight:700;color:var(--g6);cursor:pointer">해제</button>
+      <span id="wfQStartHint" style="color:var(--g4);font-size:12px"></span>
+    </div>
     <div id="wfTableWrap" style="overflow-x:auto;border:1.5px solid var(--g2);border-radius:10px">
       <div style="text-align:center;padding:30px;color:var(--g3);font-size:14px">근무계획을 불러오는 중...</div>
     </div>
@@ -4295,6 +4329,11 @@ textarea.rpt-edit{resize:vertical;min-height:36px}
 .wl-card.gm{border-left:3px solid #60a5fa}.wl-card.gf{border-left:3px solid #f472b6}.wl-card.gx{border-left:3px solid #cbd5e1}
 .wl-card.on{background:var(--teal);color:#fff;border-color:var(--teal)}.wl-card.on i{color:#d1fae5}
 .wl-card.dis{opacity:.4;cursor:default}
+.wl-card.kyum{background:#fff7e6;border-color:#f59e0b;color:#92400e}.wl-card.kyum i{color:#b45309}
+.wl-open{background:#f0fdfa;border:1.5px solid var(--teal);border-radius:12px;padding:9px;margin:2px 0 8px}
+.wl-open .wl-gh{margin-top:8px}
+.wl-supb{display:inline-block;background:#fff7e6;color:#b45309;border:1px solid #f59e0b;border-radius:99px;padding:0 7px;font-size:11px;font-weight:800;margin-left:3px;white-space:nowrap}
+.wl-zone.openz{border-top-color:var(--teal)}.wl-zone.openz .wl-zt{color:var(--teal2)}
 .wl-gh{margin:12px 0 5px;font-size:12.5px;font-weight:800;color:var(--g5)}
 .wl-chips{display:flex;gap:6px;flex-wrap:wrap}
 .wl-chip{padding:7px 12px;border-radius:20px;border:1.5px solid var(--g3);background:#fff;font-size:13px;font-weight:800;color:var(--g6);cursor:pointer}
@@ -6368,10 +6407,10 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
     <div id="regGateAdminOnly" style="display:none">
       <div class="pg-hd" style="margin-top:6px"><div><h1 style="font-size:17px">🔑 가입 허용 사번</h1><small>여기 등록된 사번만 가입 신청이 가능합니다</small></div></div>
       <div class="card"><div class="cb">
-        <div style="display:flex;gap:8px;margin-bottom:12px">
-          <input type="text" id="regGateNewEmpNo" placeholder="사번" inputmode="numeric" style="flex:1 1 0;min-width:0;width:0;padding:10px;border:1.5px solid var(--g2);border-radius:8px;font-size:14px">
-          <input type="text" id="regGateNewName" placeholder="이름(선택)" style="flex:1 1 0;min-width:0;width:0;padding:10px;border:1.5px solid var(--g2);border-radius:8px;font-size:14px">
-          <button onclick="addRegGateEmpNo()" style="flex:none;padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap">추가</button>
+        <div style="display:flex;gap:8px;margin-bottom:12px;min-width:0">
+          <input type="text" id="regGateNewEmpNo" placeholder="사번" inputmode="numeric" style="flex:1 1 0;min-width:0;box-sizing:border-box;padding:10px;border:1.5px solid var(--g2);border-radius:8px;font-size:14px">
+          <input type="text" id="regGateNewName" placeholder="이름(선택)" style="flex:1 1 0;min-width:0;box-sizing:border-box;padding:10px;border:1.5px solid var(--g2);border-radius:8px;font-size:14px">
+          <button onclick="addRegGateEmpNo()" style="flex:0 0 auto;padding:10px 16px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap">추가</button>
         </div>
         <div style="display:flex;gap:8px;margin-bottom:10px">
           <button onclick="rgDownloadTemplate()" style="flex:1;padding:10px;background:#fff;color:var(--teal2);border:1.5px solid var(--teal);border-radius:8px;font-weight:700;font-size:13px;cursor:pointer">📥 양식 다운로드</button>
@@ -7887,7 +7926,7 @@ function goHomePanel(){
 // ══════════════════════════════════════════════════════════════
 var WL={team:'',date:'',view:'main',loading:false,emps:[],tpl:[],absMap:{},auto:{},staff:{},tbm:{},safety:{},note:'',status:'',confirmedBy:'',
   reports:[],gender:{},dirty:false,absReason:'연차',showOff:false,zoneId:null,absList:[],tot:{n:0,m:0,f:0,x:0},snapshot:false,
-  tplEdit:[],genderEdit:{},rep:null,assignOut:{},busy:false,erp:{}};
+  tplEdit:[],genderEdit:{},rep:null,assignOut:{},busy:false,erp:{},sup:{},openZone:null};
 var WL_REASONS=['연차','전반','후반','병가','경조','결근','산재','휴직','휴무','기타'];
 var WL_REASONS_ALL=['연차','전반','후반','반차','병가','경조','결근','산재','휴직','휴무','기타']; // 반차: 이전 데이터 호환
 function wlHalf(r){ return r==='반차'||r==='전반'||r==='후반'; }
@@ -7898,11 +7937,41 @@ var WL_DOW=['일','월','화','수','목','금','토'];
 function wlEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function wlCanRead(){ return !!(me&&['leader','manager','admin','master','group_viewer'].indexOf(me.role)>=0); }
 function wlIsAdm(){ return !!(me&&(me.role==='admin'||me.role==='master')); }
+function wlCanGender(){ return !!(me&&(wlIsAdm()||(me.role==='manager'&&me.team===WL.team))); } // 성별 설정: master·admin 전체, 팀장은 자기 팀만
 function wlSeeWf(){ return !!(me&&['leader','manager','admin','master'].indexOf(me.role)>=0); } // group_leader는 wf_* 조회 불가 → 저장된 스냅샷만
 function wlCanWrite(){ return !!(me&&((wlIsAdm()&&!(WL.adminRO&&!WL.editOn))||(me.role==='manager'&&me.team===WL.team))); }
 function wlShift(d,n){ var p=d.split('-').map(Number); var t=new Date(Date.UTC(p[0],p[1]-1,p[2]+n)); return t.toISOString().slice(0,10); }
 function wlDow(d){ var p=d.split('-').map(Number); return WL_DOW[new Date(Date.UTC(p[0],p[1]-1,p[2])).getUTCDay()]; }
 function wlQuarter(d){ var p=d.split('-').map(Number); return p[0]+'-Q'+(Math.floor((p[1]-1)/3)+1); }
+// ── 분기 휴무 적용 시작일 (wf_quarter_start) ──
+// 새 분기 휴무는 '적용 시작일' 이후부터 적용, 그 전까지는 직전 분기 휴무 유지. 적용일이 없는 분기는 분기 1일부터(기존 방식).
+var WF_QSTART={map:{},loadedAt:0,loading:null};
+async function wfLoadQStart(force){
+  if(!force&&WF_QSTART.loadedAt&&Date.now()-WF_QSTART.loadedAt<300000) return WF_QSTART.map;
+  if(WF_QSTART.loading) return WF_QSTART.loading;
+  WF_QSTART.loading=(async function(){
+    try{
+      var r=await sb.from('wf_quarter_start').select('quarter,apply_from');
+      if(!r.error){ var m={}; (r.data||[]).forEach(function(x){ m[x.quarter]=String(x.apply_from).slice(0,10); }); WF_QSTART.map=m; }
+    }catch(e){}
+    WF_QSTART.loadedAt=Date.now(); WF_QSTART.loading=null;
+    return WF_QSTART.map;
+  })();
+  return WF_QSTART.loading;
+}
+function wfCalQuarter(d){ var p=String(d).slice(0,10).split('-').map(Number); return p[0]+'-Q'+(Math.floor((p[1]-1)/3)+1); }
+function wfPrevQuarter(q){ var m=String(q).match(/^(\d{4})-Q(\d)$/); if(!m) return q; var y=+m[1], n=+m[2]; return n===1?(y-1)+'-Q4':y+'-Q'+(n-1); }
+// 날짜(YYYY-MM-DD)에 실제로 적용할 분기 (캐시 기준 — 사용 전 await wfLoadQStart() 필요)
+function wfEffQuarter(dateStr){
+  var d=String(dateStr).slice(0,10), q=wfCalQuarter(d), af=WF_QSTART.map[q];
+  return (af&&d<af)?wfPrevQuarter(q):q;
+}
+// {분기:행} 중 해당 날짜에 쓸 행 선택 — 적용 분기 행이 없으면(예: 신규 입사자) 달력 분기 행으로 대체
+function wfPickOffRow(byQ, dateStr){
+  if(!byQ) return null;
+  var eq=wfEffQuarter(dateStr), cq=wfCalQuarter(dateStr);
+  return byQ[eq]||(eq!==cq?byQ[cq]:null)||null;
+}
 function wlGrpKey(g){ return g==='A조'?1:g==='B조'?2:g==='C조'?3:0; }
 function wlKo(a,b){ return String(a.name).localeCompare(String(b.name),'ko'); }
 function wlGen(emp){ return WL.gender[emp]||''; }
@@ -8016,7 +8085,8 @@ async function wlLoad(){
     WL.reports=(rr.data||[]).map(function(r){ return {category:r.category,reporter:r.reporter,time:r.report_time,place:r.place_content,to:r.report_to,receiver:r.receiver}; });
     WL.absMap={}; WL.auto={}; WL.erp={}; WL.staff={}; WL.emps=[]; WL.gender={}; WL.absList=[]; WL.assignOut={};
     savedAbs.forEach(function(r){ if(!r.auto) WL.absMap[r.emp_no]=r.reason; });
-    savedStaff.forEach(function(r){ var k=r.zone_id||0; (WL.staff[k]=WL.staff[k]||[]).push(r.emp_no); });
+    WL.sup={}; WL.openZone=null;
+    savedStaff.forEach(function(r){ var k=r.zone_id||0; if(r.is_support){ (WL.sup[k]=WL.sup[k]||[]).push(r.emp_no); } else { (WL.staff[k]=WL.staff[k]||[]).push(r.emp_no); } });
     if(seeWf){
       var home=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,group_name,team').eq('team',T); });
       var emps=(home.data||[]);
@@ -8029,9 +8099,12 @@ async function wlLoad(){
       WL.emps=emps;
       var ids=emps.map(function(e){return e.emp_no;});
       if(ids.length){
-        var off=await sb.from('wf_fixed_off').select('emp_no,off_day1,off_day2').eq('quarter',wlQuarter(D)).in('emp_no',ids);
+        await wfLoadQStart();
+        var wlQe=wfEffQuarter(D), wlQc=wlQuarter(D);
+        var off=await sb.from('wf_fixed_off').select('emp_no,off_day1,off_day2,quarter').in('quarter',(wlQe===wlQc?[wlQc]:[wlQe,wlQc])).in('emp_no',ids);
         var dow=wlDow(D);
-        (off.data||[]).forEach(function(o){ if(o.off_day1===dow||o.off_day2===dow) WL.auto[o.emp_no]='휴무'; });
+        var wlOffBy={}; (off.data||[]).forEach(function(o){ (wlOffBy[o.emp_no]=wlOffBy[o.emp_no]||{})[o.quarter]=o; });
+        Object.keys(wlOffBy).forEach(function(id){ var o=wfPickOffRow(wlOffBy[id],D); if(o&&(o.off_day1===dow||o.off_day2===dow)) WL.auto[id]='휴무'; });
         var lv=await sb.from('wf_leave').select('emp_no,leave_type,start_date,end_date').lte('start_date',D).gte('end_date',D).in('emp_no',ids);
         (lv.data||[]).forEach(function(l){ WL.auto[l.emp_no]=/산재/.test(l.leave_type||'')?'산재':'휴직'; });
         try{ var el2=await sb.from('erp_leave').select('emp_no,reason').lte('start_date',D).gte('end_date',D).in('emp_no',ids);
@@ -8115,8 +8188,8 @@ function wlRender(){
   if(WL.loading){ el.innerHTML='<div style="text-align:center;padding:40px;color:var(--g3);font-size:14px">불러오는 중...</div>'; return; }
   var sub=document.getElementById('wlSub');
   var v=WL.view;
-  if(sub) sub.textContent=({main:'팀별 일일 작업일지 (자동 초안 → 확인·저장)',report:'일일 보고서 미리보기',period:'주간·월간 집계',erp:'ERP 근태 업로드',abs:'휴가·결근 입력',staff:'근무자 선택',tpl:'작업내용 수정',gender:'성별 설정',rep:'신고 추가',board:'팀 현황판 (관리자)',xl:'주간 엑셀 업로드'})[v]||'';
-  el.innerHTML = v==='board'?wlViewBoard():v==='erp'?wlViewErp():v==='xl'?wlViewXl():v==='period'?wlViewPeriod():v==='report'?wlViewReport():v==='abs'?wlViewAbs():v==='staff'?wlViewStaff():v==='tpl'?wlViewTpl():v==='gender'?wlViewGender():v==='rep'?wlViewRep():wlViewMain();
+  if(sub) sub.textContent=({main:'팀별 일일 작업일지 (자동 초안 → 확인·저장)',report:'일일 보고서 미리보기',period:'주간·월간 집계',erp:'ERP 근태 업로드',abs:'휴가·결근 입력',staff:'근무자 선택',tpl:'작업내용 수정',gender:'성별 설정',rep:'신고 추가',board:'팀 현황판 (관리자)',an:'주간·월간 분석 리포트',xl:'주간 엑셀 업로드'})[v]||'';
+  el.innerHTML = v==='board'?wlViewBoard():v==='an'?wlViewAn():v==='erp'?wlViewErp():v==='xl'?wlViewXl():v==='period'?wlViewPeriod():v==='report'?wlViewReport():v==='abs'?wlViewAbs():v==='staff'?wlViewStaff():v==='tpl'?wlViewTpl():v==='gender'?wlViewGender():v==='rep'?wlViewRep():wlViewMain();
   if(v==='main'&&WL.restoreY!=null){ var _y=WL.restoreY, _z=WL.restoreZone; WL.restoreY=null; WL.restoreZone=null; wlRestorePos(_y,_z); }
   else window.scrollTo(0,0);
 }
@@ -8151,7 +8224,7 @@ function wlViewMain(){
   if(wlIsAdm()) h+='<div style="margin:8px 13px 0;display:flex;gap:8px"><button class="wl-btn" style="flex:1" onclick="wlLeaveGuard(wlBoardOpen)">← 팀 현황판</button>'+(WL.adminRO&&!WL.editOn?'<button class="wl-btn pri" style="flex:1" onclick="wlEditOn()">✏️ 수정하기</button>':'')+'</div>';
   if(!w) h+='<div class="wl-warn" style="background:#e0f2fe;color:#075985">👁 조회 전용입니다'+(WL.snapshot?' (저장된 일지만 표시됩니다)':'')+'</div>';
   if(WL.snapshot&&!WL.status) return h+'<div class="wl-sec" style="text-align:center;color:var(--g4);padding:28px">이 날짜에 저장된 일지가 없습니다.</div>';
-  if(!WL.snapshot&&WL.tot.x>0) h+='<div class="wl-warn">⚠ 성별이 지정되지 않은 직원이 '+WL.tot.x+'명 있어 남·여 인원이 정확하지 않습니다.'+(wlIsAdm()?' <a href="javascript:wlView(\'gender\')" style="color:#b45309;text-decoration:underline">성별 설정하기</a>':' (관리자에게 요청)')+'</div>';
+  if(!WL.snapshot&&WL.tot.x>0) h+='<div class="wl-warn">⚠ 성별이 지정되지 않은 직원이 '+WL.tot.x+'명 있어 남·여 인원이 정확하지 않습니다.'+(wlCanGender()?' <a href="javascript:wlGenderOpen()" style="color:#b45309;text-decoration:underline">성별 설정하기</a>':' (관리자에게 요청)')+'</div>';
   h+=wlCmpBanner();
   if(!WL.snapshot&&!WL.emps.length) h+='<div class="wl-warn">이 팀의 직원 정보를 찾을 수 없습니다. (근무계획 직원정보 확인)</div>';
   if(!(WL.snapshot&&!WL.status)) h+='<div style="margin:10px 13px 0;display:flex;gap:8px"><button class="wl-btn pri" style="flex:1" onclick="wlView(\'report\')">📄 일일 보고서·엑셀</button><button class="wl-btn pri" style="flex:1" onclick="wlPOpen()">📅 주간·월간 집계</button></div>';
@@ -8184,10 +8257,12 @@ function wlViewMain(){
     if(z.section!==lastSec){ lastSec=z.section; if(z.section) h+='<div class="wl-zh">■ '+wlEsc(z.section)+'</div>'; }
     var ids=WL.staff[z.id]||[];
     var nm=ids.map(function(id){ var e=WL.emps.filter(function(x){return x.emp_no===id;})[0]; return wlEsc(e?e.name:(WL.snapNames&&WL.snapNames[id])||id)+((WL.jwMap&&WL.jwMap[id])?'<span title="공동작업 참여" style="font-size:11px">🤝</span>':''); });
-    h+='<div class="wl-zone" data-zid="'+z.id+'"'+(w&&!WL.snapshot?' onclick="wlView(\'staff\','+z.id+')"':'')+'><div class="wl-zt">'+wlEsc(z.zone_text)+'</div><div class="wl-zn'+(nm.length?'':' empty')+'">'+(nm.length?nm.join(' · ')+' <small style="color:var(--g4)">('+nm.length+')</small>':(w?'＋ 근무자 선택':'-'))+'</div></div>';
+    var opn=(w&&!WL.snapshot&&WL.openZone===z.id), supb=wlSupIds(z.id).map(function(id){ var e=WL.emps.filter(function(x){return x.emp_no===id;})[0]; return '<span class="wl-supb">'+wlEsc(e?e.name:(WL.snapNames&&WL.snapNames[id])||id)+'(겸)</span>'; }).join('');
+    h+='<div class="wl-zone'+(opn?' openz':'')+'" data-zid="'+z.id+'"'+(w&&!WL.snapshot?' onclick="wlZoneToggle('+z.id+')"':'')+'><div class="wl-zt">'+wlEsc(z.zone_text)+'</div><div class="wl-zn'+(nm.length?'':' empty')+'">'+(nm.length?nm.join(' · ')+' <small style="color:var(--g4)">('+nm.length+')</small>':(w?'＋ 근무자 선택':'-'))+supb+'</div>'+(w&&!WL.snapshot?'<span style="color:var(--teal2);font-size:12px;font-weight:800;align-self:center">'+(opn?'▲':'▼')+'</span>':'')+'</div>';
+    if(opn) h+=wlZonePanel(z);
   });
   if(!WL.snapshot){
-    var un=WL.emps.filter(function(e){ return !wlEff(e)&&!wlAssignedAny(e.emp_no); }).sort(wlKo);
+    var un=WL.emps.filter(function(e){ return (!wlEff(e)||wlHalf(wlEff(e)))&&!wlAssignedAny(e.emp_no); }).sort(wlKo);
     if(wlTplR().length) h+='<div style="margin-top:10px;font-size:12.5px;color:'+(un.length?'#b45309':'#15803d')+';font-weight:700">'+(un.length?'⚠ 근무자인데 아직 구역에 배치되지 않은 인원 '+un.length+'명: '+un.map(function(e){return wlEsc(e.name);}).join(' '):'✔ 근무 인원 전원 배치 완료')+'</div>';
   }
   h+='</div>';
@@ -8208,7 +8283,7 @@ function wlViewMain(){
     h+='<div style="display:flex;gap:8px;margin:14px 13px 0"><button class="wl-btn" style="flex:1" onclick="wlSave(\'draft\')">💾 임시저장</button><button class="wl-btn pri" style="flex:1" onclick="wlSave(\'confirmed\')">✅ 확정 저장</button></div>';
     if(WL.status==='confirmed') h+='<div style="margin:8px 13px 0"><button class="wl-btn sm" onclick="wlSave(\'draft\')">확정 해제(수정 가능 상태로)</button></div>';
   }
-  if(wlIsAdm()&&!WL.snapshot) h+='<div style="margin:12px 13px 0"><button class="wl-btn sm" onclick="wlView(\'gender\')">👥 직원 성별 설정 (관리자)</button></div>';
+  if(wlCanGender()) h+='<div style="margin:12px 13px 0"><button class="wl-btn sm" onclick="wlGenderOpen()">👥 직원 성별 설정</button></div>';
   return h;
 }
 function wlCheckBlock(title,items,map,key,w){
@@ -8247,10 +8322,54 @@ function wlViewAbs(){
   return h;
 }
 function wlAbsTap(emp){
-  if(WL.absMap[emp]===WL.absReason) delete WL.absMap[emp]; else WL.absMap[emp]=WL.absReason;
+  var cur=WL.absMap[emp], au=WL.auto[emp], rs=WL.absReason;
+  if(cur===rs){ if(au===rs&&rs!=='근무') WL.absMap[emp]='근무'; else delete WL.absMap[emp]; }   // 자동(ERP·고정휴무)으로 들어온 사유는 지우면 다시 자동값으로 돌아가므로, '출근'으로 명시 해제
+  else if(!cur&&au===rs&&rs!=='근무') WL.absMap[emp]='근무';   // 자동으로 들어온 사유를 누르면 바로 해제
+  else WL.absMap[emp]=rs;
   // 배치되어 있던 구역에서 제거 (휴가 처리된 사람)
-  if(WL.absReason!=='근무'){ for(var k in WL.staff){ WL.staff[k]=WL.staff[k].filter(function(x){return x!==emp;}); } }
+  if(WL.absReason!=='근무'){ for(var k in WL.staff){ WL.staff[k]=WL.staff[k].filter(function(x){return x!==emp;}); } for(var k2 in WL.sup){ WL.sup[k2]=WL.sup[k2].filter(function(x){return x!==emp;}); } }
   WL.dirty=true; wlRecalc(); wlRenderKeepScroll();
+}
+// ─ 한 줄씩 펼쳐서 배정 + 겸무 ─
+function wlSupIds(zid){ return (WL.sup[zid]||[]).filter(function(id){ return wlAssignedAny(id)&&(WL.staff[zid]||[]).indexOf(id)<0; }); }
+function wlZoneShort(zid){ var z=wlTplR().filter(function(x){return String(x.id)===String(zid);})[0]; if(!z) return ''; var t=String(z.zone_text||''); var i=t.indexOf(')'); return (i>0&&i<12)?t.slice(0,i):t.slice(0,6); }
+function wlZoneOf(emp,zid){ for(var k in WL.staff){ if(String(k)!==String(zid)&&WL.staff[k].indexOf(emp)>=0) return k; } return null; }
+function wlZoneToggle(zid){
+  WL.openZone=(WL.openZone===zid)?null:zid;
+  var y=window.scrollY; wlRender();
+  if(WL.openZone){ var el=document.querySelector('#wlBody [data-zid="'+zid+'"]'); if(el&&el.scrollIntoView) el.scrollIntoView({block:'start'}); window.scrollBy(0,-8); } else window.scrollTo(0,y);
+}
+function wlZonePanel(z){
+  var sel=WL.staff[z.id]||[], sup=wlSupIds(z.id);
+  var list=WL.emps.filter(function(e){ return !wlEff(e)||wlHalf(WL.absMap[e.emp_no])||wlHalf(wlEff(e)); }).filter(function(e){ return !wlAssignedElsewhere(e.emp_no,z.id); }).sort(wlKo);
+  var h='<div class="wl-open"><div style="font-size:12.5px;font-weight:800;color:var(--teal2)">근무자를 눌러 배정 <span style="font-weight:600;color:var(--g4)">· 선택 '+sel.length+'명</span></div>';
+  var gs={}; list.forEach(function(e){ var g=e.position==='팀장'?'팀장':(e.group_name||'기타'); (gs[g]=gs[g]||[]).push(e); });
+  Object.keys(gs).sort(function(a,b){ return wlGrpKey(a)-wlGrpKey(b); }).forEach(function(g){
+    h+='<div class="wl-gh">'+g+' · '+gs[g].length+'명</div><div class="wl-grid">';
+    gs[g].forEach(function(e){ var on=sel.indexOf(e.emp_no)>=0; var tag=e.position==='조장'?'조장':e.position==='팀장'?'팀장':(wlHalf(wlEff(e))?wlEff(e):'');
+      h+='<div class="wl-card g'+({남:'m',여:'f'}[wlGen(e.emp_no)]||'x')+(on?' on':'')+'" onclick="event.stopPropagation();wlStaffTap('+z.id+',\''+e.emp_no+'\')">'+wlEsc(e.name)+'<i>'+tag+'</i></div>'; });
+    h+='</div>'; });
+  if(!list.length) h+='<div style="font-size:12px;color:var(--g4);padding:6px 0">배정 가능한 인원이 없습니다 (이미 모두 다른 작업에 배정됨)</div>';
+  // 겸무: 이미 다른 작업에 배정된 사람이 이 작업도 함께 볼 때 (인원수 미포함)
+  var others=WL.emps.filter(function(e){ return wlAssignedElsewhere(e.emp_no,z.id)&&(WL.staff[z.id]||[]).indexOf(e.emp_no)<0; }).sort(wlKo);
+  if(others.length){
+    h+='<div style="margin-top:12px;padding-top:9px;border-top:1px dashed #f59e0b"><div style="font-size:12.5px;font-weight:800;color:#92400e">🔁 겸무 추가 <span style="font-weight:600;color:var(--g4)">· 다른 작업 배정자가 이 작업도 함께 볼 때 (인원수에는 미포함)</span></div><div class="wl-grid" style="margin-top:6px">';
+    others.forEach(function(e){ var on=sup.indexOf(e.emp_no)>=0; var zs=wlZoneShort(wlZoneOf(e.emp_no,z.id));
+      h+='<div class="wl-card g'+({남:'m',여:'f'}[wlGen(e.emp_no)]||'x')+(on?' kyum':'')+'" onclick="event.stopPropagation();wlSupTap('+z.id+',\''+e.emp_no+'\')">'+wlEsc(e.name)+'<i>'+(on?'겸무 ✔':wlEsc(zs))+'</i></div>'; });
+    h+='</div></div>';
+  }
+  h+='<div style="margin-top:10px;display:flex;gap:8px"><button class="wl-btn pri" style="flex:1" onclick="event.stopPropagation();wlZoneNext('+z.id+')">다음 작업 ▶</button><button class="wl-btn" style="flex:1" onclick="event.stopPropagation();wlZoneToggle('+z.id+')">접기 ▲</button></div></div>';
+  return h;
+}
+function wlZoneNext(zid){
+  var arr=wlTplR(), i=-1; arr.forEach(function(z,k){ if(z.id===zid) i=k; });
+  var nx=arr[i+1]; if(!nx){ WL.openZone=null; wlRender(); toast('마지막 작업입니다'); return; }
+  wlZoneToggle(nx.id);
+}
+function wlSupTap(zid,emp){
+  var a=WL.sup[zid]=WL.sup[zid]||[]; var i=a.indexOf(emp);
+  if(i>=0) a.splice(i,1); else a.push(emp);
+  WL.dirty=true; wlRenderKeepScroll();
 }
 function wlRenderKeepScroll(){ var y=window.scrollY; wlRender(); window.scrollTo(0,y); }
 
@@ -8282,12 +8401,12 @@ async function wlCopyPrev(){
   try{
     var q=await sb.from('worklog_daily').select('log_date').eq('team_no',WL.team).lte('log_date',wlShift(WL.date,-1)).order('log_date',{ascending:false}).limit(1);
     var pd=q.data&&q.data[0]&&q.data[0].log_date; if(!pd){ toast('이전에 저장된 일지가 없습니다'); return; }
-    var r=await msFetchAll(function(){ return sb.from('worklog_staff').select('zone_id,emp_no,sort_no').eq('log_date',pd).eq('team_no',WL.team).order('sort_no'); });
+    var r=await msFetchAll(function(){ return sb.from('worklog_staff').select('zone_id,emp_no,sort_no').eq('log_date',pd).eq('team_no',WL.team).eq('is_support',false).order('sort_no'); });
     var okIds={}; WL.emps.forEach(function(e){ var m=wlEff(e); if(!m||wlHalf(m)) okIds[e.emp_no]=1; });
     var n=0, st={}; (r.data||[]).forEach(function(x){ if(!x.zone_id||!okIds[x.emp_no]) return; (st[x.zone_id]=st[x.zone_id]||[]).push(x.emp_no); n++; });
     var _okZ={}; wlTplR().forEach(function(z){ _okZ[z.id]=1; }); Object.keys(st).forEach(function(k){ if(!_okZ[k]) delete st[k]; });
     if(WL.staff&&Object.keys(WL.staff).some(function(k){return WL.staff[k].length;})&&!confirm('이미 배치된 근무자가 있습니다. '+pd+' 일지로 덮어쓸까요?')) return;
-    WL.staff=st; WL.dirty=true; wlRender(); toast(pd+' 일지에서 '+n+'명 불러옴 (오늘 휴무·휴가자는 제외)');
+    WL.staff=st; WL.sup={}; WL.dirty=true; wlRender(); toast(pd+' 일지에서 '+n+'명 불러옴 (오늘 휴무·휴가자는 제외)');
   }catch(e){ toast('불러오기 실패'); }
 }
 
@@ -8337,7 +8456,7 @@ async function wlSave(status){
 }
 function wlCmpPopup(c,as){
   var o=document.getElementById('wlCmpOv'); if(o) o.remove();
-  var un=(WL.emps||[]).filter(function(e){ return !wlEff(e)&&!wlAssignedAny(e.emp_no); }).sort(wlKo).map(function(e){ return wlEsc(e.name); });
+  var un=(WL.emps||[]).filter(function(e){ return (!wlEff(e)||wlHalf(wlEff(e)))&&!wlAssignedAny(e.emp_no); }).sort(wlKo).map(function(e){ return wlEsc(e.name); });
   var d=c.mp-as;
   var h='<div id="wlCmpOv" style="position:fixed;inset:0;z-index:500;background:rgba(15,36,72,.45);display:flex;align-items:center;justify-content:center;padding:18px"><div style="background:#fff;border-radius:16px;padding:16px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
    +'<div style="font-weight:800;font-size:16px;color:#b91c1c">⚠ 인력현황과 작업일지 인원이 맞지 않습니다</div>'
@@ -8359,6 +8478,9 @@ function wlCmpConfirm(){
 }
 
 // ─ 저장 ─
+// DB 일괄저장용: 모든 줄의 항목(key)을 똑같이 맞춤 (값 없으면 null)
+var WL_BUILD='1003-0830';
+function wlNormRows(rows){ var ks={}; rows.forEach(function(r){ Object.keys(r).forEach(function(k){ ks[k]=1; }); }); return rows.map(function(r){ var o={}; Object.keys(ks).forEach(function(k){ o[k]=(r[k]===undefined?null:r[k]); }); return o; }); }
 async function wlSaveCore(status){
   if(!wlCanWrite()){ toast('⚠️ 저장 권한이 없습니다'); return; }
   if(WL.busy) return; WL.busy=true;
@@ -8369,21 +8491,33 @@ async function wlSaveCore(status){
       total_n:WL.tot.n,total_m:WL.tot.m,total_f:WL.tot.f,no_gender:WL.tot.x,opts:WL.opts||{},opt_txt:WL.optTxt||{},mismatch_note:WL.mmNote||null,mismatch_mp:(WL.mmNote&&WL.cmp&&WL.cmp.mp!=null)?WL.cmp.mp:null,mismatch_wl:WL.mmNote?wlAssignedCount():null,
       confirmed_by:status==='confirmed'?me.name:null,confirmed_at:status==='confirmed'?now:null};
     var r1=await sb.from('worklog_daily').upsert(body,{onConflict:'log_date,team_no'}); if(r1.error) throw r1.error;
+    // 저장 실패 시 되돌리기 위해 기존 배치를 미리 백업 (삭제 후 입력 실패하면 데이터가 비는 것을 방지)
+    var bk={};
+    ['worklog_staff','worklog_absence','worklog_report'].forEach(function(){});
+    for(var bi=0;bi<3;bi++){ var bt=['worklog_staff','worklog_absence','worklog_report'][bi]; var bq=await sb.from(bt).select('*').eq('log_date',D).eq('team_no',T); if(bq.error) throw bq.error; bk[bt]=(bq.data||[]).map(function(r){ var o={}; Object.keys(r).forEach(function(k){ if(k!=='id') o[k]=r[k]; }); return o; }); }
+    WL._bk=bk;
     var d1=await sb.from('worklog_staff').delete().eq('log_date',D).eq('team_no',T); if(d1.error) throw d1.error;
     var sr=[]; wlTplR().forEach(function(z){ (WL.staff[z.id]||[]).forEach(function(id,i){ var e=WL.emps.filter(function(x){return x.emp_no===id;})[0]; if(!e) return;
-      sr.push({log_date:D,team_no:T,zone_id:z.id,emp_no:id,sort_no:i,name:e.name,group_name:e.group_name||null,gender:wlGen(id)||null}); }); });
-    if(sr.length){ var i1=await sb.from('worklog_staff').insert(sr); if(i1.error) throw i1.error; }
+      sr.push({log_date:D,team_no:T,zone_id:z.id,emp_no:id,sort_no:i,name:e.name,group_name:e.group_name||null,gender:wlGen(id)||null,is_support:false}); }); });
+    wlTplR().forEach(function(z){ wlSupIds(z.id).forEach(function(id,i){ var e=WL.emps.filter(function(x){return x.emp_no===id;})[0]; if(!e) return;
+      sr.push({log_date:D,team_no:T,zone_id:z.id,emp_no:id,sort_no:100+i,name:e.name,group_name:e.group_name||null,gender:wlGen(id)||null,is_support:true}); }); });
+    if(sr.length){ var i1=await sb.from('worklog_staff').insert(wlNormRows(sr)); if(i1.error) throw i1.error; }
     var d2=await sb.from('worklog_absence').delete().eq('log_date',D).eq('team_no',T); if(d2.error) throw d2.error;
     var ar=[], seen={};
     WL.absList.forEach(function(a){ var e=WL.emps.filter(function(x){return x.emp_no===a.emp_no;})[0]||{}; seen[a.emp_no]=1;
       ar.push({log_date:D,team_no:T,emp_no:a.emp_no,reason:a.reason,updated_by:me.name,name:a.name,group_name:e.group_name||null,gender:a.gender||null,auto:a.auto}); });
     WL.emps.forEach(function(e){ if(WL.absMap[e.emp_no]==='근무'&&!seen[e.emp_no]) ar.push({log_date:D,team_no:T,emp_no:e.emp_no,reason:'근무',updated_by:me.name,name:e.name,group_name:e.group_name||null,gender:wlGen(e.emp_no)||null,auto:false}); });
-    if(ar.length){ var i2=await sb.from('worklog_absence').insert(ar); if(i2.error) throw i2.error; }
+    if(ar.length){ var i2=await sb.from('worklog_absence').insert(wlNormRows(ar)); if(i2.error) throw i2.error; }
     var d3=await sb.from('worklog_report').delete().eq('log_date',D).eq('team_no',T); if(d3.error) throw d3.error;
-    if(WL.reports.length){ var i3=await sb.from('worklog_report').insert(WL.reports.map(function(x){ return {log_date:D,team_no:T,reporter:x.reporter||null,category:x.category,report_time:x.time||null,place_content:x.place||null,report_to:x.to||null,receiver:x.receiver||null}; })); if(i3.error) throw i3.error; }
-    WL.status=status; WL.confirmedBy=status==='confirmed'?me.name:''; WL.dirty=false;
+    if(WL.reports.length){ var i3=await sb.from('worklog_report').insert(wlNormRows(WL.reports.map(function(x){ return {log_date:D,team_no:T,reporter:x.reporter||null,category:x.category,report_time:x.time||null,place_content:x.place||null,report_to:x.to||null,receiver:x.receiver||null}; }))); if(i3.error) throw i3.error; }
+    WL.status=status; WL.confirmedBy=status==='confirmed'?me.name:''; WL.dirty=false; WL._bk=null;
     toast(status==='confirmed'?'✅ 확정 저장되었습니다':'💾 임시저장되었습니다');
-  }catch(e){ console.error(e); toast('⚠️ 저장 실패: '+(e.message||e)); }
+  }catch(e){ console.error(e); var rb='';
+    try{ if(WL._bk){ var bk2=WL._bk; WL._bk=null;
+      for(var ri=0;ri<3;ri++){ var rt=['worklog_staff','worklog_absence','worklog_report'][ri]; var cur=await sb.from(rt).select('emp_no,log_date').eq('log_date',D).eq('team_no',T);
+        if(!cur.error && !(cur.data||[]).length && bk2[rt] && bk2[rt].length){ var rr=await sb.from(rt).insert(wlNormRows(bk2[rt])); if(rr.error) rb=' (원래 데이터 복구 실패)'; else rb=rb||' (기존 데이터는 그대로 유지됨)'; } }
+    } }catch(e2){ rb=' (복구 확인 필요)'; }
+    toast('⚠️ 저장 실패['+WL_BUILD+']: '+(e.message||e)+rb); }
   WL.busy=false; wlRender();
 }
 
@@ -8514,7 +8648,7 @@ async function wlSaveTpl(){
 function wlViewGender(){
   var h='<div class="wl-bar"><button class="wl-btn" onclick="wlView(\'main\')">← 취소</button><button class="wl-btn pri" onclick="wlSaveGender()">💾 성별 저장</button></div>';
   h+='<div class="wl-sec"><h3><span>'+WL.team+' 성별 설정</span></h3><div style="font-size:12.5px;color:var(--g5);margin-bottom:8px;line-height:1.55">카드를 누를 때마다 <b>남 → 여 → 미정</b> 순서로 바뀝니다. 한 번 저장하면 계속 유지됩니다.</div>';
-  var list=WL.emps.slice().sort(wlKo), gs={}; list.forEach(function(e){ var g=e.position==='팀장'?'팀장':(e.group_name||'기타'); (gs[g]=gs[g]||[]).push(e); });
+  var list=((WL.snapshot&&WL.gEmps)?WL.gEmps:WL.emps).slice().sort(wlKo), gs={}; list.forEach(function(e){ var g=e.position==='팀장'?'팀장':(e.group_name||'기타'); (gs[g]=gs[g]||[]).push(e); });
   Object.keys(gs).sort(function(a,b){ return wlGrpKey(a)-wlGrpKey(b); }).forEach(function(g){
     h+='<div class="wl-gh">'+g+'</div><div class="wl-grid">';
     gs[g].forEach(function(e){ var gv=(WL.genderEdit[e.emp_no]!==undefined?WL.genderEdit[e.emp_no]:wlGen(e.emp_no))||'';
@@ -8522,22 +8656,39 @@ function wlViewGender(){
     h+='</div>'; });
   return h+'</div>';
 }
+async function wlGenderOpen(){
+  if(!wlCanGender()) return;
+  if(WL.snapshot){
+    try{
+      var he=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,group_name,team').eq('team',WL.team); });
+      WL.gEmps=he.data||[];
+      var ids=WL.gEmps.map(function(e){return e.emp_no;});
+      WL.gender={};
+      if(ids.length){ var gx=await sb.from('worklog_emp_ext').select('emp_no,gender').in('emp_no',ids); (gx.data||[]).forEach(function(g){ WL.gender[g.emp_no]=g.gender; }); }
+    }catch(e){ toast('⚠️ 직원 정보를 불러오지 못했습니다'); return; }
+  }
+  WL.genderEdit={};
+  wlView('gender');
+}
 function wlGenderTap(emp){ var cur=(WL.genderEdit[emp]!==undefined?WL.genderEdit[emp]:wlGen(emp))||''; WL.genderEdit[emp]=cur===''?'남':cur==='남'?'여':''; wlRenderKeepScroll(); }
 async function wlSaveGender(){
-  if(!wlIsAdm()) return;
+  if(!wlCanGender()) return;
   try{
     var up=[], del=[];
     Object.keys(WL.genderEdit).forEach(function(k){ var v=WL.genderEdit[k]; if((wlGen(k)||'')===v) return; if(v) up.push({emp_no:k,gender:v,updated_by:me.name,updated_at:new Date().toISOString()}); else del.push(k); });
     if(up.length){ var r=await sb.from('worklog_emp_ext').upsert(up,{onConflict:'emp_no'}); if(r.error) throw r.error; }
     for(var i=0;i<del.length;i++){ var d=await sb.from('worklog_emp_ext').delete().eq('emp_no',del[i]); if(d.error) throw d.error; }
     Object.keys(WL.genderEdit).forEach(function(k){ if(WL.genderEdit[k]) WL.gender[k]=WL.genderEdit[k]; else delete WL.gender[k]; });
-    WL.genderEdit={}; wlRecalc(); toast('✅ 성별을 저장했습니다 ('+(up.length+del.length)+'건)'); WL.view='main'; wlRender();
+    WL.genderEdit={}; if(!WL.snapshot) wlRecalc(); toast('✅ 성별을 저장했습니다 ('+(up.length+del.length)+'건)'+(WL.snapshot?' · 저장된 일지 숫자는 수정 후 다시 저장해야 바뀝니다':'')); WL.view='main'; wlRender();
   }catch(e){ console.error(e); toast('⚠️ 저장 실패: '+(e.message||e)); }
 }
 
 // ─ 일일 보고서(인쇄·PDF) / 엑셀 ─
 function wlZoneNames(z){
   return (WL.staff[z.id]||[]).map(function(id){ var e=WL.emps.filter(function(x){return x.emp_no===id;})[0]; return (e?e.name:(WL.snapNames&&WL.snapNames[id])||id)+((WL.jwMap&&WL.jwMap[id])?'(공동)':''); });
+}
+function wlZoneSupNames(z){
+  return wlSupIds(z.id).map(function(id){ var e=WL.emps.filter(function(x){return x.emp_no===id;})[0]; return (e?e.name:(WL.snapNames&&WL.snapNames[id])||id)+'(겸)'; });
 }
 function wlAbsNames(r){
   var a=WL.absList.filter(function(x){return x.reason===r;});
@@ -8561,7 +8712,7 @@ function wlViewReport(){
   t+='</table><div class="wl-rh">2. 금일 작업내용</div><table class="wl-rtb"><tr><th style="width:60%">작업내용</th><th>근무자</th></tr>';
   var last=null;
   wlTplR().forEach(function(z){ if(z.section!==last){ last=z.section; if(z.section) t+='<tr><td colspan="2" class="l sec">■ '+wlEsc(z.section)+'</td></tr>'; }
-    var n=wlZoneNames(z); t+='<tr><td class="l">'+wlEsc(z.zone_text)+'</td><td class="l">'+wlEsc(n.join(' '))+(n.length?' <small>('+n.length+')</small>':'')+'</td></tr>'; });
+    var n=wlZoneNames(z), sp=wlZoneSupNames(z); t+='<tr><td class="l">'+wlEsc(z.zone_text)+'</td><td class="l">'+wlEsc(n.concat(sp).join(' '))+(n.length?' <small>('+n.length+')</small>':'')+'</td></tr>'; });
   t+='</table>';
   var chk=function(title,items,map){ var s='<div class="wl-rh">'+title+'</div><table class="wl-rtb"><tr><th style="width:28px">No</th><th>점검 항목</th><th style="width:42px">실시</th><th style="width:48px">미실시</th></tr>';
     items.forEach(function(x,i){ var on=map[String(i+1)]!==false; s+='<tr><td>'+(i+1)+'</td><td class="l">'+wlEsc(x)+'</td><td>'+(on?'√':'')+'</td><td>'+(on?'':'√')+'</td></tr>'; }); return s+'</table>'; };
@@ -8598,7 +8749,7 @@ async function wlExcel(){
   push(['','','','','',''],'x');
   push(['2. 금일 작업내용','','','','',''],'h'); M.push({s:{r:R.length-1,c:0},e:{r:R.length-1,c:5}});
   push(['구분','작업내용','','','근무자','인원'],'th'); M.push({s:{r:R.length-1,c:1},e:{r:R.length-1,c:3}});
-  wlTplR().forEach(function(z){ var n=wlZoneNames(z); push([z.section||'',z.zone_text,'','',n.join(' '),n.length||''],'tdl'); M.push({s:{r:R.length-1,c:1},e:{r:R.length-1,c:3}}); });
+  wlTplR().forEach(function(z){ var n=wlZoneNames(z), sp=wlZoneSupNames(z); push([z.section||'',z.zone_text,'','',n.concat(sp).join(' '),n.length||''],'tdl'); M.push({s:{r:R.length-1,c:1},e:{r:R.length-1,c:3}}); });
   push(['','','','','',''],'x');
   var chk=function(title,items,map){ push([title,'','','','',''],'h'); M.push({s:{r:R.length-1,c:0},e:{r:R.length-1,c:5}});
     push(['No','점검 항목','','','실시','미실시'],'th'); M.push({s:{r:R.length-1,c:1},e:{r:R.length-1,c:3}});
@@ -8813,8 +8964,10 @@ async function xlTplDownload(){
   try{
     var ids=(WL.emps||[]).map(function(e){return e.emp_no;}), byId={}; (WL.emps||[]).forEach(function(e){ byId[e.emp_no]=e; });
     var dates=[]; for(var di=0;di<7;di++) dates.push(wlShift(start,di));
-    var qs={}; dates.forEach(function(dd){ qs[wlQuarter(dd)]=1; });
+    await wfLoadQStart();
+    var qs={}; dates.forEach(function(dd){ qs[wlQuarter(dd)]=1; qs[wfEffQuarter(dd)]=1; });
     var fo=[]; for(var q in qs){ var rq=await sb.from('wf_fixed_off').select('emp_no,off_day1,off_day2,quarter').eq('quarter',q).in('emp_no',ids); fo=fo.concat(rq.data||[]); }
+    var foBy={}; fo.forEach(function(x){ (foBy[x.emp_no]=foBy[x.emp_no]||{})[x.quarter]=x; });
     var lv=[], el=[];
     var lr=await sb.from('wf_leave').select('emp_no,leave_type,start_date,end_date').lte('start_date',dates[6]).gte('end_date',dates[0]).in('emp_no',ids); lv=lr.data||[];
     try{ var er=await sb.from('erp_leave').select('emp_no,reason,start_date,end_date').lte('start_date',dates[6]).gte('end_date',dates[0]).in('emp_no',ids); el=er.data||[]; }catch(e2){}
@@ -8824,7 +8977,7 @@ async function xlTplDownload(){
       var dw=wlDow(dd);
       el.forEach(function(x){ if(x.start_date<=dd&&x.end_date>=dd) put(x.emp_no,grpOf(x.reason),(x.reason==='전반'||x.reason==='후반')?x.reason:''); });
       lv.forEach(function(x){ if(x.start_date<=dd&&x.end_date>=dd) put(x.emp_no,'산재/휴직'); });
-      fo.forEach(function(x){ if(x.quarter===wlQuarter(dd)&&(x.off_day1===dw||x.off_day2===dw)) put(x.emp_no,'휴무'); });
+      Object.keys(foBy).forEach(function(id){ var x=wfPickOffRow(foBy[id],dd); if(x&&(x.off_day1===dw||x.off_day2===dw)) put(x.emp_no,'휴무'); });
       var o={}; Object.keys(m).forEach(function(id){ var e=byId[id]; if(!e) return; var r=m[id]; o[r]=o[r]||{'남':[],'여':[]}; o[r][WL.gender[id]==='남'?'남':'여'].push(e.name+(subM[id]?'('+subM[id]+')':'')); });
       OFF[dd]=o;
     });
@@ -8947,10 +9100,10 @@ async function xlApply(){
       var d1=await sb.from('worklog_staff').delete().eq('log_date',D).eq('team_no',T); if(d1.error) throw d1.error;
       var sr=[]; Object.keys(d.staff).forEach(function(zid){ d.staff[zid].forEach(function(id,k){ var e=XL.ctx.emps.filter(function(x){return x.emp_no===id;})[0]; if(!e) return;
         sr.push({log_date:D,team_no:T,zone_id:Number(zid),emp_no:id,sort_no:k,name:e.name,group_name:e.group_name||null,gender:XL.ctx.gen[id]||null}); }); });
-      if(sr.length){ var i1=await sb.from('worklog_staff').insert(sr); if(i1.error) throw i1.error; }
+      if(sr.length){ var i1=await sb.from('worklog_staff').insert(wlNormRows(sr)); if(i1.error) throw i1.error; }
       var d2=await sb.from('worklog_absence').delete().eq('log_date',D).eq('team_no',T); if(d2.error) throw d2.error;
       var ar=d.abs.map(function(a){ return {log_date:D,team_no:T,emp_no:a.emp_no,reason:a.reason,updated_by:me.name,name:a.name,group_name:a.group_name,gender:a.gender,auto:false}; });
-      if(ar.length){ var i2=await sb.from('worklog_absence').insert(ar); if(i2.error) throw i2.error; }
+      if(ar.length){ var i2=await sb.from('worklog_absence').insert(wlNormRows(ar)); if(i2.error) throw i2.error; }
       ok++;
     }catch(e){ fail.push(D+' '+((e&&e.message)||e)); }
   }
@@ -9008,11 +9161,12 @@ async function wlBoardLoad(){
 }
 function wlBoardDate(n){ WL.date=n===0?kstDate():wlShift(WL.date,n); wlBoardLoad(); }
 function wlBoardSet(v){ if(v){ WL.date=v; wlBoardLoad(); } }
-function wlOpenTeam(t){ WL.team=t; WL.view='main'; WL.adminRO=true; WL.editOn=false; wlLoad(); }
+function wlOpenTeam(t){ WP.fromBoard=false; ERP.fromBoard=false; WL.team=t; WL.view='main'; WL.adminRO=true; WL.editOn=false; wlLoad(); }
 function wlEditOn(){ WL.editOn=true; wlLoad(); }
 function wlViewBoard(){
   var h='<div class="wl-bar"><button class="wl-nav" onclick="wlBoardDate(-1)">◀</button><input type="date" value="'+WL.date+'" onchange="wlBoardSet(this.value)"><button class="wl-nav" onclick="wlBoardDate(1)">▶</button>'
    +'<span style="font-size:13px;font-weight:800;color:var(--g6)">('+wlDow(WL.date)+')</span><button class="wl-btn sm" onclick="wlBoardDate(0)">오늘</button><button class="wl-btn sm" onclick="wlBoardLoad()">새로고침</button></div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 13px 0"><button class="wl-btn pri" style="flex:1;min-width:120px" onclick="WP.fromBoard=true;wlPOpen()">📅 주간·월간 집계</button><button class="wl-btn pri" style="flex:1;min-width:120px" onclick="wlAnOpen()">📊 분석 리포트</button><button class="wl-btn" style="flex:1;min-width:120px" onclick="ERP.fromBoard=true;erpOpen()">📥 ERP 근태 업로드</button></div>';
   if(BD.loading) return h+'<div style="text-align:center;padding:40px;color:var(--g3)">불러오는 중...</div>';
   if(BD.err) return h+'<div class="wl-warn">⚠️ '+wlEsc(BD.err)+'</div>';
   var cf=0, dr=0, no=0; BD.rows.forEach(function(r){ if(r.status==='confirmed') cf++; else if(r.status==='draft') dr++; else no++; });
@@ -9033,7 +9187,7 @@ function wlViewBoard(){
   return h;
 }
 function wlViewErp(){
-  var h='<div class="wl-bar"><button class="wl-btn" onclick="WL.view=\'main\';wlLoad()">← 작업일지</button></div>';
+  var h='<div class="wl-bar"><button class="wl-btn" onclick="'+(ERP.fromBoard?'wlBoardOpen()':'WL.view=\'main\';wlLoad()')+'">'+(ERP.fromBoard?'← 팀 현황판':'← 작업일지')+'</button></div>';
   h+='<div class="wl-sec"><h3>📥 ERP 근태 신청현황 업로드</h3>'
    +'<div class="wl-abs-line">회사 ERP에서 받은 <b>근태 신청현황 엑셀</b>을 그대로 올리세요.<br>· <b>승인</b> → 반영 · <b>신청</b> → 미반영 · <b>승인취소</b> → 제외<br>· 팀장·조장·운영팀은 <b>관리자 출근 현황</b>에, 전체 직원은 <b>현장작업일지</b> 자동 초안에 표시됩니다.<br>· 연락처 등 개인정보는 저장하지 않습니다.</div>'
    +'<div style="margin-top:10px"><input type="file" accept=".xlsx,.xls" onchange="erpPick(this)"'+(ERP.busy?' disabled':'')+'></div></div>';
@@ -9094,7 +9248,7 @@ function wlAvg(v,c){ return c?(Math.round(v/c*10)/10):'-'; }
 function wlPTitle(){ var per=wlPeriod(); return WP.mode==='week'?(per.from+' ~ '+per.to+' (주간)'):(per.from.slice(0,7).replace('-','년 ')+'월 (월간)'); }
 function wlViewPeriod(){
   var per=wlPeriod();
-  var h='<div class="wl-bar no-print"><button class="wl-btn" onclick="wlView(\'main\')">← 일지로</button>'
+  var h='<div class="wl-bar no-print"><button class="wl-btn" onclick="'+(WP.fromBoard?'wlBoardOpen()':'wlView(\'main\')')+'">'+(WP.fromBoard?'← 팀 현황판':'← 일지로')+'</button>'
    +'<div class="wl-chip'+(WP.mode==='week'?' on':'')+'" onclick="WP.mode=\'week\';wlPLoad()">주간</div><div class="wl-chip'+(WP.mode==='month'?' on':'')+'" onclick="WP.mode=\'month\';wlPLoad()">월간</div>'
    +'<div class="wl-chip'+(WP.scope==='team'?' on':'')+'" onclick="WP.scope=\'team\';wlPLoad()">'+WL.team+' 일자별</div><div class="wl-chip'+(WP.scope==='compare'?' on':'')+'" onclick="WP.scope=\'compare\';wlPLoad()">팀 비교</div></div>'
    +'<div class="wl-bar no-print"><button class="wl-nav" onclick="wlPNav(-1)">◀</button><b style="font-size:14px">'+wlPTitle()+'</b><button class="wl-nav" onclick="wlPNav(1)">▶</button>'
@@ -9167,6 +9321,175 @@ async function wlPExcel(){
     ws[a].s=st; }
   var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,WP.mode==='week'?'주간집계':'월간집계');
   try{ await dlSaveWorkbook(wb,(team?'현장작업일지_'+WL.team:'현장작업일지_팀비교')+'_'+(WP.mode==='week'?'주간_':'월간_')+wlPeriod().from+'.xlsx'); toast('📊 엑셀을 내려받았습니다'); }
+  catch(e){ console.error(e); toast('⚠️ 엑셀 생성 실패: '+(e.message||e)); }
+}
+
+// ══ 현장작업일지 분석 리포트 (관리자·마스터) — 주간/월간 요약·추이·팀 비교·주의 팀 ══
+var AN={mode:'week',loading:false,err:'',cur:null,prev:null};
+function wlAnOpen(){ if(!wlIsAdm()){ toast('⚠️ 관리자만 볼 수 있습니다'); return; } WL.view='an'; wlAnLoad(); }
+function wlAnRange(mode,date){
+  var p=date.split('-').map(Number);
+  if(mode==='week'){ var dw=new Date(Date.UTC(p[0],p[1]-1,p[2])).getUTCDay(); var mon=wlShift(date,-((dw+6)%7)); return {from:mon,to:wlShift(mon,6)}; }
+  var last=new Date(Date.UTC(p[0],p[1],0)).getUTCDate();
+  return {from:p[0]+'-'+wlPad(p[1])+'-01',to:p[0]+'-'+wlPad(p[1])+'-'+wlPad(last)};
+}
+function wlAnPrevRange(mode,cur){
+  if(mode==='week') return {from:wlShift(cur.from,-7),to:wlShift(cur.from,-1)};
+  return wlAnRange('month',wlShift(cur.from,-1));
+}
+function wlAnNav(n){
+  if(AN.mode==='week') WL.date=wlShift(WL.date,7*n);
+  else{ var p=WL.date.split('-').map(Number); var t=new Date(Date.UTC(p[0],p[1]-1+n,1)); WL.date=t.getUTCFullYear()+'-'+wlPad(t.getUTCMonth()+1)+'-01'; }
+  wlAnLoad();
+}
+function wlAnSetMode(m){ AN.mode=m; wlAnLoad(); }
+async function wlAnLoad(){
+  AN.loading=true; AN.err=''; WL.view='an'; wlRender();
+  try{
+    var cur=wlAnRange(AN.mode,WL.date), prev=wlAnPrevRange(AN.mode,cur);
+    var rd=await msFetchAll(function(){ return sb.from('worklog_daily').select('log_date,team_no,tbm,safety,special_note,status,total_n,total_m,total_f,no_gender').gte('log_date',prev.from).lte('log_date',cur.to).order('log_date'); });
+    var ra=await msFetchAll(function(){ return sb.from('worklog_absence').select('log_date,team_no,reason').gte('log_date',prev.from).lte('log_date',cur.to).order('log_date'); });
+    var rr=await msFetchAll(function(){ return sb.from('worklog_report').select('log_date,team_no,category,reporter,report_time,place_content').gte('log_date',prev.from).lte('log_date',cur.to).order('log_date'); });
+    if(rd.error||ra.error||rr.error) throw (rd.error||ra.error||rr.error);
+    AN.cur=wlAnCalc(cur,rd.data||[],ra.data||[],rr.data||[]);
+    AN.prev=wlAnCalc(prev,rd.data||[],ra.data||[],rr.data||[]);
+  }catch(e){ console.error(e); AN.err=(e&&e.message)||String(e); }
+  AN.loading=false; wlRender();
+}
+// 기간 안의 일지를 팀별·일자별로 집계 (오늘 이후 날짜는 '미작성'으로 세지 않음)
+function wlAnCalc(per,daily,abs,reps){
+  var today=kstDate(), days=[]; for(var d=per.from; d<=per.to; d=wlShift(d,1)) days.push(d);
+  var pastDays=days.filter(function(d){ return d<=today; });
+  var inR=function(x){ return x.log_date>=per.from&&x.log_date<=per.to; };
+  var absMap={};
+  abs.filter(inR).forEach(function(r){ if(r.reason==='근무') return; var k=r.team_no+'|'+r.log_date; var o=absMap[k]=absMap[k]||{h:0,y:0,b:0,s:0,e:0};
+    if(r.reason==='휴무') o.h++; else if(r.reason==='연차') o.y++; else if(wlHalf(r.reason)) o.b++; else if(r.reason==='산재'||r.reason==='휴직') o.s++; else o.e++; });
+  var teams=[], byDay={}, all={cells:0,n:0,cur:0,sub:0,h:0,y:0,b:0,s:0,e:0,tbm:0,safe:0,m:0,f:0,x:0,reps:0,notes:[]};
+  for(var i=1;i<=10;i++){
+    var T=i+'팀', t={team:T,cnt:0,n:0,cur:0,sub:0,h:0,y:0,b:0,s:0,e:0,tbm:0,safe:0,reps:0,m:0,f:0};
+    daily.filter(function(r){ return r.team_no===T&&inR(r); }).forEach(function(r){
+      var a=absMap[T+'|'+r.log_date]||{h:0,y:0,b:0,s:0,e:0}, sub=a.h+a.y+a.s+a.e, n=r.total_n||0;
+      t.cnt++; t.n+=n; t.sub+=sub; t.cur+=n-sub; t.h+=a.h; t.y+=a.y; t.b+=a.b; t.s+=a.s; t.e+=a.e;
+      t.tbm+=wlRateOf(r.tbm,6); t.safe+=wlRateOf(r.safety,7); t.m+=r.total_m||0; t.f+=r.total_f||0; all.x+=r.no_gender||0;
+      var bd=byDay[r.log_date]=byDay[r.log_date]||{n:0,cur:0,sub:0,c:0}; bd.n+=n; bd.cur+=n-sub; bd.sub+=sub; bd.c++;
+      var sn=(r.special_note||'').trim(); if(sn&&sn!=='안전사고 0건, 특이사항 없음') all.notes.push([r.log_date,T,'특이사항',sn]);
+    });
+    reps.filter(function(r){ return r.team_no===T&&inR(r); }).forEach(function(r){ t.reps++; all.notes.push([r.log_date,T,r.category||'신고',(r.report_time?r.report_time+' ':'')+(r.place_content||'')+(r.reporter?' ('+r.reporter+')':'')]); });
+    t.miss=pastDays.length-t.cnt; if(t.miss<0) t.miss=0;
+    all.cells+=t.cnt; ['n','cur','sub','h','y','b','s','e','tbm','safe','m','f','reps'].forEach(function(k){ all[k]+=t[k]; });
+    teams.push(t);
+  }
+  all.expected=pastDays.length*10;
+  all.notes.sort(function(a,b){ return a[0]<b[0]?-1:a[0]>b[0]?1:0; });
+  return {per:per,days:days,pastN:pastDays.length,teams:teams,all:all,byDay:byDay};
+}
+function wlAnAvg(v,c,dec){ if(!c) return null; var k=Math.pow(10,dec==null?1:dec); return Math.round(v/c*k)/k; }
+function wlAnDelta(cur,prev,unit,badUp){
+  if(cur==null||prev==null) return '<span style="color:#9aa3b5">전 기간 자료 없음</span>';
+  var d=Math.round((cur-prev)*10)/10; if(d===0) return '<span style="color:#9aa3b5">전 기간과 같음</span>';
+  var up=d>0, bad=badUp?up:!up;
+  return '<span style="color:'+(bad?'#C0485F':'#2E8B72')+';font-weight:800">'+(up?'▲':'▼')+' '+Math.abs(d)+unit+'</span> <span style="color:#9aa3b5">전 '+(AN.mode==='week'?'주':'월')+' 대비</span>';
+}
+function wlAnCard(ico,label,val,unit,delta,bg){
+  return '<div style="background:'+bg+';border-radius:16px;padding:10px 10px;min-width:0"><div style="font-size:11px;color:#5B6472;font-weight:700;word-break:keep-all">'+ico+' '+label+'</div>'
+    +'<div style="font-size:21px;font-weight:900;color:#3F4A75;margin:3px 0 1px">'+(val==null?'-':val)+'<span style="font-size:12px;font-weight:700;margin-left:2px">'+(val==null?'':unit)+'</span></div>'
+    +'<div style="font-size:11px">'+delta+'</div></div>';
+}
+function wlAnTitle(){ var p=AN.cur.per; return AN.mode==='week'?(p.from+' ~ '+p.to+' (주간)'):(p.from.slice(0,7).replace('-','년 ')+'월 (월간)'); }
+function wlAnStats(){
+  var c=AN.cur.all, p=AN.prev.all, cc=c.cells, pc=p.cells;
+  return {
+    wr:c.expected?Math.round(cc/c.expected*100):null, pwr:p.expected?Math.round(pc/p.expected*100):null,
+    cur:wlAnAvg(c.cur,cc), pcur:wlAnAvg(p.cur,pc),
+    sub:wlAnAvg(c.sub,cc), psub:wlAnAvg(p.sub,pc),
+    tbm:wlAnAvg(c.tbm,cc,0), ptbm:wlAnAvg(p.tbm,pc,0),
+    safe:wlAnAvg(c.safe,cc,0), psafe:wlAnAvg(p.safe,pc,0),
+    m:wlAnAvg(c.m,cc), f:wlAnAvg(c.f,cc), pm:wlAnAvg(p.m,pc), pf:wlAnAvg(p.f,pc)
+  };
+}
+function wlAnDayChart(){
+  var A=AN.cur, max=1; A.days.forEach(function(d){ var b=A.byDay[d]; if(b&&b.n>max) max=b.n; });
+  var H=110, month=(AN.mode==='month');
+  var cols=A.days.map(function(d,i){
+    var b=A.byDay[d], dw=wlDow(d), wk=(dw==='토'||dw==='일');
+    var curH=b?Math.round(b.cur/max*H):0, subH=b?Math.round(b.sub/max*H):0;
+    var lbl=month?((i%5===0||i===A.days.length-1)?parseInt(d.slice(8),10):''):(parseInt(d.slice(5,7),10)+'/'+parseInt(d.slice(8),10)+'<br>'+dw);
+    return '<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center">'
+      +'<div style="font-size:'+(month?9:10.5)+'px;font-weight:800;color:#5B6472;height:14px">'+(b&&!month?b.cur:'')+'</div>'
+      +'<div title="'+d+(b?(' 현원 '+b.cur+' · 휴무·연차 '+b.sub+' · 작성 '+b.c+'팀'):' 작성 없음')+'" style="width:100%;max-width:'+(month?12:34)+'px;height:'+H+'px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:'+(month?4:9)+'px;overflow:hidden;background:'+(wk?'#FBF3E9':'#F3F5FA')+'">'
+        +(subH?'<div style="height:'+subH+'px;background:#FFC58A"></div>':'')+(curH?'<div style="height:'+curH+'px;background:#9ADBC8"></div>':'')+'</div>'
+      +'<div style="font-size:'+(month?9:10)+'px;color:#8A93A6;margin-top:4px;line-height:1.25;text-align:center;height:24px">'+lbl+'</div></div>';
+  }).join('');
+  return '<div style="display:flex;gap:'+(month?2:5)+'px;align-items:flex-end">'+cols+'</div>';
+}
+function wlAnTeamRows(){
+  var A=AN.cur, rows=A.teams.map(function(t){
+    var c=t.cnt, tb=wlAnAvg(t.tbm,c,0), sf=wlAnAvg(t.safe,c,0);
+    return {team:t.team,cnt:c,miss:t.miss,cur:wlAnAvg(t.cur,c),sub:t.h+t.y+t.s+t.e,half:t.b,tbm:tb,safe:sf,reps:t.reps,score:c?((tb+sf)/2):-1,m:wlAnAvg(t.m,c),f:wlAnAvg(t.f,c)};
+  });
+  var thr=Math.max(2,Math.ceil(A.pastN*0.2));
+  rows.forEach(function(r){ r.flags=[]; if(r.miss>=thr) r.flags.push('미작성 '+r.miss+'일'); if(r.cnt&&r.tbm<80) r.flags.push('TBM '+r.tbm+'%'); if(r.cnt&&r.safe<80) r.flags.push('안전일지 '+r.safe+'%'); });
+  rows.sort(function(a,b){ return b.score-a.score||b.cnt-a.cnt; });
+  rows.forEach(function(r,i){ r.rank=i+1; });
+  return rows;
+}
+function wlAnHtml(){
+  var A=AN.cur, S=wlAnStats(), c=A.all, rows=wlAnTeamRows();
+  var h='<div class="wl-rt" style="font-size:19px">환경미화 현장작업일지 '+(AN.mode==='week'?'주간':'월간')+' 분석 리포트</div><div class="wl-rd">'+wlAnTitle()+' · 저장된 일지 기준</div>';
+  h+='<div style="background:linear-gradient(135deg,#E6EEFF,#F1E8FF);border-radius:16px;padding:12px 14px;margin:6px 0 10px;color:#3F4A75;font-size:12.5px;line-height:1.7">'
+    +'기간 내 <b>10팀 × '+A.pastN+'일 = '+c.expected+'건</b> 중 <b>'+c.cells+'건</b> 작성'+(c.expected?(' ('+S.wr+'%)'):'')+(c.x?' · 성별 미지정 인원 '+c.x+'명 포함':'')+'</div>';
+  h+='<div class="wl-rh">1. 한눈에 보기</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:7px">'
+    +wlAnCard('📝','일지 작성률',S.wr,'%',wlAnDelta(S.wr,S.pwr,'%p',false),'#E6EEFF')
+    +wlAnCard('👥','팀당 평균 현원',S.cur,'명',wlAnDelta(S.cur,S.pcur,'명',false),'#E4F6F0')
+    +wlAnCard('🏖','팀당 평균 휴무·연차',S.sub,'명',wlAnDelta(S.sub,S.psub,'명',true),'#FFF1E2')
+    +wlAnCard('✅','TBM 이행률',S.tbm,'%',wlAnDelta(S.tbm,S.ptbm,'%p',false),'#F1E8FF')
+    +wlAnCard('🦺','안전일지 이행률',S.safe,'%',wlAnDelta(S.safe,S.psafe,'%p',false),'#E8F4FB')
+    +wlAnCard('📣','신고 건수',c.reps,'건',wlAnDelta(c.reps,AN.prev.all.reps,'건',true),'#FDE9ED')
+    +wlAnCard('♂','팀당 평균 남자',S.m,'명',wlAnDelta(S.m,S.pm,'명',false),'#EEF0FC')
+    +wlAnCard('♀','팀당 평균 여자',S.f,'명',wlAnDelta(S.f,S.pf,'명',false),'#FDEEF4')
+  +'</div>';
+  h+='<div style="font-size:11px;color:#666;margin-top:5px">※ 팀당 평균 = 작성된 일지 기준 · 휴무·연차 = 휴무+연차+산재/휴직+기타 (반차 제외) · 현원 = 총원 − 휴무·연차</div>';
+  h+='<div class="wl-rh">2. 일자별 추이 <span style="font-weight:600;font-size:11px;color:#666">(10팀 합계 · 초록=현원 · 주황=휴무·연차)</span></div>'+wlAnDayChart();
+  h+='<div class="wl-rh">3. 팀별 비교 <span style="font-weight:600;font-size:11px;color:#666">(종합 이행률 = TBM·안전일지 평균, 높은 순)</span></div>';
+  h+='<div class="wl-sc"><table class="wl-rtb wl-ptb" style="font-size:11px"><tr><th>순위</th><th>팀</th><th>작성</th><th>현원</th><th>남</th><th>여</th><th>휴·연</th><th>반차</th><th>TBM</th><th>안전</th><th>신고</th></tr>';
+  rows.forEach(function(r){
+    var fl=r.flags.length;
+    h+='<tr'+(fl?' style="background:#FDE9ED"':'')+'><td>'+(r.cnt?r.rank:'-')+'</td><td style="font-weight:700">'+r.team+'</td><td>'+r.cnt+'/'+A.pastN+'</td><td>'+(r.cur==null?'-':r.cur)+'</td><td>'+(r.m==null?'-':r.m)+'</td><td>'+(r.f==null?'-':r.f)+'</td><td>'+(r.cnt?r.sub:'-')+'</td><td>'+(r.cnt?r.half:'-')+'</td><td>'+(r.tbm==null?'-':r.tbm+'%')+'</td><td>'+(r.safe==null?'-':r.safe+'%')+'</td><td>'+r.reps+'</td></tr>';
+  });
+  h+='</table></div><div style="font-size:11px;color:#666;margin-top:3px">※ 분홍색 = 주의 팀 · 휴·연(휴무·연차)·반차는 기간 합계(연인원) · 현원·남·여는 일평균, TBM·안전(안전일지)은 이행률 · 모두 작성된 일자 기준</div>';
+  h+='<div class="wl-rh">4. 주의 팀·이슈</div>';
+  var fl=rows.filter(function(r){ return r.flags.length; });
+  h+=fl.length?('<div style="background:#FDE9ED;border-radius:12px;padding:9px 12px;font-size:12.5px;line-height:1.9">'+fl.map(function(r){ return '<b>'+r.team+'</b> — '+r.flags.join(' · '); }).join('<br>')+'</div>'):'<div style="background:#E4F6F0;border-radius:12px;padding:9px 12px;font-size:12.5px">주의가 필요한 팀이 없습니다 👍</div>';
+  h+='<div style="font-size:11px;color:#666;margin:3px 0 6px">※ 기준: 미작성 '+Math.max(2,Math.ceil(A.pastN*0.2))+'일 이상 · TBM 또는 안전일지 이행률 80% 미만</div>';
+  var nt=c.notes.slice(0,40);
+  h+=nt.length?('<table class="wl-rtb"><tr><th style="width:52px">일자</th><th style="width:44px">팀</th><th style="width:90px">구분</th><th>내용</th></tr>'+nt.map(function(r){ return '<tr><td>'+wlEsc(r[0].slice(5))+'</td><td>'+wlEsc(r[1])+'</td><td>'+wlEsc(r[2])+'</td><td class="l">'+wlEsc(r[3])+'</td></tr>'; }).join('')+'</table>'+(c.notes.length>nt.length?'<div style="font-size:11px;color:#666;margin-top:3px">※ 전체 '+c.notes.length+'건 중 앞 '+nt.length+'건만 표시</div>':'')):'<div style="font-size:12.5px;color:#666">기간 내 특이사항·신고가 없습니다.</div>';
+  return h;
+}
+function wlViewAn(){
+  var h='<div class="wl-bar no-print"><button class="wl-btn" onclick="wlBoardOpen()">← 팀 현황판</button>'
+   +'<div class="wl-chip'+(AN.mode==='week'?' on':'')+'" onclick="wlAnSetMode(\'week\')">주간</div><div class="wl-chip'+(AN.mode==='month'?' on':'')+'" onclick="wlAnSetMode(\'month\')">월간</div></div>'
+   +'<div class="wl-bar no-print"><button class="wl-nav" onclick="wlAnNav(-1)">◀</button><b style="font-size:14px">'+(AN.cur?wlAnTitle():'')+'</b><button class="wl-nav" onclick="wlAnNav(1)">▶</button>'
+   +'<button class="wl-btn pri sm" onclick="wlPrint()">🖨 인쇄/PDF</button><button class="wl-btn pri sm" onclick="wlAnExcel()">📊 엑셀</button></div>';
+  if(AN.loading||!AN.cur) return h+'<div style="text-align:center;padding:40px;color:var(--g3)">분석 중...</div>';
+  if(AN.err) return h+'<div class="wl-warn">⚠️ '+wlEsc(AN.err)+'</div>';
+  return h+'<div style="padding:10px 13px"><div id="wlPrintArea" class="wl-rpt">'+wlAnHtml()+'</div></div>';
+}
+async function wlAnExcel(){
+  if(typeof XLSX==='undefined'){ toast('엑셀 라이브러리를 불러오지 못했습니다'); return; }
+  var S=wlAnStats(), A=AN.cur, c=A.all, rows=wlAnTeamRows();
+  var R=[['환경미화 현장작업일지 '+(AN.mode==='week'?'주간':'월간')+' 분석 리포트'],[wlAnTitle()+' · 저장된 일지 기준'],[],
+    ['항목','값','단위'],
+    ['일지 작성률',S.wr==null?'':S.wr,'%'],['팀당 평균 현원',S.cur==null?'':S.cur,'명'],['팀당 평균 휴무·연차',S.sub==null?'':S.sub,'명'],
+    ['TBM 이행률',S.tbm==null?'':S.tbm,'%'],['안전일지 이행률',S.safe==null?'':S.safe,'%'],['신고 건수',c.reps,'건'],
+    ['팀당 평균 남자',S.m==null?'':S.m,'명'],['팀당 평균 여자',S.f==null?'':S.f,'명'],[],
+    ['순위','팀','작성일','평균현원','남','여','휴무·연차','반차','TBM','안전일지','신고','주의']];
+  rows.forEach(function(r){ R.push([r.cnt?r.rank:'-',r.team,r.cnt+'/'+A.pastN,r.cur==null?'':r.cur,r.m==null?'':r.m,r.f==null?'':r.f,r.cnt?r.sub:'',r.cnt?r.half:'',r.tbm==null?'':r.tbm+'%',r.safe==null?'':r.safe+'%',r.reps,r.flags.join(' · ')]); });
+  R.push([]); R.push(['특이사항·신고']); R.push(['일자','팀','구분','내용']); c.notes.forEach(function(x){ R.push(x); }); if(!c.notes.length) R.push(['해당 없음']);
+  var ws=XLSX.utils.aoa_to_sheet(R); ws['!cols']=[{wch:14},{wch:10},{wch:10},{wch:10},{wch:8},{wch:8},{wch:10},{wch:8},{wch:8},{wch:10},{wch:8},{wch:28}];
+  ws['!merges']=[{s:{r:0,c:0},e:{r:0,c:11}},{s:{r:1,c:0},e:{r:1,c:11}}];
+  var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,AN.mode==='week'?'주간분석':'월간분석');
+  try{ await dlSaveWorkbook(wb,'현장작업일지_분석리포트_'+(AN.mode==='week'?'주간_':'월간_')+A.per.from+'.xlsx'); toast('📊 엑셀을 내려받았습니다'); }
   catch(e){ console.error(e); toast('⚠️ 엑셀 생성 실패: '+(e.message||e)); }
 }
 
@@ -13209,12 +13532,23 @@ async function fetchMgrRosterWithOff(){
     });
   }catch(e){}
   try{
-    var nowQ=new Date(Date.now()+9*3600000);
-    var quarter=nowQ.getFullYear()+'-Q'+(Math.floor(nowQ.getMonth()/3)+1);
-    var offRes=await sb.from('wf_fixed_off').select('emp_no,off_day1,off_day2').eq('quarter',quarter);
-    (offRes.data||[]).forEach(function(r){ offMap[r.emp_no]={d1:r.off_day1,d2:r.off_day2}; });
+    await wfLoadQStart();
+    var todayKst=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
+    var qCalT=wfCalQuarter(todayKst), qEffT=wfEffQuarter(todayKst);
+    // 오늘 분기 + 직전 분기(적용 시작일 전 구간·전일 조회용)를 함께 읽는다
+    var offRes=await msFetchAll(function(){ return sb.from('wf_fixed_off').select('emp_no,quarter,off_day1,off_day2').in('quarter',[qCalT,wfPrevQuarter(qCalT)]).order('emp_no').order('quarter'); });
+    var offTmp={};
+    (offRes.data||[]).forEach(function(r){ (offTmp[r.emp_no]=offTmp[r.emp_no]||{})[r.quarter]={d1:r.off_day1,d2:r.off_day2}; });
+    Object.keys(offTmp).forEach(function(k){ var b=offTmp[k], cur=b[qEffT]||b[qCalT]||null; offMap[k]={d1:cur?cur.d1:null, d2:cur?cur.d2:null, byQ:b}; });
   }catch(e){}
   return {roster:roster, offMap:offMap};
+}
+// 공휴일 휴무 대상: 운영팀 사업부장·행정1·행정2 (총괄팀장은 공휴일에도 출근하는 경우가 있어 제외)
+var _mgrHolDb={};
+function mgrIsHolidayOff(team, name, dateStr){
+  if(team!=='운영' || !({'사업부장':1,'행정1':1,'행정2':1})[name]) return false;
+  var d=String(dateStr||'').slice(0,10);
+  return !!(_mgrHolDb[d] || (typeof KR_HOL_FALLBACK!=='undefined' && KR_HOL_FALLBACK[d]));
 }
 function isSlotOffToday(team, slotLabel, rosterData, dateStr){
   if(!rosterData) return false;
@@ -13230,7 +13564,10 @@ function isSlotOffToday(team, slotLabel, rosterData, dateStr){
   }else{
     target=dayNames[new Date(Date.now()+9*3600000).getUTCDay()];
   }
-  return o.d1===target||o.d2===target;
+  var dq=dateStr?String(dateStr).slice(0,10):new Date(Date.now()+9*3600000).toISOString().slice(0,10);
+  var oo=o;
+  if(o.byQ){ var pr=wfPickOffRow(o.byQ,dq); if(pr) oo=pr; }
+  return oo.d1===target||oo.d2===target;
 }
 async function fetchQuotaCounts(){
   var mgrCntByTeam={}, leaderCntByGroup={}, staffQuotaByGroup={}, opsQuota=0;
@@ -17488,8 +17825,7 @@ function eeReportRowsTable(rows, cols){
     h+='<tr><td style="text-align:center">'+(i+1)+'</td>'
       +cols.map(function(c){
         if(c.key==='_sig'){
-          if(r._sigUrl) return '<td style="height:30px;text-align:center;padding:2px"><img src="'+r._sigUrl+'" alt="서명" style="max-height:26px;max-width:90px;vertical-align:middle"></td>';
-          return '<td style="height:30px"></td>'; // 등록된 전자서명 없음 → 직접 서명란
+          return '<td style="height:30px;text-align:center;padding:2px">'+sigStamp(r.name, r._stampT)+'</td>';
         }
         if(c.key===null) return '<td style="height:30px"></td>'; // 서명란 등 빈 칸
         return '<td>'+eeEsc(r[c.key]==null?'':r[c.key])+'</td>';
@@ -17517,6 +17853,32 @@ async function eeAttachSignatures(rows){
   }catch(e){}
   return rows;
 }
+
+// 필기체 이름 + 일시 도장(서명 이미지 대체) — 이미지 전송 없이 글자만 사용
+function sigStampTime(v){
+  if(!v) return '';
+  if(/^\d{4}-\d{2}-\d{2}$/.test(String(v))) return String(v);
+  try{ var d=new Date(v); if(isNaN(d.getTime())) return String(v).slice(0,16); return d.toLocaleString('sv-SE',{timeZone:'Asia/Seoul'}).slice(0,16); }catch(e){ return String(v).slice(0,16); }
+}
+function sigStamp(name, when, big){
+  var nm=String(name==null?'':name).replace(/[&<>\"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[c];});
+  var t=sigStampTime(when);
+  // 원형 도장: 이름은 가운데 필기체, 일시는 둘레를 따라 반복 배치(한 글자씩 회전) — PDF(html2canvas)에서도 글꼴 유지
+  var len=Math.max(1,Array.from(String(name==null?'':name).trim()).length);
+  var fs=Math.min(34,Math.floor(52/(len*0.66)));
+  var ring='';
+  if(t){
+    var unit=t.split(' ').join('\u00b7')+'\u00b7';
+    var chars=Array.from(unit);
+    var reps=Math.max(1,Math.floor(43/chars.length));
+    var all=[]; for(var r=0;r<reps;r++) all=all.concat(chars);
+    var step=360/all.length;
+    for(var k=0;k<all.length;k++){
+      ring+='<i style=\"transform:rotate('+(k*step).toFixed(2)+'deg) translateY(-34.5px)\">'+all[k]+'</i>';
+    }
+  }
+  return '<span class=\"sgst'+(big?' lg':'')+'\"><span class=\"sgi\"><b style=\"font-size:'+fs+'px\">'+nm+'</b>'+ring+'</span></span>';
+}
 function eeOpenSignSheet(eventId, scheduleId){
   eeOpenScheduleReport(eventId, scheduleId, 'sign');
 }
@@ -17540,16 +17902,15 @@ async function eeOpenScheduleReport(eventId, scheduleId, kind){
       cols=[{key:'소속',label:'소속',width:'19%'},{key:'position',label:'직책',width:'15%'},{key:'employee_id',label:'사번',width:'16%'},{key:'name',label:'성명',width:'16%'},{key:null,label:'비고',width:'23%'}];
     }else{ // log — 실제 참석확인된 사람 기준 (신청여부 무관, 워크인 포함)
       title=catLabel+' 참석 서명지';
-      var attRes=await sb.from('edu_attendance').select('*').eq('schedule_id',scheduleId);
+      var attRes=await sb.from('edu_attendance').select('id,team,team_group,employee_id,name,verified_at').eq('schedule_id',scheduleId);
       var attList=(attRes.data||[]).slice().sort(eeTeamSortCmp);
       rows=attList.map(function(a){
         return {소속:((a.team||'')+' '+(a.team_group||'')).trim(), team:a.team, team_group:a.team_group, employee_id:a.employee_id, name:a.name,
           attend_time:a.verified_at?new Date(a.verified_at).toLocaleString('ko-KR',{hour:'2-digit',minute:'2-digit',timeZone:'Asia/Seoul'}):'',
-          _sigUrl:a.signature_data||null};
+          _stampT:a.verified_at||null};
       });
       cols=[{key:'소속',label:'소속',width:'18%'},{key:'employee_id',label:'사번',width:'15%'},{key:'name',label:'성명',width:'15%'},{key:'attend_time',label:'참석시간',width:'15%'},{key:'_sig',label:'서명',width:'21%'},{key:null,label:'비고',width:'16%'}];
     }
-    if(kind==='log') await eeAttachSignatures(rows); // QR참석확인 시 직접 서명한 게 있으면 그걸 우선 사용, 없으면 등록된 전자서명(개인계정)으로 보완, 그래도 없으면 빈 칸
     document.getElementById('eeReportModalTitle').textContent='📄 '+title;
     document.getElementById('eeReportBigTitle').textContent=title;
     document.getElementById('eeReportMeta').innerHTML=eeReportMetaTable([
@@ -17596,7 +17957,7 @@ async function eeExportExcel(eventId){
     var appRes=await sb.from('edu_applications').select('*').eq('event_id',eventId);
     var apps=appRes.data||[];
     var schedIds=(ev._schedules||[]).map(function(s){return s.id;});
-    var attRes=await sb.from('edu_attendance').select('*').in('schedule_id',schedIds.length?schedIds:['']);
+    var attRes=await sb.from('edu_attendance').select('schedule_id,employee_id,name,team,team_group,verified_at,qr_verified,gps_verified').in('schedule_id',schedIds.length?schedIds:['']);
     var attByKey={}; (attRes.data||[]).forEach(function(a){ attByKey[a.schedule_id+'|'+a.employee_id]=a; });
     var schedById={}; (ev._schedules||[]).forEach(function(s){ schedById[s.id]=s; });
 
@@ -17794,47 +18155,26 @@ async function eeRenderAttendScreen(scheduleId, token){
         +'<div style="flex:1"><div class="f-lbl">성명</div><input type="text" id="eeAtName" class="ri" value="'+eeEsc(autoName)+'" placeholder="성명 입력"></div>'
       +'</div>'
       +'<div id="eeAtSigWrap"></div>'
-      +'<div id="eeAtStatus" style="font-size:12.5px;color:var(--g4);margin-bottom:11px">📷 QR 인증 완료 — 서명 후 아래 버튼을 눌러 위치까지 확인하면 참석 처리됩니다</div>'
+      +'<div id="eeAtStatus" style="font-size:12.5px;color:var(--g4);margin-bottom:11px">📷 QR 인증 완료 — 아래 버튼을 눌러 위치까지 확인하면 참석 처리됩니다</div>'
       +'<button class="btn-prim" onclick="eeConfirmAttendance()">✅ 참석 확인</button>'
       +'</div></div>';
     var empIdEl0=document.getElementById('eeAtEmpId');
-    if(empIdEl0){ empIdEl0.oninput=function(){ clearTimeout(eeAtSigCheckTimer); eeAtSigCheckTimer=setTimeout(eeAtCheckRegisteredSig,400); }; }
-    eeAtCheckRegisteredSig();
+    var nmEl0=document.getElementById('eeAtName');
+    if(nmEl0){ nmEl0.oninput=eeAtRenderSigBlock; }
+    eeAtRenderSigBlock();
   }catch(e){ wrap.innerHTML='<div style="text-align:center;padding:30px;color:var(--danger)">오류: '+e.message+'</div>'; }
 }
-// ─ 사번 입력/변경 시 관리자확인사항에 등록된 서명이 있는지 확인 — 있으면 캔버스 서명 생략 가능 ─
-var eeAtSigCheckTimer=null, eeAtRegisteredSigUrl=null;
-async function eeAtCheckRegisteredSig(){
-  var empIdEl=document.getElementById('eeAtEmpId');
-  var empId=empIdEl?empIdEl.value.trim():'';
-  eeAtRegisteredSigUrl=null;
-  if(empId){
-    try{
-      var res=await sb.from('user_signatures').select('signature_path').eq('employee_id',empId).maybeSingle();
-      if(res.data&&res.data.signature_path) eeAtRegisteredSigUrl=await getSignedFileUrl('adminconfirm', res.data.signature_path);
-    }catch(e){}
-  }
-  eeAtRenderSigBlock();
-}
+// ─ 서명 대신 필기체 이름 + 일시 도장 미리보기 (성명 입력 시 갱신) ─
 function eeAtRenderSigBlock(){
   var wrap=document.getElementById('eeAtSigWrap');
   if(!wrap) return;
-  if(eeAtRegisteredSigUrl){
-    wrap.innerHTML='<div class="f-lbl">서명</div>'
-      +'<div style="display:flex;align-items:center;gap:10px;border:1.5px solid var(--success);background:var(--success-bg);border-radius:var(--r2);padding:10px 13px;margin-bottom:13px">'
-      +'<img src="'+eeAtRegisteredSigUrl+'" alt="등록된 서명" style="height:32px;max-width:110px;background:white;border-radius:4px;padding:2px">'
-      +'<div style="font-size:12.5px;color:var(--success);font-weight:700">✅ 관리자확인사항에 등록된 서명을 사용합니다 — 별도 서명 없이 참석 확인 가능</div>'
-      +'</div>';
-  }else{
-    wrap.innerHTML='<div class="f-lbl">서명 <span style="color:var(--danger);font-size:12px">* 필수 — 손가락으로 아래에 서명해주세요</span></div>'
-      +'<div style="border:1.5px solid var(--g2);border-radius:var(--r2);background:white;margin-bottom:6px;touch-action:none">'
-        +'<canvas id="eeAtSigCanvas" width="320" height="140" style="width:100%;height:140px;display:block;touch-action:none"></canvas>'
-      +'</div>'
-      +'<div style="display:flex;justify-content:flex-end;margin-bottom:13px">'
-        +'<button type="button" onclick="eeAtSigClear()" style="padding:5px 11px;background:var(--g1);color:var(--g6);border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer">🧹 서명 지우기</button>'
-      +'</div>';
-    setTimeout(eeAtSigInit, 0);
-  }
+  var nmEl=document.getElementById('eeAtName');
+  var nm=nmEl?nmEl.value.trim():'';
+  wrap.innerHTML='<div class="f-lbl">서명</div>'
+    +'<div style="display:flex;align-items:center;gap:12px;border:1.5px solid var(--success);background:var(--success-bg);border-radius:var(--r2);padding:10px 13px;margin-bottom:13px">'
+    +(nm?sigStamp(nm,new Date().toISOString(),true):'<span style="color:var(--g4);font-size:12.5px">성명을 입력하면 이름 도장이 표시됩니다</span>')
+    +'<div style="font-size:12.5px;color:var(--success);font-weight:700">✅ 별도 서명 없이 이름·일시가 자동 기록됩니다</div>'
+    +'</div>';
 }
 // ─ QR 참석확인 화면의 서명 캔버스 (손가락/마우스로 직접 서명) ─
 var eeAtSigCtx=null, eeAtSigDrawing=false, eeAtSigHasStroke=false;
@@ -17872,18 +18212,7 @@ async function eeConfirmAttendance(){
   var group=(document.getElementById('eeAtGroup').value||'').trim();
   if(!empId){ toast('⚠️ 사번을 입력하세요'); return; }
   if(!name){ toast('⚠️ 성명을 입력하세요'); return; }
-  var sigDataUrl=null;
-  if(eeAtRegisteredSigUrl){
-    // 등록된 전자서명은 여기서 스냅샷(blob: URL 등)을 DB에 저장하지 않는다.
-    // signature_data를 비워두면 출력 시점에 eeAttachSignatures()가 그때그때 최신 등록서명을 다시 불러와 보여준다(자동으로 항상 최신·항상 유효).
-    sigDataUrl=null;
-  }else{
-    if(!eeAtSigHasStroke){ toast('⚠️ 서명을 해주세요'); return; }
-    try{
-      var sigCv=document.getElementById('eeAtSigCanvas');
-      if(sigCv) sigDataUrl=sigCv.toDataURL('image/png');
-    }catch(e){}
-  }
+  var sigDataUrl=null; // 서명 이미지는 저장하지 않음 — 이름·참석시각으로 도장 표시
   var statusEl=document.getElementById('eeAtStatus');
   if(statusEl) statusEl.textContent='📍 위치 확인 중...';
 
@@ -17905,7 +18234,7 @@ async function eeConfirmAttendance(){
   try{
     var res=await sb.from('edu_attendance').upsert({
       id:eeGenToken(), schedule_id:eeAttendCurSchedId, employee_id:empId, name:name, team:team, team_group:group,
-      qr_verified:true, gps_verified:gpsOk, distance_m:distM, verify_method:'qr', verified_at:new Date().toISOString(), signature_data:sigDataUrl
+      qr_verified:true, gps_verified:gpsOk, distance_m:distM, verify_method:'qr', verified_at:new Date().toISOString(), signature_data:null
     }, {onConflict:'schedule_id,employee_id'});
     if(res.error){ toast('⚠️ 참석확인 실패: '+_safeErrMsg(res.error)); return; }
     var wrap=document.getElementById('eeAttendWrap');
@@ -20904,7 +21233,15 @@ var DB_TABLE_LABELS={
   'wf_employees':'근무계획 직원정보', 'wf_fixed_off':'근무계획 고정휴무요일', 'wf_holidays':'근무계획 공휴일',
   'wf_export_log':'근무계획 다운로드 이력', 'wf_leave':'근무계획 휴직정보', 'wf_employee_edit_log':'근무계획 수정이력',
   'wf_special_events':'특별근무 계획', 'wf_special_assignments':'특별근무 편성', 'wf_special_edit_log':'특별근무 수정이력',
-  'team_quota':'인력현황 정원입력'
+  'team_quota':'인력현황 정원입력',
+  'worklog_daily':'현장작업일지(일일)', 'worklog_staff':'현장작업일지 근무자 배치', 'worklog_zone_tpl':'현장작업일지 구역 양식',
+  'worklog_absence':'현장작업일지 휴가·결근', 'worklog_report':'현장작업일지 신고', 'worklog_assign':'현장작업일지 배정', 'worklog_emp_ext':'현장작업일지 직원 성별',
+  'erp_leave':'ERP 연차 자료', 'mp_support':'인력현황 다른 조 지원',
+  'floor_report_snapshots':'층별 인력현황 리포트 기록', 'kpi_targets':'과업평가지표 목표',
+  'weekly_meetings':'주간회의', 'weekly_meeting_items':'주간회의 항목', 'weekly_meeting_signatures':'주간회의 서명', 'monthly_strategy_items':'월간전략회의 과제',
+  'notice_confirm_docs':'공지 확인서', 'notice_confirm_signatures':'공지 확인서 서명',
+  'campaign_tiebreaks':'사업부 행사 동점 재투표', 'campaign_tiebreak_votes':'사업부 행사 재투표 표',
+  'push_subscriptions':'푸시 알림 구독', 'reg_view_logs':'사규 열람 기록', 'signup_gate_log':'가입 사번확인 기록'
 };
 async function loadDbUsage(){
   var wrap=document.getElementById('dbUsageWrap');
@@ -20939,15 +21276,17 @@ async function loadDbUsage(){
     if(rows.length){
       var maxBytes=Math.max.apply(null, rows.map(function(r){return parseInt(r.total_bytes)||0;}));
       html+='<div class="card"><div class="cb">';
-      html+='<div style="font-size:14px;font-weight:800;color:var(--g7);margin-bottom:13px">📋 테이블별 용량 (상위 '+Math.min(rows.length,12)+'개)</div>';
-      rows.slice(0,12).forEach(function(r){
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px"><div style="font-size:14px;font-weight:800;color:var(--g7)">📋 테이블별 용량 ('+(window._dbShowAll?'전체 ':'상위 ')+Math.min(rows.length,showN)+'개 / 총 '+rows.length+'개)</div>';
+      html+='<button onclick="window._dbShowAll=!window._dbShowAll;loadDbUsage();" style="padding:6px 12px;background:var(--g1);color:var(--g5);border:none;border-radius:20px;font-size:12px;font-weight:700;cursor:pointer">'+(window._dbShowAll?'상위 12개만':'전체 보기')+'</button></div>';
+      html+='<div style="font-size:11.5px;color:var(--g4);line-height:1.5;margin-bottom:13px">입력 데이터 표 합계 '+formatBytes(listSum)+' + 시스템 영역(계정·로그인·저장소 정보 등) '+formatBytes(sysBytes)+' = 위 DB 사용량. 행 수는 조회 시점의 실제 건수입니다.</div>';
+      rows.slice(0,showN).forEach(function(r){
         var bytes=parseInt(r.total_bytes)||0;
         var barPct=maxBytes?Math.max(3, bytes/maxBytes*100):0;
         var label=DB_TABLE_LABELS[r.table_name]||r.table_name;
         html+='<div style="margin-bottom:13px">';
         html+='<div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">';
         html+='<span style="font-size:13px;font-weight:700;color:var(--g6)">'+label+'</span>';
-        html+='<span style="font-size:12px;color:var(--g4)">'+formatBytes(bytes)+' · '+Math.round(r.row_count||0)+'행</span>';
+        html+='<span style="font-size:12px;color:var(--g4)">'+formatBytes(bytes)+' · '+(parseInt(r.row_count)||0).toLocaleString('ko-KR')+'행</span>';
         html+='</div>';
         html+='<div style="background:var(--g1);border-radius:8px;height:9px;overflow:hidden"><div style="width:'+barPct.toFixed(1)+'%;height:100%;background:linear-gradient(90deg,var(--navy),#4A7BC8);border-radius:8px"></div></div>';
         html+='</div>';
@@ -20967,7 +21306,8 @@ var STORAGE_BUCKET_LABELS={
   'operation-manuals':{name:'운영매뉴얼', icon:'📘'},
   'riskassessment':{name:'위험성평가', icon:'🧯'},
   'trainingmaterial':{name:'교육자료', icon:'🎓'},
-  'facility-files':{name:'시설사진', icon:'🏢'}
+  'facility-files':{name:'시설사진', icon:'🏢'},
+  'adminconfirm':{name:'관리자 확인사항(서명·PDF)', icon:'✍️'}
 };
 var STORAGE_TOTAL_BYTES = 1024*1024*1024; // Supabase Free 플랜 기준 1GB
 function formatBytes(bytes){
@@ -21723,6 +22063,20 @@ function renderNoticeList(data, targetId){
   window._noticeData=data;
   ncfAttachNoticeBadges(displayData, wrap);
 }
+// 배지 HTML 공용: [확인 서명 필요/완료](대상자만) + [미확인 N명](대상자·관리자, 누르면 명단 팝업)
+function ncfBadgeHtml(d, signed, users, allSigs){
+  var h='';
+  if(ncfEligible(d.target_roles)){
+    h+='<button onclick="event.stopPropagation();go(\'noticeconfirm\');setTimeout(function(){ncfOpenDocDetail('+d.id+');},80)" style="margin-top:8px;margin-right:6px;padding:6px 12px;background:'+(signed?'var(--teal-bg)':'#FFF7E0')+';color:'+(signed?'var(--teal2)':'#B8860B')+';border:1px solid '+(signed?'var(--teal)':'#E0C46A')+';border-radius:20px;font-size:12px;font-weight:700;cursor:pointer">'+(signed?'✅ 확인 서명 완료':'🔔 확인 서명 필요')+'</button>';
+  }
+  var label='👥 미확인자 보기';
+  if(users){
+    var c=ncfCalcUnsigned(d, users, (allSigs||[]).filter(function(x){return x.doc_id===d.id;}));
+    label='👥 미확인 '+c.unsigned.length+'명';
+  }
+  h+='<button onclick="event.stopPropagation();ncfShowUnsignedPopup('+d.id+')" style="margin-top:8px;padding:6px 12px;background:var(--g1);color:var(--g6);border:1px solid var(--g2);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer">'+label+'</button>';
+  return h;
+}
 // 공지사항 목록에 연결된 "공지 확인서"가 있으면 서명 배지를 붙인다
 async function ncfAttachNoticeBadges(notices, wrap){
   if(!notices||!notices.length||!me) return;
@@ -21731,14 +22085,14 @@ async function ncfAttachNoticeBadges(notices, wrap){
     var docRes=await sb.from('notice_confirm_docs').select('id,title,target_roles,linked_notice_id').in('linked_notice_id',ids);
     if(docRes.error||!docRes.data||!docRes.data.length) return;
     var sigRes=await sb.from('notice_confirm_signatures').select('doc_id,signed_by');
-    var mySigned={};
+    var mySigned={}; var users=null; try{ users=await ncfLoadUsers(); }catch(_){}
     (sigRes.data||[]).forEach(function(s){ if(s.signed_by===me.id) mySigned[s.doc_id]=true; });
     docRes.data.forEach(function(d){
-      if(!ncfEligible(d.target_roles)) return;
+      if(!ncfEligible(d.target_roles)&&!ncfCanManage()) return;
       // 같은 id를 쓰는 배지 div가 여러 화면(홈 패널/관리자 목록)에 동시에 존재할 수 있어 getElementById 대신 해당 목록 안에서만 찾는다
       var el=(wrap||document).querySelector('#ncfBadge_'+CSS.escape(String(d.linked_notice_id))); if(!el) return;
       var signed=!!mySigned[d.id];
-      el.innerHTML='<button onclick="event.stopPropagation();go(\'noticeconfirm\');setTimeout(function(){ncfOpenDocDetail('+d.id+');},80)" style="margin-top:8px;padding:6px 12px;background:'+(signed?'var(--teal-bg)':'#FFF7E0')+';color:'+(signed?'var(--teal2)':'#B8860B')+';border:1px solid '+(signed?'var(--teal)':'#E0C46A')+';border-radius:20px;font-size:12px;font-weight:700;cursor:pointer">'+(signed?'✅ 확인 서명 완료':'🔔 확인 서명 필요')+'</button>';
+      el.innerHTML=ncfBadgeHtml(d, signed, users, sigRes.data||[]);
     });
   }catch(e){}
 }
@@ -21750,13 +22104,13 @@ async function ncfAttachNewsBadges(posts, wrap){
     var docRes=await sb.from('notice_confirm_docs').select('id,title,target_roles,linked_news_id').in('linked_news_id',ids);
     if(docRes.error||!docRes.data||!docRes.data.length) return;
     var sigRes=await sb.from('notice_confirm_signatures').select('doc_id,signed_by');
-    var mySigned={};
+    var mySigned={}; var users=null; try{ users=await ncfLoadUsers(); }catch(_){}
     (sigRes.data||[]).forEach(function(s){ if(s.signed_by===me.id) mySigned[s.doc_id]=true; });
     docRes.data.forEach(function(d){
-      if(!ncfEligible(d.target_roles)) return;
+      if(!ncfEligible(d.target_roles)&&!ncfCanManage()) return;
       var el=(wrap||document).querySelector('#ncfNewsBadge_'+CSS.escape(String(d.linked_news_id))); if(!el) return;
       var signed=!!mySigned[d.id];
-      el.innerHTML='<button onclick="event.stopPropagation();go(\'noticeconfirm\');setTimeout(function(){ncfOpenDocDetail('+d.id+');},80)" style="margin-top:8px;padding:6px 12px;background:'+(signed?'var(--teal-bg)':'#FFF7E0')+';color:'+(signed?'var(--teal2)':'#B8860B')+';border:1px solid '+(signed?'var(--teal)':'#E0C46A')+';border-radius:20px;font-size:12px;font-weight:700;cursor:pointer">'+(signed?'✅ 확인 서명 완료':'🔔 확인 서명 필요')+'</button>';
+      el.innerHTML=ncfBadgeHtml(d, signed, users, sigRes.data||[]);
     });
   }catch(e){}
 }
@@ -23920,8 +24274,47 @@ function eqOpenEditModal(idx){
     var val=(row[hi]!==null&&row[hi]!==undefined?row[hi]:'');
     h+='<div class="fg"><label class="f-lbl">'+hd+'</label><input type="text" class="ri eq-edit-inp" data-ci="'+hi+'" value="'+String(val).replace(/"/g,'&quot;')+'" style="margin-bottom:0"></div>';
   });
+  // 담당 조 (장비점검에서 이 장비를 고르면 조가 자동 입력됨 — 여러 조가 같이 쓰면 복수 선택)
+  h+='<div class="fg"><label class="f-lbl">담당 조 <span style="font-size:11px;color:var(--g4);font-weight:400">(장비점검 선택 시 조 자동 입력 · 여러 조 선택 가능)</span></label>'
+    +'<div id="eqJoBox" style="display:flex;gap:8px;flex-wrap:wrap">'
+    +['A조','B조','C조'].map(function(j){ return '<div class="eq-jo-chip" data-v="'+j+'" onclick="eqJoToggle(this)" style="padding:8px 18px;border-radius:20px;border:1.5px solid var(--g2);background:var(--g1);font-size:14px;font-weight:700;color:var(--g5);cursor:pointer">'+j+'</div>'; }).join('')
+    +'</div><div id="eqJoHint" style="font-size:11px;color:var(--g4);margin-top:5px">불러오는 중...</div></div>';
   body.innerHTML=h;
+  _eqEditMasterId=null; _eqJoOrig='';
   showM('eqEditModal');
+  eqJoLoad(row);
+}
+var _eqEditMasterId=null, _eqJoOrig='';
+function eqJoToggle(el){
+  if(_eqEditMasterId===null){ toast('⚠️ 점검용 명단에 없는 장비라 담당 조를 저장할 수 없습니다'); return; }
+  var on=el.dataset.on==='1'; el.dataset.on=on?'0':'1';
+  el.style.background=on?'var(--g1)':'var(--teal)'; el.style.color=on?'var(--g5)':'#fff'; el.style.borderColor=on?'var(--g2)':'var(--teal)';
+}
+function eqJoSet(v){
+  var set={}; String(v||'').split(',').forEach(function(x){ x=x.trim(); if(x) set[x]=1; });
+  document.querySelectorAll('#eqJoBox .eq-jo-chip').forEach(function(c){
+    var on=!!set[c.dataset.v]; c.dataset.on=on?'1':'0';
+    c.style.background=on?'var(--teal)':'var(--g1)'; c.style.color=on?'#fff':'var(--g5)'; c.style.borderColor=on?'var(--teal)':'var(--g2)';
+  });
+}
+function eqJoGet(){
+  return Array.prototype.map.call(document.querySelectorAll('#eqJoBox .eq-jo-chip'),function(c){ return c.dataset.on==='1'?c.dataset.v:null; }).filter(Boolean).join(',');
+}
+async function eqJoLoad(row){
+  var hint=document.getElementById('eqJoHint');
+  try{
+    var hdr=(equipmentData&&equipmentData.headers)||[];
+    var noIdx=hdr.findIndex(function(h){ return String(h).indexOf('관리번호')!==-1; });
+    var snIdx=hdr.findIndex(function(h){ return /serial/i.test(String(h)); });
+    var no=noIdx>=0?String(row[noIdx]==null?'':row[noIdx]).trim():'';
+    var m=null;
+    if(no){ var r1=await sb.from('equipment_master').select('id,jo').eq('mgmt_no',no); if(r1.data&&r1.data.length===1) m=r1.data[0]; }
+    if(!m&&snIdx>=0){ var sn=String(row[snIdx]==null?'':row[snIdx]).trim(); if(sn){ var r2=await sb.from('equipment_master').select('id,jo').eq('serial_no',sn); if(r2.data&&r2.data.length===1) m=r2.data[0]; } }
+    if(!document.getElementById('eqJoBox')) return; // 그 사이 창을 닫은 경우
+    if(!m){ if(hint) hint.textContent='점검용 명단에 없는 장비라 담당 조를 저장할 수 없습니다'; return; }
+    _eqEditMasterId=m.id; _eqJoOrig=m.jo||''; eqJoSet(_eqJoOrig);
+    if(hint) hint.textContent=_eqJoOrig?'':'미선택 — 점검에서는 로그인한 계정의 조로 자동 입력됩니다';
+  }catch(e){ if(hint) hint.textContent='담당 조를 불러오지 못했습니다'; }
 }
 function eqOpenAddModal(){
   if(!canDeleteWorkItem()){ toast('⚠️ 조장 이상만 추가할 수 있습니다'); return; }
@@ -23941,7 +24334,7 @@ function eqOpenAddModal(){
   body.innerHTML=h;
   showM('eqEditModal');
 }
-function closeEqEditModal(){ hideM('eqEditModal'); _eqEditIdx=null; _eqAddMode=false; }
+function closeEqEditModal(){ hideM('eqEditModal'); _eqEditIdx=null; _eqAddMode=false; _eqEditMasterId=null; _eqJoOrig=''; }
 async function eqSaveEdit(){
   if(!canDeleteWorkItem()){ toast('⚠️ 조장 이상만 저장할 수 있습니다'); return; }
   if(!_eqAddMode && _eqEditIdx===null){ toast('⚠️ 오류: 대상을 찾을 수 없습니다'); return; }
@@ -23952,6 +24345,10 @@ async function eqSaveEdit(){
     var ci=parseInt(inp.getAttribute('data-ci'));
     newRow[ci]=inp.value;
   });
+  var _eqHdr=equipmentData.headers||[];
+  var _eqNoIdx=_eqHdr.findIndex(function(h){ return String(h).indexOf('관리번호')!==-1; });
+  var _eqSnIdx=_eqHdr.findIndex(function(h){ return /serial/i.test(String(h)); });
+  var _eqOldRow=(!_eqAddMode&&equipmentData.rows[_eqEditIdx])?equipmentData.rows[_eqEditIdx].slice():null;
   if(_eqAddMode){
     equipmentData.rows.push(newRow);
   }else{
@@ -23960,7 +24357,49 @@ async function eqSaveEdit(){
   try{
     var res=await sb.from('equipment_data').update({data:{headers:equipmentData.headers,rows:equipmentData.rows}}).eq('id',eqDbRowId);
     if(res.error) throw res.error;
-    toast(_eqAddMode?'✅ 추가되었습니다':'✅ 수정되었습니다');
+    // 관리번호를 바꾼 경우: 점검용 장비 명단(equipment_master)과 점검 기록(equip_inspection_data)에도 같은 번호로 반영
+    var _eqSyncMsg='';
+    if(!_eqAddMode&&_eqOldRow&&_eqNoIdx>=0){
+      var oldNo=String(_eqOldRow[_eqNoIdx]==null?'':_eqOldRow[_eqNoIdx]).trim();
+      var newNo=String(newRow[_eqNoIdx]==null?'':newRow[_eqNoIdx]).trim();
+      if(newNo&&oldNo!==newNo){
+        try{
+          var mid=null;
+          var m1=await sb.from('equipment_master').select('id,mgmt_no').eq('mgmt_no',oldNo);
+          if(m1.data&&m1.data.length===1) mid=m1.data[0].id;
+          if(mid===null&&_eqSnIdx>=0){ // 예전 번호로 못 찾으면 시리얼번호로 한 번 더 찾음 (유일할 때만)
+            var sn=String(_eqOldRow[_eqSnIdx]==null?'':_eqOldRow[_eqSnIdx]).trim();
+            if(sn){ var m2=await sb.from('equipment_master').select('id,mgmt_no').eq('serial_no',sn); if(m2.data&&m2.data.length===1) mid=m2.data[0].id; }
+          }
+          if(mid===null){
+            _eqSyncMsg=' (점검용 명단에 이 장비가 없어 점검 화면에는 반영되지 않았습니다)';
+          }else{
+            var dup=await sb.from('equipment_master').select('id').eq('mgmt_no',newNo);
+            if(dup.data&&dup.data.some(function(d){ return d.id!==mid; })){
+              _eqSyncMsg=' (⚠️ 점검용 명단에 같은 관리번호가 있어 점검 화면은 바뀌지 않았습니다)';
+            }else{
+              var u1=await sb.from('equipment_master').update({mgmt_no:newNo}).eq('id',mid);
+              if(u1.error) throw u1.error;
+              var u2=await sb.from('equip_inspection_data').update({mgmt_no:newNo}).eq('equip_id',mid);
+              if(u2.error) throw u2.error;
+              _eqSyncMsg=' (점검 화면에도 반영)';
+            }
+          }
+        }catch(se){ _eqSyncMsg=' (⚠️ 점검 화면 반영 실패: '+_safeErrMsg(se)+')'; }
+      }
+    }
+    // 담당 조(A·B·C) 변경 시 점검용 명단에 저장
+    if(!_eqAddMode&&_eqEditMasterId!==null){
+      var joNew=eqJoGet();
+      if(joNew!==_eqJoOrig){
+        try{
+          var uj=await sb.from('equipment_master').update({jo:joNew||null}).eq('id',_eqEditMasterId);
+          if(uj.error) throw uj.error;
+          _eqSyncMsg+=' (담당 조: '+(joNew||'없음')+')';
+        }catch(je){ _eqSyncMsg+=' (⚠️ 담당 조 저장 실패: '+_safeErrMsg(je)+')'; }
+      }
+    }
+    toast((_eqAddMode?'✅ 추가되었습니다':'✅ 수정되었습니다')+_eqSyncMsg);
     closeEqEditModal();
     renderEquipment();
   }catch(e){ toast('⚠️ 저장 실패: '+_safeErrMsg(e)); }
@@ -24180,10 +24619,8 @@ async function adcOpenDocDetail(id){
       +'3. ('+lrptEsc(d.label3||'회람방법')+') '+lrptEsc(d.content3)+(canEdit?' <span onclick="adcEditLine('+id+',3,\''+escL3+'\',\''+esc3+'\')" style="cursor:pointer;font-size:12px" title="수정">✏️</span>':'')
       +'</div></div></div>';
     h+='<table class="adc-sig-table"><thead><tr><th>연번</th><th>소속</th><th>직책</th><th>사번</th><th>성명</th><th>확인일자</th><th>서명</th>'+(canEdit?'<th></th>':'')+'</tr></thead><tbody>';
-    var _sigUrlMap1={};
-    await Promise.all(sigs.filter(function(s){return s.signature_path;}).map(async function(s){ _sigUrlMap1[s.signature_path]=await getSignedFileUrl('adminconfirm', s.signature_path); }));
     sigs.forEach(function(s,i){
-      var sigImg=s.signature_path?'<img src="'+(_sigUrlMap1[s.signature_path]||'')+'" style="height:26px">':'';
+      var sigImg=sigStamp(s.name, s.created_at||s.confirmed_date);
       h+='<tr><td>'+(i+1)+'</td><td>'+lrptEsc(s.dept)+'</td><td>'+lrptEsc(s.position)+'</td><td>'+lrptEsc(s.employee_id)+'</td><td>'+lrptEsc(s.name)+'</td><td>'+lrptEsc(s.confirmed_date)+'</td><td>'+sigImg+'</td>'
         +(canEdit?'<td><span onclick="adcDeleteSignature('+s.id+','+id+')" style="cursor:pointer" title="삭제">🗑️</span></td>':'')
         +'</tr>';
@@ -24241,8 +24678,8 @@ async function adcSign(docId){
   try{
     var profRes=await sb.from('user_signatures').select('*').eq('username',me.id);
     var prof=profRes&&profRes.data&&profRes.data[0];
-    if(!prof||!prof.signature_path||!prof.dept||!prof.position||!prof.employee_id){
-      toast('⚠️ 먼저 "내 서명 등록" 탭에서 소속·직책·사번·서명 이미지를 등록해주세요');
+    if(!prof||!prof.dept||!prof.position||!prof.employee_id){
+      toast('⚠️ 먼저 "내 서명 등록" 탭에서 소속·직책·사번을 등록해주세요');
       adcTab(2);
       return;
     }
@@ -24251,7 +24688,7 @@ async function adcSign(docId){
     if(sigRes.data) sigRes.data.forEach(function(s){ if(s.seq>maxSeq) maxSeq=s.seq; });
     var res=await sb.from('admin_confirm_signatures').insert({
       doc_id:docId, seq:maxSeq+1, dept:prof.dept, position:prof.position, employee_id:prof.employee_id,
-      name:me.name, confirmed_date:kstDate(), signature_path:prof.signature_path,
+      name:me.name, confirmed_date:kstDate(), signature_path:null,
       signed_by:me.id, signed_by_role:me.role
     });
     if(res.error) throw res.error;
@@ -24302,12 +24739,10 @@ async function adcPrintDoc(id){
       +'</div>';
     h+='<table class="adc-sig-table"><thead><tr><th style="width:6%">연번</th><th style="width:16%">소속</th><th style="width:12%">직책</th><th style="width:12%">사번</th><th style="width:12%">성명</th><th style="width:14%">확인일자</th><th style="width:18%">서명</th></tr></thead><tbody>';
     var maxRows=Math.max(20, sigs.length);
-    var _sigUrlMap2={};
-    await Promise.all(sigs.filter(function(s){return s&&s.signature_path;}).map(async function(s){ _sigUrlMap2[s.signature_path]=await getSignedFileUrl('adminconfirm', s.signature_path); }));
     for(var i=0;i<maxRows;i++){
       var s=sigs[i];
       if(s){
-        var sigImg=s.signature_path?'<img src="'+(_sigUrlMap2[s.signature_path]||'')+'" style="height:24px">':'';
+        var sigImg=sigStamp(s.name, s.created_at||s.confirmed_date);
         h+='<tr><td>'+(i+1)+'</td><td>'+lrptEsc(s.dept)+'</td><td>'+lrptEsc(s.position)+'</td><td>'+lrptEsc(s.employee_id)+'</td><td>'+lrptEsc(s.name)+'</td><td>'+lrptEsc(s.confirmed_date)+'</td><td>'+sigImg+'</td></tr>';
       }else{
         h+='<tr><td>'+(i+1)+'</td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';
@@ -24503,7 +24938,15 @@ function mtgExecPrint(){
 // 상태 색은 앱 전체에서 이미 쓰고있는 MTG_STATUS_META를 그대로 재사용(의미 일관성 유지)
 // 과제별 추이 그래프에서만 쓰는 계열(카테고리) 색상 — 서로 구분이 잘 되도록 고정 순서로 배정
 var MTG_CAT_PALETTE=['#2a78d6','#eb6834','#1baf7a','#eda100','#e87ba4','#008300'];
-function mtgWeekDonutSvg(counts){
+var MTG_MONTH_PASTEL={
+  '수행전':{c:'#A9B4E6',t:'#5B67A8',bg:'#EEF0FC'},
+  '진행중':{c:'#FFC58A',t:'#B8651B',bg:'#FFF1E2'},
+  '완료':{c:'#9ADBC8',t:'#2E8B72',bg:'#E4F6F0'},
+  '지연':{c:'#F6A9B5',t:'#C0485F',bg:'#FDE9ED'},
+  '보류':{c:'#C9CFDA',t:'#6B7385',bg:'#F0F2F6'},
+  '취소':{c:'#D6D9DF',t:'#7A808C',bg:'#F3F4F6'}
+};
+function mtgWeekDonutSvg(counts, unit, pal){
   var order=['진행중','지연','수행전','보류','완료','취소'];
   var total=0; order.forEach(function(s){ total+=(counts[s]||0); });
   if(!total) return '';
@@ -24512,18 +24955,18 @@ function mtgWeekDonutSvg(counts){
     var n=counts[s]||0; if(!n) return;
     var frac=n/total;
     var len=Math.max(0, frac*circumference-gap);
-    var meta=MTG_STATUS_META[s];
-    segs+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+meta.c+'" stroke-width="18" stroke-dasharray="'+len+' '+(circumference-len)+'" stroke-dashoffset="'+(-cum)+'" transform="rotate(-90 '+cx+' '+cy+')"><title>'+s+' '+n+'건 ('+Math.round(frac*100)+'%)</title></circle>';
+    var meta=(pal&&pal[s])||MTG_STATUS_META[s];
+    segs+='<circle cx="'+cx+'" cy="'+cy+'" r="'+r+'" fill="none" stroke="'+meta.c+'" stroke-width="18" stroke-dasharray="'+len+' '+(circumference-len)+'" stroke-dashoffset="'+(-cum)+'" transform="rotate(-90 '+cx+' '+cy+')"><title>'+s+' '+n+(unit||'건')+' ('+Math.round(frac*100)+'%)</title></circle>';
     cum+=frac*circumference;
   });
   var rate=total?Math.round((counts['완료']||0)/total*100):0;
   var legendItems=order.filter(function(s){ return counts[s]; }).map(function(s){
-    var meta=MTG_STATUS_META[s];
-    return '<div style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--g5)"><span style="width:10px;height:10px;border-radius:50%;background:'+meta.c+';flex-shrink:0"></span>'+s+' '+(counts[s]||0)+'건</div>';
+    var meta=(pal&&pal[s])||MTG_STATUS_META[s];
+    return '<div style="display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--g5)"><span style="width:10px;height:10px;border-radius:50%;background:'+meta.c+';flex-shrink:0"></span>'+s+' '+(counts[s]||0)+(unit||'건')+'</div>';
   }).join('');
   return '<div style="display:flex;align-items:center;gap:16px;background:white;border:1px solid var(--g2);border-radius:14px;padding:14px;margin-bottom:12px">'
     +'<div style="position:relative;flex-shrink:0;width:140px;height:140px"><svg width="140" height="140" viewBox="0 0 140 140">'+segs+'</svg>'
-      +'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:22px;font-weight:800;color:var(--teal2)">'+rate+'%</div><div style="font-size:9.5px;color:var(--g4)">완료율</div></div>'
+      +'<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center"><div style="font-size:22px;font-weight:800;color:'+(pal?pal['완료'].t:'var(--teal2)')+'">'+rate+'%</div><div style="font-size:9.5px;color:var(--g4)">완료율</div></div>'
     +'</div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;flex:1;min-width:0">'+legendItems+'</div>'
   +'</div>';
@@ -24561,13 +25004,42 @@ function mtgMonthLatestProgressHtml(items){
     +rows
   +'</div>';
 }
-function mtgMonthTrendSvg(items){
+function mtgMonthBarsHtml(items){
+  var P=MTG_MONTH_PASTEL, by={};
+  (items||[]).forEach(function(it){
+    var m=String(it.report_month).slice(0,7); by[m]=by[m]||{n:0,'진행중':0,'완료':0,'기타':0};
+    by[m].n++; if(it.status==='진행중'||it.status==='완료') by[m][it.status]++; else by[m]['기타']++;
+  });
+  var months=Object.keys(by).sort().slice(-8);
+  if(!months.length) return '';
+  var max=1; months.forEach(function(m){ if(by[m].n>max) max=by[m].n; });
+  var cols=months.map(function(m){
+    var b=by[m], H=96;
+    function seg(k,col){ return b[k]?'<div title="'+k+' '+b[k]+'개" style="height:'+Math.max(4,Math.round(b[k]/max*H))+'px;background:'+col+'"></div>':''; }
+    return '<div style="flex:1;min-width:0;display:flex;flex-direction:column;align-items:center">'
+      +'<div style="font-size:11px;font-weight:800;color:#5B6472;margin-bottom:3px">'+b.n+'</div>'
+      +'<div style="width:100%;max-width:34px;height:'+H+'px;display:flex;flex-direction:column;justify-content:flex-end;border-radius:9px;overflow:hidden;background:#F3F5FA">'
+        +seg('기타',P['보류'].c)+seg('완료',P['완료'].c)+seg('진행중',P['진행중'].c)
+      +'</div>'
+      +'<div style="font-size:10.5px;color:#8A93A6;margin-top:5px">'+parseInt(m.slice(5,7),10)+'월</div></div>';
+  }).join('');
+  var leg=[['진행중',P['진행중'].c],['완료',P['완료'].c],['기타',P['보류'].c]].map(function(x){
+    return '<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;color:#6B7385"><span style="width:9px;height:9px;border-radius:3px;background:'+x[1]+'"></span>'+x[0]+'</span>';
+  }).join('');
+  return '<div style="background:white;border:1px solid #E8ECF6;border-radius:18px;padding:14px 14px 12px;margin-bottom:12px">'
+    +'<div style="display:flex;align-items:center;margin-bottom:10px"><div style="font-size:12.5px;font-weight:800;color:#4A5370">📊 월별 보고된 과제 수</div><div style="margin-left:auto;display:flex;gap:9px">'+leg+'</div></div>'
+    +'<div style="display:flex;gap:6px;align-items:flex-end">'+cols+'</div></div>';
+}
+function mtgMonthTrendSvg(chains){
   var byTask={};
-  items.forEach(function(it){
-    if(it.progress_pct==null) return;
-    var key=it.task_name||'(과제명 없음)';
-    byTask[key]=byTask[key]||{};
-    byTask[key][String(it.report_month).slice(0,7)]=it.progress_pct;
+  // 같은 과제(묶음)끼리 한 줄로: 줄 이름은 가장 최근 과제명
+  (chains||[]).forEach(function(c){
+    c.items.forEach(function(it){
+      if(it.progress_pct==null || it.status!=='진행중') return;   // 진행중일 때의 진행률만 추이에 사용
+      var key=c.last.task_name||'(과제명 없음)';
+      byTask[key]=byTask[key]||{};
+      byTask[key][String(it.report_month).slice(0,7)]=it.progress_pct;
+    });
   });
   // 한 달만 있는 과제는 "추이"가 아니므로 제외, 데이터 포인트 많은(=꾸준히 이어진) 과제 위주로 최대 6개
   var tasks=Object.keys(byTask).filter(function(k){ return Object.keys(byTask[k]).length>=2; });
@@ -24833,8 +25305,21 @@ async function mtgRptUngroupDo(){
     mtgWeekReportOpen();
   }catch(e){ toast('⚠️ 해제 실패: '+_safeErrMsg(e)); }
 }
-var _mtgMonthRptData=null, _mtgMonthRptFilter='전체', _mtgMonthRptShowAll=false;
+var _mtgMonthRptData=null, _mtgMonthRptFilter='전체', _mtgMonthRptView='all';
+var _mtgMonthSelMode=false, _mtgMonthSel={}, _mtgMonthHistOpen={}, _mtgMonthViewChains=[];
+// 같은 과제 판정: 직접 묶은 번호(task_group_id)가 있으면 그것, 없으면 과제명이 (공백·특수문자 무시하고) 똑같은 것끼리
+function mtgMonthChainKey(it){ return it.task_group_id?('g:'+it.task_group_id):('t:'+mtgRptTitleKey(it.task_name)); }
+function mtgMonthBuildChains(items){
+  var m={}, order=[];
+  items.slice().sort(function(a,b){
+    var x=String(a.report_month), y=String(b.report_month);
+    return x<y?-1:(x>y?1:((a.no||0)-(b.no||0)));
+  }).forEach(function(it){ var k=mtgMonthChainKey(it); if(!m[k]){ m[k]=[]; order.push(k); } m[k].push(it); });
+  return order.map(function(k){ var a=m[k]; return {key:k, items:a, first:a[0], last:a[a.length-1]}; });
+}
+function mtgMonthYM(d){ var p=String(d).slice(0,7).split('-'); return p[0]+'년 '+parseInt(p[1],10)+'월'; }
 async function mtgMonthReportOpen(){
+  if(_curScreenName!=='mtgmonthreport'){ _mtgMonthSelMode=false; _mtgMonthSel={}; }
   go('mtgmonthreport');
   var listEl=document.getElementById('mtgMonthRptList');
   listEl.innerHTML='<div style="text-align:center;padding:30px;color:var(--g3);font-size:14px">불러오는 중...</div>';
@@ -24843,60 +25328,158 @@ async function mtgMonthReportOpen(){
     if(res.error) throw res.error;
     _mtgMonthRptData={items:res.data||[]};
     _mtgMonthRptFilter='전체';
-    _mtgMonthRptShowAll=false;
     mtgMonthRptRender();
   }catch(e){ listEl.innerHTML='<div style="color:var(--danger);text-align:center;padding:20px">불러오기 실패: '+eeEsc(_safeErrMsg(e))+'</div>'; }
 }
 function mtgMonthRptSetFilter(f){ _mtgMonthRptFilter=f; mtgMonthRptRender(); }
-function mtgMonthRptToggleShowAll(){ _mtgMonthRptShowAll=!_mtgMonthRptShowAll; mtgMonthRptRender(); }
+function mtgMonthRptSetView(v){ _mtgMonthRptView=v; mtgMonthRptRender(); }
+function mtgMonthToggleHist(i){ var c=_mtgMonthViewChains[i]; if(!c) return; _mtgMonthHistOpen[c.key]=!_mtgMonthHistOpen[c.key]; mtgMonthRptRender(); }
+function mtgMonthToggleSel(i){ var c=_mtgMonthViewChains[i]; if(!c) return; if(_mtgMonthSel[c.key]) delete _mtgMonthSel[c.key]; else _mtgMonthSel[c.key]=true; mtgMonthRptRender(); }
+function mtgMonthSelStart(){ _mtgMonthSelMode=true; _mtgMonthSel={}; mtgMonthRptRender(); }
+function mtgMonthSelCancel(){ _mtgMonthSelMode=false; _mtgMonthSel={}; mtgMonthRptRender(); }
+function mtgMonthToolsHtml(){
+  if(!mtgCanManage()) return '';
+  var n=Object.keys(_mtgMonthSel).length;
+  if(!_mtgMonthSelMode){
+    return '<button onclick="mtgMonthSelStart()" style="padding:7px 14px;border-radius:20px;border:1.5px solid var(--g2);background:white;color:var(--g6);font-size:12.5px;font-weight:700;cursor:pointer">☑️ 선택해서 같은 과제 묶기</button>';
+  }
+  return '<div style="position:sticky;top:0;z-index:20;background:var(--bg,#f4f6f8);padding:4px 0 8px">'
+    +'<div style="display:flex;gap:6px;align-items:center">'
+    +'<button onclick="mtgMonthSelCancel()" style="padding:7px 12px;border-radius:20px;border:1.5px solid var(--g2);background:white;color:var(--g5);font-size:12.5px;font-weight:700;cursor:pointer">취소</button>'
+    +'<span style="font-size:12px;color:var(--g4)">같은 과제인 카드를 체크하세요</span>'
+    +'<span style="margin-left:auto;font-size:12.5px;font-weight:800;color:var(--teal2)">'+n+'개 선택</span></div>'
+    +'<div style="display:flex;gap:6px;margin-top:6px">'
+    +'<button onclick="mtgMonthGroupDo()" '+(n<2?'disabled ':'')+'style="flex:2;padding:10px;border-radius:10px;border:none;background:'+(n<2?'var(--g2)':'var(--teal)')+';color:'+(n<2?'var(--g4)':'white')+';font-size:13.5px;font-weight:800;cursor:pointer">🔗 같은 과제로 묶기 (2개 이상)</button>'
+    +'<button onclick="mtgMonthUngroupDo()" '+(n<1?'disabled ':'')+'style="flex:1;padding:10px;border-radius:10px;border:1.5px solid var(--g2);background:white;color:'+(n<1?'var(--g4)':'var(--g6)')+';font-size:13px;font-weight:700;cursor:pointer">묶음 해제</button>'
+    +'</div></div>';
+}
+function _mtgMonthIdsOfSel(){
+  var d=_mtgMonthRptData, ids=[], gids=[];
+  d.items.forEach(function(it){ if(_mtgMonthSel[mtgMonthChainKey(it)]){ ids.push(it.id); if(it.task_group_id && gids.indexOf(it.task_group_id)<0) gids.push(it.task_group_id); } });
+  return {ids:ids, gids:gids};
+}
+async function mtgMonthGroupDo(){
+  if(!mtgCanManage()){ toast('⚠️ admin·master만 사용할 수 있습니다'); return; }
+  var n=Object.keys(_mtgMonthSel).length;
+  if(n<2){ toast('⚠️ 2개 이상 선택하세요'); return; }
+  var r=_mtgMonthIdsOfSel();
+  var gid=r.gids[0]||('m'+Date.now().toString(36));
+  if(!confirm('선택한 '+n+'개 과제를 같은 과제로 묶습니다.\n(기록은 지워지지 않고, 월별 흐름으로 함께 표시됩니다)')) return;
+  try{
+    var res=await sb.from('monthly_strategy_items').update({task_group_id:gid}).in('id',r.ids);
+    if(res&&res.error) throw res.error;
+    toast('✅ 같은 과제로 묶었습니다');
+    _mtgMonthSelMode=false; _mtgMonthSel={};
+    mtgMonthReportOpen();
+  }catch(e){ toast('⚠️ 묶기 실패: '+_safeErrMsg(e)); }
+}
+async function mtgMonthUngroupDo(){
+  if(!mtgCanManage()){ toast('⚠️ admin·master만 사용할 수 있습니다'); return; }
+  var r=_mtgMonthIdsOfSel();
+  var ids=_mtgMonthRptData.items.filter(function(it){ return it.task_group_id && r.gids.indexOf(it.task_group_id)>=0; }).map(function(it){ return it.id; });
+  if(!ids.length){ toast('직접 묶은 과제가 아니라 해제할 게 없습니다'); return; }
+  if(!confirm('직접 묶은 과제 묶음을 풀까요? ('+ids.length+'개 기록)')) return;
+  try{
+    var res=await sb.from('monthly_strategy_items').update({task_group_id:null}).in('id',ids);
+    if(res&&res.error) throw res.error;
+    toast('✅ 묶음을 풀었습니다');
+    _mtgMonthSelMode=false; _mtgMonthSel={};
+    mtgMonthReportOpen();
+  }catch(e){ toast('⚠️ 해제 실패: '+_safeErrMsg(e)); }
+}
+function mtgMonthTaskCardHtml(c, idx){
+  var last=c.last, meta=MTG_MONTH_PASTEL[last.status]||MTG_MONTH_PASTEL['수행전'];
+  var n=c.items.length, sel=!!_mtgMonthSel[c.key];
+  var hasPct=last.progress_pct!=null, pct=hasPct?Math.max(0,Math.min(100,last.progress_pct)):0;
+  var bar;
+  if(last.status==='완료') bar='<div style="flex:1;height:9px;background:'+meta.bg+';border-radius:6px;overflow:hidden"><div style="width:100%;height:100%;background:'+meta.c+';border-radius:6px"></div></div><span style="font-size:12px;font-weight:800;color:'+meta.t+';min-width:44px;text-align:right">완료</span>';
+  else if(hasPct) bar='<div style="flex:1;height:9px;background:#F1F3F9;border-radius:6px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+meta.c+';border-radius:6px"></div></div><span style="font-size:12.5px;font-weight:800;color:'+meta.t+';min-width:44px;text-align:right">'+pct+'%</span>';
+  else bar='<div style="flex:1;height:8px;background:repeating-linear-gradient(135deg,var(--g1),var(--g1) 4px,var(--g2) 4px,var(--g2) 8px);border-radius:6px"></div><span style="font-size:10.5px;color:var(--g4);min-width:44px;text-align:right">미입력</span>';
+  // 월별 흐름 점
+  var dots=c.items.map(function(it,i){
+    var m=MTG_MONTH_PASTEL[it.status]||MTG_MONTH_PASTEL['수행전'], isLast=(i===n-1);
+    var lbl=String(it.report_month).slice(5,7).replace(/^0/,'');
+    return '<span title="'+eeEsc(mtgMonthYM(it.report_month)+' '+it.status+(it.progress_pct!=null&&it.status==='진행중'?(' '+it.progress_pct+'%'):''))+'" style="display:inline-flex;align-items:center;justify-content:center;width:'+(isLast?24:20)+'px;height:'+(isLast?24:20)+'px;border-radius:50%;background:'+m.c+';color:'+m.t+';font-size:'+(isLast?10.5:9.5)+'px;font-weight:800;'+(isLast?'box-shadow:0 0 0 3px '+m.bg+';':'opacity:.85;')+'">'+lbl+'</span>';
+  }).join('<span style="width:6px;height:2px;background:var(--g2);display:inline-block;align-self:center"></span>');
+  // 데이터 확인용 경고
+  var warn='';
+  if(n>1){
+    var prev=c.items[n-2];
+    if(last.status!=='완료' && prev.status==='완료') warn='↩ 지난 기록에서 완료였는데 다시 '+eeEsc(last.status)+'으로 되어 있어요';
+    else if(last.status==='진행중' && prev.status==='진행중' && last.progress_pct!=null && prev.progress_pct!=null && last.progress_pct<prev.progress_pct) warn='⚠ 진행률이 이전('+prev.progress_pct+'%)보다 낮아졌어요';
+  }
+  var hist='';
+  if(n>1 && _mtgMonthHistOpen[c.key]){
+    hist='<div onclick="event.stopPropagation()" style="margin-top:9px;padding:8px 10px;background:var(--g1);border-radius:8px;font-size:11.5px;color:var(--g5);line-height:1.8">'
+      +c.items.slice().reverse().map(function(it,i){
+        var m=MTG_MONTH_PASTEL[it.status]||MTG_MONTH_PASTEL['수행전'];
+        var p=(it.status==='진행중'&&it.progress_pct!=null)?(' '+it.progress_pct+'%'):'';
+        var nm=(it.task_name!==last.task_name)?(' <span style="color:var(--g4)">· '+eeEsc(it.task_name)+'</span>'):'';
+        return '<div onclick="mtgMonthOpenDetail(\''+it.report_month+'\')" style="cursor:pointer"><b style="color:'+m.t+'">'+eeEsc(mtgMonthYM(it.report_month))+'</b> · '+eeEsc(it.status+p)+nm+(i===0?' <b style="color:var(--teal2)">(최근)</b>':'')+'</div>';
+      }).join('')+'</div>';
+  }
+  var click=_mtgMonthSelMode?('mtgMonthToggleSel('+idx+')'):('mtgMonthOpenDetail(\''+last.report_month+'\')');
+  var chk=_mtgMonthSelMode?('<span style="flex-shrink:0;width:22px;height:22px;border-radius:6px;border:2px solid '+(sel?'var(--teal)':'var(--g3)')+';background:'+(sel?'var(--teal)':'white')+';color:white;font-size:14px;line-height:18px;text-align:center">'+(sel?'✓':'')+'</span>'):'';
+  return '<div onclick="'+click+'" style="display:flex;gap:10px;align-items:flex-start;background:'+(sel?'#E4F6F0':'white')+';border:1px solid '+(sel?'#7FD0B8':'#E8ECF6')+';border-radius:18px;padding:13px 14px;margin-bottom:10px;cursor:pointer;box-shadow:0 2px 8px rgba(110,120,170,.08)">'
+    +chk
+    +'<div style="flex:1;min-width:0">'
+      +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;flex-wrap:wrap">'
+        +'<span style="font-size:11px;font-weight:800;color:'+meta.t+';background:'+meta.bg+';padding:2px 10px;border-radius:10px">'+eeEsc(last.status)+'</span>'
+        +(n>1?'<span onclick="event.stopPropagation();mtgMonthToggleHist('+idx+')" style="font-size:10.5px;font-weight:800;color:#b45309;background:#fef3c7;padding:2px 8px;border-radius:9px;cursor:pointer">🔁 '+n+'개월째 '+(_mtgMonthHistOpen[c.key]?'▴':'▾')+'</span>':'')
+        +'<span style="margin-left:auto;font-size:11px;color:var(--g4)">'+eeEsc(mtgMonthYM(last.report_month))+' 기준</span>'
+      +'</div>'
+      +'<div style="font-size:14px;font-weight:800;color:var(--g7);line-height:1.4;word-break:keep-all;margin-bottom:9px">'+eeEsc(last.task_name||'(과제명 없음)')+'</div>'
+      +'<div style="display:flex;align-items:center;gap:8px;margin-bottom:'+(n>1?'10':'2')+'px">'+bar+'</div>'
+      +(n>1?'<div style="display:flex;align-items:center;gap:2px;flex-wrap:wrap">'+dots+'</div>':'')
+      +(last.status==='완료'&&last.completed_at?'<div style="font-size:11px;color:var(--g4);margin-top:6px">✔ '+eeEsc(mtgFmtDT(last.completed_at))+' 완료</div>':'')
+      +(warn?'<div style="margin-top:8px;font-size:11.5px;font-weight:700;color:#b45309;background:#fff7e6;border-radius:8px;padding:5px 9px">'+warn+'</div>':'')
+      +hist
+    +'</div>'
+    +(_mtgMonthSelMode?'':'<span style="color:var(--g3);flex-shrink:0;margin-top:2px">›</span>')
+  +'</div>';
+}
 function mtgMonthRptRender(){
   var data=_mtgMonthRptData; if(!data) return;
   var statsEl=document.getElementById('mtgMonthRptStats');
   var tabsEl=document.getElementById('mtgMonthRptTabs');
   var listEl=document.getElementById('mtgMonthRptList');
-  // 월간전략회의자료는 "최신월 = 최종본" 성격 → 목록도 기본은 최신월 것만, 같은 과제가 매달 중복으로 나열되지 않게 한다
+  var allChains=mtgMonthBuildChains(data.items);
   var latestMonth=data.items.reduce(function(max,it){ return (!max||String(it.report_month)>String(max))?it.report_month:max; }, null);
-  var baseItems=_mtgMonthRptShowAll ? data.items : data.items.filter(function(it){ return it.report_month===latestMonth; });
+  var scope=(_mtgMonthRptView==='latest')?allChains.filter(function(c){ return c.last.report_month===latestMonth; }):allChains;
   var counts={};
-  baseItems.forEach(function(it){ counts[it.status]=(counts[it.status]||0)+1; });
-  if(statsEl) statsEl.innerHTML=mtgMonthLatestProgressHtml(data.items)+mtgMonthTrendSvg(data.items)+mtgRptStatsHtml(counts);
-  if(tabsEl){
-    var ym=latestMonth?String(latestMonth).slice(0,7).split('-'):null;
-    var monthLabel=ym?(ym[0]+'년 '+parseInt(ym[1],10)+'월'):'';
-    tabsEl.innerHTML=mtgRptTabsHtml(_mtgMonthRptFilter,'mtgMonthRptSetFilter')
-      +'<button onclick="mtgMonthRptToggleShowAll()" style="flex-shrink:0;padding:7px 14px;border-radius:20px;border:1.5px solid var(--g2);background:'+(_mtgMonthRptShowAll?'var(--g6)':'white')+';color:'+(_mtgMonthRptShowAll?'white':'var(--g5)')+';font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap">'+(_mtgMonthRptShowAll?'🕒 전체 이력 표시중':'🕒 지난 월 이력 보기')+'</button>';
-    var noteEl=document.getElementById('mtgMonthRptNote');
-    if(!noteEl){
-      noteEl=document.createElement('div');
-      noteEl.id='mtgMonthRptNote';
-      noteEl.style.cssText='font-size:11.5px;color:var(--g4);margin:-4px 0 10px 2px';
-      tabsEl.parentNode.insertBefore(noteEl, tabsEl.nextSibling);
-    }
-    noteEl.textContent=_mtgMonthRptShowAll?'전체 월 이력을 함께 표시하고 있습니다 (같은 과제가 여러 번 나올 수 있음)':(monthLabel?monthLabel+' 최신 보고 기준 목록입니다':'');
+  scope.forEach(function(c){ counts[c.last.status]=(counts[c.last.status]||0)+1; });
+  var thisMonthN=allChains.filter(function(c){ return c.last.report_month===latestMonth; }).length;
+  if(statsEl){
+    var headLine='<div style="background:linear-gradient(135deg,#E6EEFF,#F1E8FF);border-radius:20px;padding:15px 17px;margin-bottom:12px;color:#3F4A75">'
+      +'<div style="font-size:12px;opacity:.8">'+(latestMonth?eeEsc(mtgMonthYM(latestMonth)):'')+' 기준 · 같은 과제는 한 개로 묶어서 계산</div>'
+      +'<div style="display:flex;align-items:baseline;gap:6px;margin-top:4px"><span style="font-size:32px;font-weight:900">'+scope.length+'</span><span style="font-size:14px;font-weight:700">개 과제</span>'
+      +'<span style="margin-left:auto;font-size:11.5px;opacity:.8">월별 기록 '+data.items.length+'건 → 과제 '+allChains.length+'개</span></div></div>';
+    statsEl.innerHTML=headLine+mtgWeekDonutSvg(counts,'개',MTG_MONTH_PASTEL)+mtgMonthBarsHtml(data.items);
   }
-  var h='';
-  var rendered=0;
-  function renderItems(list){
-    list.sort(function(a,b){ return (a.report_month||'')<(b.report_month||'')?1:-1; });
-    list.forEach(function(it){
-      var metaParts=[String(it.report_month).slice(0,7)];
-      if(it.status==='완료'&&it.completed_at) metaParts.push('✔'+mtgFmtDT(it.completed_at));
-      var progressPct=(it.status==='진행중')?(it.progress_pct!=null?it.progress_pct:'unset'):null;
-      h+=mtgRptRowHtml({status:it.status, title:it.task_name||'(과제명 없음)', meta:eeEsc(metaParts.join(' · ')), progressPct:progressPct, onclick:'mtgMonthOpenDetail(\''+it.report_month+'\')'});
-      rendered++;
-    });
+  if(tabsEl){
+    var seg=function(v,label){ var a=(_mtgMonthRptView===v); return '<button onclick="mtgMonthRptSetView(\''+v+'\')" style="flex:1;padding:9px 6px;border:none;border-radius:9px;background:'+(a?'white':'transparent')+';color:'+(a?'var(--navy)':'var(--g4)')+';font-size:13px;font-weight:800;cursor:pointer;'+(a?'box-shadow:0 1px 4px rgba(0,0,0,.12)':'')+'">'+label+'</button>'; };
+    tabsEl.style.cssText='display:block;margin-bottom:12px';
+    tabsEl.innerHTML='<div style="display:flex;gap:4px;background:var(--g1);padding:4px;border-radius:12px;margin-bottom:10px">'+seg('all','전체 과제 '+allChains.length)+seg('latest','이번 달 '+thisMonthN)+'</div>'
+      +'<div style="display:flex;gap:6px;overflow-x:auto;margin-bottom:8px">'+mtgRptTabsHtml(_mtgMonthRptFilter,'mtgMonthRptSetFilter')+'</div>'
+      +'<div style="font-size:11.5px;color:var(--g4);margin:2px 2px 8px">'+(_mtgMonthRptView==='latest'?'이번 달 보고에 올라온 과제만 보여줍니다':'지난 달 보고된 과제까지 모두, 과제별 가장 최근 상태로 보여줍니다')+'</div>'
+      +mtgMonthToolsHtml();
+  }
+  var h='', rendered=0;
+  _mtgMonthViewChains=[];
+  function add(list){
+    list.sort(function(a,b){ var x=String(a.last.report_month), y=String(b.last.report_month); return x<y?1:(x>y?-1:((a.last.no||0)-(b.last.no||0))); });
+    list.forEach(function(c){ _mtgMonthViewChains.push(c); h+=mtgMonthTaskCardHtml(c,_mtgMonthViewChains.length-1); rendered++; });
   }
   if(_mtgMonthRptFilter==='전체'){
     MTG_RPT_GROUP_ORDER.forEach(function(st){
-      var list=baseItems.filter(function(it){ return it.status===st; });
+      var list=scope.filter(function(c){ return c.last.status===st; });
       if(!list.length) return;
-      var meta=MTG_STATUS_META[st];
-      h+='<div style="font-size:12.5px;font-weight:800;color:'+meta.c+';margin:14px 0 6px">'+st+' ('+list.length+')</div>';
-      renderItems(list);
+      var meta=MTG_MONTH_PASTEL[st];
+      h+='<div style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:800;color:'+meta.t+';margin:16px 2px 8px"><span style="width:9px;height:9px;border-radius:50%;background:'+meta.c+'"></span>'+st+' <span style="background:'+meta.bg+';padding:1px 8px;border-radius:9px;font-size:11.5px">'+list.length+'</span></div>';
+      add(list);
     });
   }else{
-    var list=baseItems.filter(function(it){ return mtgRptMatch(it.status,_mtgMonthRptFilter); });
-    renderItems(list);
+    add(scope.filter(function(c){ return mtgRptMatch(c.last.status,_mtgMonthRptFilter); }));
   }
   if(!rendered) h='<div style="color:var(--g3);text-align:center;padding:30px;font-size:14px">해당하는 항목이 없습니다</div>';
   if(listEl) listEl.innerHTML=h;
@@ -25605,10 +26188,6 @@ async function mtgWeekOpenDetail(meetingId){
     var sRes=await sb.from('weekly_meeting_signatures').select('*').eq('meeting_id',meetingId).order('seq',{ascending:true});
     var sigs=(sRes&&sRes.data)||[];
     // 참석자 서명란에 체크표시가 아니라 각자 등록해둔 실제 서명 이미지를 보여준다("사인등록한거로" 표시)
-    var _sigUrlMap={};
-    await Promise.all(sigs.filter(function(s){return s&&s.signature_path;}).map(async function(s){
-      _sigUrlMap[s.signature_path]=await getSignedFileUrl('adminconfirm', s.signature_path);
-    }));
     var clickable=mtgCanManage();
     // 실제 회의록 원본 양식: 붙임 태그 + 회의명·일자·장소·안건 표 (2단 그리드, 색상 구획 코딩)
     var h='<div class="mtg-tag">붙임</div>'
@@ -25649,7 +26228,7 @@ async function mtgWeekOpenDetail(meetingId){
     if(sigs.length){
       h+='<div class="mtg-signgrid2">';
       sigs.forEach(function(s){
-        var sigImg=s.signature_path?('<img src="'+(_sigUrlMap[s.signature_path]||'')+'" style="height:28px;object-fit:contain">'):'<span style="color:var(--teal2);font-weight:700;font-size:11px">✔ 서명완료</span>';
+        var sigImg=sigStamp(s.name, s.signed_at);
         h+='<div class="mtg-signcell2"><b>'+eeEsc(s.name)+'</b><span style="margin-left:auto">'+sigImg+'</span></div>';
       });
       if(sigs.length%2===1) h+='<div class="mtg-signcell2"></div>';
@@ -25793,8 +26372,8 @@ async function mtgWeekSign(meetingId){
   try{
     var profRes=await sb.from('user_signatures').select('*').eq('username',me.id);
     var prof=profRes&&profRes.data&&profRes.data[0];
-    if(!prof||!prof.signature_path||!prof.dept||!prof.position||!prof.employee_id){
-      toast('⚠️ 먼저 "내 서명 등록" 탭에서 소속·직책·사번·서명 이미지를 등록해주세요');
+    if(!prof||!prof.dept||!prof.position||!prof.employee_id){
+      toast('⚠️ 먼저 "내 서명 등록" 탭에서 소속·직책·사번을 등록해주세요');
       return;
     }
     var sigRes=await sb.from('weekly_meeting_signatures').select('id,seq,employee_id').eq('meeting_id',meetingId);
@@ -25807,7 +26386,7 @@ async function mtgWeekSign(meetingId){
       // 이미 서명한 사람이 다시 누르면 새 행을 추가하지 않고 기존 서명을 최신 정보로 갱신한다(1인 1서명)
       var updRes=await sb.from('weekly_meeting_signatures').update({
         name:me.name, dept:prof.dept, position:prof.position,
-        signature_path:prof.signature_path, signed_at:new Date().toISOString(), signed_by_role:me.role
+        signature_path:null, signed_at:new Date().toISOString(), signed_by_role:me.role
       }).eq('id',mine.id);
       if(updRes.error) throw updRes.error;
       toast('✅ 서명이 갱신되었습니다 (이미 서명하셨습니다)');
@@ -25816,7 +26395,7 @@ async function mtgWeekSign(meetingId){
     }
     var res=await sb.from('weekly_meeting_signatures').insert({
       meeting_id:meetingId, seq:maxSeq+1, name:me.name, dept:prof.dept, position:prof.position,
-      employee_id:prof.employee_id, signature_path:prof.signature_path,
+      employee_id:prof.employee_id, signature_path:null,
       signed_at:new Date().toISOString(), signed_by_role:me.role
     });
     if(res.error) throw res.error;
@@ -26504,11 +27083,7 @@ async function loadAdcMySig(){
     _adcMySigExistingPath=(p&&p.signature_path)||null;
     _adcMySigFile=null;
     var wrap=document.getElementById('adcMySigPreviewWrap');
-    var img=document.getElementById('adcMySigPreview');
-    if(p&&p.signature_path&&wrap&&img){
-      img.src=await getSignedFileUrl('adminconfirm', p.signature_path);
-      wrap.style.display='block';
-    }else if(wrap){ wrap.style.display='none'; }
+    if(wrap) wrap.style.display='none'; // 서명 이미지는 더 이상 불러오지 않음(전송량 절감)
   }catch(e){}
 }
 // ── 서명 손으로 그리기 ──
@@ -26779,10 +27354,8 @@ async function ncfOpenDocDetail(id){
       +(d.content3?('<br>· ('+lrptEsc(d.label3||'')+') '+sfRender(d.content3)):'')
       +'</div></div></div>';
     h+='<table class="adc-sig-table"><thead><tr><th>연번</th><th>소속</th><th>직책</th><th>사번</th><th>성명</th><th>확인일자</th><th>서명</th>'+(canEdit?'<th></th>':'')+'</tr></thead><tbody>';
-    var _sigUrlMap1={};
-    await Promise.all(sigs.filter(function(s){return s.signature_path;}).map(async function(s){ _sigUrlMap1[s.signature_path]=await getSignedFileUrl('adminconfirm', s.signature_path); }));
     sigs.forEach(function(s,i){
-      var sigImg=s.signature_path?'<img src="'+(_sigUrlMap1[s.signature_path]||'')+'" style="height:26px">':'';
+      var sigImg=sigStamp(s.name, s.created_at||s.confirmed_date);
       h+='<tr><td>'+(i+1)+'</td><td>'+lrptEsc(s.dept)+'</td><td>'+lrptEsc(s.position)+'</td><td>'+lrptEsc(s.employee_id)+'</td><td>'+lrptEsc(s.name)+'</td><td>'+lrptEsc(s.confirmed_date)+'</td><td>'+sigImg+'</td>'
         +(canEdit?'<td><span onclick="ncfDeleteSignature('+s.id+','+id+')" style="cursor:pointer" title="삭제">🗑️</span></td>':'')
         +'</tr>';
@@ -26796,24 +27369,70 @@ async function ncfOpenDocDetail(id){
     }
     h+='<button onclick="ncfPrintDoc('+id+')" style="flex:1;padding:12px;background:var(--navy);color:white;border:none;border-radius:var(--r2);font-size:14px;font-weight:700;cursor:pointer">🖨️ 인쇄</button>';
     h+='</div>';
-    if(canEdit){
+    if(canEdit||iAmEligible){
       h+='<div id="ncfUnsignedWrap" style="margin-top:14px"><div style="text-align:center;padding:14px;color:var(--g3);font-size:13px">미확인자 집계 중...</div></div>';
+    }
+    if(canEdit){
       h+='<button onclick="ncfOpenEditMeta('+id+',\''+lrptEsc(d.due_date||'')+'\',\''+(d.target_roles||[]).join(',')+'\')" style="width:100%;margin-top:8px;padding:10px;background:var(--teal-bg);color:var(--teal2);border:1px solid var(--teal2);border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer">✏️ 확인기한·대상 수정</button>';
       h+='<button onclick="ncfDeleteDoc('+id+')" style="width:100%;margin-top:8px;padding:10px;background:#FFF0F0;color:var(--danger);border:1px solid var(--danger);border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer">🗑️ 이 확인서 전체 삭제</button>';
     }
     body.innerHTML=h;
-    if(canEdit) ncfRenderUnsigned(d, sigs);
+    if(canEdit||iAmEligible) ncfRenderUnsigned(d, sigs);
   }catch(e){ body.innerHTML='<div style="text-align:center;padding:30px;color:var(--danger)">불러오기 실패: '+e.message+'</div>'; }
+}
+// 미확인자 계산 공용 (상세 화면·배지·팝업 공통). 사용자 목록은 20초간 캐시
+var _ncfUsersCache={t:0,rows:null};
+async function ncfLoadUsers(){
+  if(_ncfUsersCache.rows && Date.now()-_ncfUsersCache.t<20000) return _ncfUsersCache.rows;
+  var r=await sb.from('users').select('id,name,role,team,employee_id,status').eq('status','active');
+  if(r.error||!r.data) return null;
+  _ncfUsersCache={t:Date.now(),rows:r.data}; return r.data;
+}
+function ncfCalcUnsigned(d, users, sigs){
+  var signedIds={}; (sigs||[]).forEach(function(s){ if(s.signed_by) signedIds[s.signed_by]=true; });
+  var target=users.filter(function(u){ return noticeVisibleFor(d.target_roles, u.role); });
+  return {target:target, unsigned:target.filter(function(u){ return !signedIds[u.id]; })};
+}
+// 미확인자 명단 팝업 (대상자·관리자 누구나)
+async function ncfShowUnsignedPopup(docId){
+  var body=document.getElementById('ncfUnsignedModalBody'); if(!body) return;
+  body.innerHTML='<div style="text-align:center;padding:24px;color:var(--g3)">불러오는 중...</div>';
+  showM('ncfUnsignedModal');
+  try{
+    var dr=await sb.from('notice_confirm_docs').select('id,title,due_date,target_roles').eq('id',docId);
+    var d=dr&&dr.data&&dr.data[0];
+    if(!d){ body.innerHTML='<div style="text-align:center;padding:24px;color:var(--danger)">문서를 찾을 수 없습니다</div>'; return; }
+    var sr=await sb.from('notice_confirm_signatures').select('doc_id,signed_by').eq('doc_id',docId);
+    var users=await ncfLoadUsers();
+    if(!users){ body.innerHTML='<div style="text-align:center;padding:24px;color:var(--danger)">명단을 불러오지 못했습니다</div>'; return; }
+    var c=ncfCalcUnsigned(d, users, sr.data||[]);
+    var done=c.target.length-c.unsigned.length;
+    var h='<div style="font-size:14px;font-weight:800;color:var(--g7);margin-bottom:4px">'+sfRender(d.title)+'</div>'
+      +(d.due_date?'<div style="font-size:12px;color:var(--g4);margin-bottom:8px">확인기한 '+lrptEsc(d.due_date)+'</div>':'')
+      +'<div style="display:flex;gap:8px;margin-bottom:12px">'
+      +'<div style="flex:1;text-align:center;padding:10px;background:var(--teal-bg);border-radius:var(--r2)"><div style="font-size:11px;color:var(--teal2);font-weight:700">확인 완료</div><div style="font-size:20px;font-weight:900;color:var(--teal2)">'+done+'명</div></div>'
+      +'<div style="flex:1;text-align:center;padding:10px;background:#FFF7E0;border-radius:var(--r2)"><div style="font-size:11px;color:#B8860B;font-weight:700">미확인</div><div style="font-size:20px;font-weight:900;color:#B8860B">'+c.unsigned.length+'명</div></div>'
+      +'<div style="flex:1;text-align:center;padding:10px;background:var(--g1);border-radius:var(--r2)"><div style="font-size:11px;color:var(--g4);font-weight:700">대상</div><div style="font-size:20px;font-weight:900;color:var(--g6)">'+c.target.length+'명</div></div></div>';
+    if(!c.unsigned.length){
+      h+='<div style="text-align:center;padding:18px;color:var(--teal2);font-weight:700">🎉 대상자 모두 확인했습니다</div>';
+    }else{
+      var byTeam={}; c.unsigned.forEach(function(u){ var t=u.team||'소속없음'; (byTeam[t]=byTeam[t]||[]).push(u.name); });
+      h+='<div style="font-size:12px;font-weight:700;color:var(--g5);margin-bottom:6px">아직 확인하지 않은 사람</div>'
+        +'<div style="background:var(--g1);border-radius:var(--r2);padding:8px 12px">'
+        +Object.keys(byTeam).sort(function(x,y){return x.localeCompare(y,'ko',{numeric:true});}).map(function(t){
+          return '<div style="padding:5px 0;font-size:13px;line-height:1.7;border-bottom:1px solid var(--g2)"><span style="display:inline-block;min-width:64px;font-weight:700;color:var(--g6)">'+lrptEsc(t)+'</span><span style="color:var(--g5)">'+byTeam[t].map(lrptEsc).join(', ')+'</span></div>';
+        }).join('')+'</div>';
+    }
+    body.innerHTML=h;
+  }catch(e){ body.innerHTML='<div style="text-align:center;padding:24px;color:var(--danger)">불러오기 실패: '+lrptEsc(e.message||'')+'</div>'; }
 }
 // 대상 역할에 해당하는 승인된 계정 전체 중 아직 서명하지 않은 사람 목록 (관리자만 조회)
 async function ncfRenderUnsigned(d, sigs){
   var wrap=document.getElementById('ncfUnsignedWrap'); if(!wrap) return;
   try{
-    var ures=await sb.from('users').select('id,name,role,team,employee_id,status').eq('status','approved');
-    if(ures.error||!ures.data){ wrap.innerHTML=''; return; }
-    var signedIds={}; sigs.forEach(function(s){ if(s.signed_by) signedIds[s.signed_by]=true; });
-    var target=ures.data.filter(function(u){ return noticeVisibleFor(d.target_roles, u.role); });
-    var unsigned=target.filter(function(u){ return !signedIds[u.id]; });
+    var users=await ncfLoadUsers();
+    if(!users){ wrap.innerHTML=''; return; }
+    var cc=ncfCalcUnsigned(d, users, sigs); var target=cc.target, unsigned=cc.unsigned;
     var h='<div style="font-size:13px;font-weight:700;color:var(--g6);margin-bottom:7px">📋 대상 '+target.length+'명 중 미확인 '+unsigned.length+'명</div>';
     if(unsigned.length){
       h+='<div style="background:var(--g1);border-radius:var(--r2);padding:10px 12px;font-size:12.5px;color:var(--g5);line-height:1.9;max-height:180px;overflow-y:auto">'
@@ -26828,8 +27447,8 @@ async function ncfSign(docId){
   try{
     var profRes=await sb.from('user_signatures').select('*').eq('username',me.id);
     var prof=profRes&&profRes.data&&profRes.data[0];
-    if(!prof||!prof.signature_path||!prof.dept||!prof.position||!prof.employee_id){
-      toast('⚠️ 먼저 "관리자 확인사항 > 내 서명 등록" 탭에서 소속·직책·사번·서명 이미지를 등록해주세요');
+    if(!prof||!prof.dept||!prof.position||!prof.employee_id){
+      toast('⚠️ 먼저 "관리자 확인사항 > 내 서명 등록" 탭에서 소속·직책·사번을 등록해주세요');
       return;
     }
     var sigRes=await sb.from('notice_confirm_signatures').select('seq').eq('doc_id',docId);
@@ -26837,7 +27456,7 @@ async function ncfSign(docId){
     if(sigRes.data) sigRes.data.forEach(function(s){ if(s.seq>maxSeq) maxSeq=s.seq; });
     var res=await sb.from('notice_confirm_signatures').insert({
       doc_id:docId, seq:maxSeq+1, dept:prof.dept, position:prof.position, employee_id:prof.employee_id,
-      name:me.name, confirmed_date:kstDate(), signature_path:prof.signature_path,
+      name:me.name, confirmed_date:kstDate(), signature_path:null,
       signed_by:me.id, signed_by_role:me.role
     });
     if(res.error) throw res.error;
@@ -27484,13 +28103,13 @@ var FAC_CONFIGS={
       {key:'water_cnt', label:'정수기(생수) 수량', xh:'정수기', type:'number'},
       {key:'hanger_cnt', label:'공용 옷걸이 수량', xh:'옷걸이', type:'number'},
       {key:'board_type', label:'게시판', xh:'게시판', type:'text'},
-      {key:'fire_extinguisher_count', label:'소화기 현황', xh:'소화기 수량', type:'select', options:['1','2','3','4','5','6']},
+      {key:'fire_extinguisher_count', label:'소화기 현황', xh:'소화기 수량', type:'select', options:['0','1','2','3','4','5','6']},
       {key:'fire_extinguisher_dates', label:'소화기 구매일자', xh:'소화기 구매일자', type:'extdates', countKey:'fire_extinguisher_count'}
     ,
       {key:'status', label:'사용 여부', xh:'사용여부', type:'select', options:['사용중','공사중','폐쇄','기타'], default:'사용중'}],
     listTitle:function(r){ return (r.location||''); },
     listSub:function(r){ return (r.gender||'-')+' · '+(r.use_team||''); },
-    listDetail:function(r){ return '냉장고'+(r.fridge_cnt||0)+' 전자레인지'+(r.microwave_cnt||0)+' 정수기'+(r.water_cnt||0)+(r.fire_extinguisher_count?(' · 소화기 '+r.fire_extinguisher_count+'개'):''); }
+    listDetail:function(r){ return '냉장고'+(r.fridge_cnt||0)+' 전자레인지'+(r.microwave_cnt||0)+' 정수기'+(r.water_cnt||0)+(parseInt(r.fire_extinguisher_count)>0?(' · 소화기 '+r.fire_extinguisher_count+'개'):''); }
   },
   storage:{table:'storage_room_master', icon:'📦', title:'창고', screen:'sStorageMgmt', pfx:'st',
     fields:[
@@ -27500,14 +28119,14 @@ var FAC_CONFIGS={
       {key:'location', label:'위치', xh:'창고 위치', type:'text', required:true},
       {key:'number', label:'번호', xh:'창고 NUMBER', type:'text'},
       {key:'storage_type', label:'창고 종류(용품/장비/문서 등)', xh:'창고 종류', type:'text'},
-      {key:'fire_extinguisher_count', label:'소화기 현황', xh:'소화기 수량', type:'select', options:['1','2','3','4','5','6']},
+      {key:'fire_extinguisher_count', label:'소화기 현황', xh:'소화기 수량', type:'select', options:['0','1','2','3','4','5','6']},
       {key:'fire_extinguisher_dates', label:'소화기 구매일자', xh:'소화기 구매일자', type:'extdates', countKey:'fire_extinguisher_count'},
       {key:'manager', label:'관리 주체', xh:'관리 주체', type:'text'}
     ,
       {key:'status', label:'사용 여부', xh:'사용여부', type:'select', options:['사용중','공사중','폐쇄','기타'], default:'사용중'}],
     listTitle:function(r){ return (r.location||''); },
     listSub:function(r){ return (r.number||''); },
-    listDetail:function(r){ return (r.storage_type||'-')+' · 관리: '+(r.manager||'-')+(r.fire_extinguisher_count?(' · 소화기 '+r.fire_extinguisher_count+'개'):''); }
+    listDetail:function(r){ return (r.storage_type||'-')+' · 관리: '+(r.manager||'-')+(parseInt(r.fire_extinguisher_count)>0?(' · 소화기 '+r.fire_extinguisher_count+'개'):''); }
   },
   baby:{table:'baby_room_master', icon:'👶', title:'유아휴게실', screen:'sBabyMgmt', pfx:'bb',
     fields:[
@@ -27941,7 +28560,7 @@ function facOpenDetail(type,id){
   var r=(facData[type]||[]).find(function(x){return x.id===id;});
   if(!r) return;
   facEditId[type]=id;
-  document.getElementById('fac2DetailTitle').textContent=cfg.icon+' '+(cfg.listTitle(r)||cfg.title)+' 상세';
+  document.getElementById('fac2DetailTitle').innerHTML=cfg.icon+' '+String(cfg.listTitle(r)||cfg.title).replace(/[&<>]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;'}[c];})+' 상세';
   var p=cfg.pfx+'D';
   var body=document.getElementById('fac2DetailBody');
   var h=facRenderFieldsHtml(type,'D');
@@ -31060,8 +31679,7 @@ async function subAcc(){
     injury_type: injuryType||null,
     expected_leave_days: leaveDaysVal?parseInt(leaveDaysVal):null,
     action: document.getElementById('accAction').value.trim()||null,
-    writer: me?me.name:'',
-    confirmed: false
+    writer: me?me.name:''
   };
   try{
     var editBtn=document.querySelector('button[onclick="subAcc()"]');
@@ -31070,7 +31688,7 @@ async function subAcc(){
     if(editId){
       res=await sb.from('safety_accidents').update(payload).eq('id',editId);
     }else{
-      res=await sb.from('safety_accidents').insert(payload);
+      res=await sb.from('safety_accidents').insert(Object.assign({confirmed:false},payload));
     }
     if(res.error){ toast('저장 오류: '+_safeErrMsg(res.error)); return; }
     toast(editId?'✅ 안전사고 수정 완료':'✅ 안전사고 등록 완료');
@@ -32600,6 +33218,8 @@ async function mgrAutoConfirmPastDue(){
         if(!res.error){ (res.data||[]).forEach(function(r){ mgrAttData[r.team+'_'+r.name]=r; }); _mgrAttDataLoadedToday=true; }
       }catch(e){}
     }
+    // 공휴일이면 사업부장·행정은 휴무로 자동확정 (총괄팀장은 공휴일에도 출근하는 경우가 있어 제외)
+    try{ var _hm=await mgrAttHistFetchHolidays(todayStr,todayStr); if(_hm[todayStr]) _mgrHolDb[todayStr]=_hm[todayStr]; }catch(e){}
     var toWrite=[];
     Object.keys(MGR_STRUCTURE).forEach(function(shift){
       var cutoff=MGR_CONFIRM_TIME[shift]; if(!cutoff || nowHM<cutoff) return;
@@ -32611,7 +33231,7 @@ async function mgrAutoConfirmPastDue(){
           if(rec && rec.checked) return; // 이미 뭐든 확정돼 있으면 손 안 댐
           var scheduledEntry=mgrLeaveEntryFor(team, name, todayStr);
           var statusToConfirm=scheduledEntry ? scheduledEntry.status
-            : (isSlotOffToday(team, name, mgrRosterOffCache, todayStr) ? '휴무' : null);
+            : ((isSlotOffToday(team, name, mgrRosterOffCache, todayStr) || mgrIsHolidayOff(team, name, todayStr)) ? '휴무' : null);
           if(!statusToConfirm) return; // 예정도 없고 휴무일도 아니면(순수 미확인) 자동확정 대상 아님 — 그대로 둠
           toWrite.push({team:team, name:name, status:statusToConfirm});
         });
@@ -33779,7 +34399,8 @@ function renderMgrAttendance(){
         var scheduledEntry = !isChecked ? mgrLeaveEntryFor(team, name, offCheckDate) : null;
         var scheduledStatus = scheduledEntry ? scheduledEntry.status : null;
         // 미체크 상태인데 근무계획(분기 고정휴무)상 해당 조회일이 휴무인 경우 자동으로 "휴무"로 표시 (당일·전일·조회일 공통 적용)
-        var isAutoOff = !isChecked && !scheduledStatus && isSlotOffToday(team, name, mgrRosterOffCache, offCheckDate);
+        var isHolOff = !isChecked && !scheduledStatus && mgrIsHolidayOff(team, name, offCheckDate);
+        var isAutoOff = !isChecked && !scheduledStatus && (isSlotOffToday(team, name, mgrRosterOffCache, offCheckDate) || isHolOff);
         var effStatus = status || scheduledStatus; // 아이콘/색상 판정용
         var isLeaveType = effStatus && effStatus!=='출장' && effStatus!=='교육' && effStatus!=='휴무' && effStatus!=='출근'; // 연차/공가/건강검진/병가/휴직/기타(및 자유입력) 통칭
         var isPlainOff = effStatus==='휴무'; // "휴무"는 자동감지된 근무계획 휴무와 동일한 스타일로 통일
@@ -33817,7 +34438,7 @@ function renderMgrAttendance(){
         }else if(scheduledStatus){
           h += '<div style="font-size:10px;color:inherit;margin-top:1px;opacity:.85">'+scheduledStatus+' (예정)</div>';
         }else if(isAutoOff){
-          h += '<div style="font-size:10px;color:inherit;margin-top:1px;opacity:.85">근무계획 휴무</div>';
+          h += '<div style="font-size:10px;color:inherit;margin-top:1px;opacity:.85">'+((isHolOff && !isSlotOffToday(team, name, mgrRosterOffCache, offCheckDate))?'공휴일 휴무':'근무계획 휴무')+'</div>';
         }
         h += '</div>';
       });
@@ -34319,7 +34940,7 @@ function mgrAttHistStatusStyle(status){
 async function mgrAttHistFetchPlan(y,m,from,to){
   var t=mgrAttHistTarget, plan={};
   var dayNamesK=['일','월','화','수','목','금','토'];
-  var sched=[], leaves=[], off=null;
+  var sched=[], leaves=[], off=null, offByQ={};
   try{ var r1=await sb.from('mgr_leave_schedule').select('status,start_date,end_date').eq('team',t.team).eq('name',t.name).lte('start_date',to).gte('end_date',from); sched=r1.data||[]; }catch(e){}
   if(t.empNo===undefined){
     t.empNo=null;
@@ -34327,7 +34948,13 @@ async function mgrAttHistFetchPlan(y,m,from,to){
   }
   if(t.empNo){
     try{ var r2=await sb.from('wf_leave').select('leave_type,start_date,end_date').eq('emp_no',t.empNo).lte('start_date',to).gte('end_date',from); leaves=r2.data||[]; }catch(e){}
-    try{ var q=y+'-Q'+(Math.floor(m/3)+1); var r3=await sb.from('wf_fixed_off').select('off_day1,off_day2').eq('emp_no',t.empNo).eq('quarter',q).maybeSingle(); off=r3.data||null; }catch(e){}
+    try{
+      await wfLoadQStart();
+      var qNeed={}, ld0=new Date(y,m+1,0).getDate();
+      for(var dd0=1; dd0<=ld0; dd0++){ var ds0=y+'-'+String(m+1).padStart(2,'0')+'-'+String(dd0).padStart(2,'0'); qNeed[wfCalQuarter(ds0)]=1; qNeed[wfEffQuarter(ds0)]=1; }
+      var r3=await sb.from('wf_fixed_off').select('quarter,off_day1,off_day2').eq('emp_no',t.empNo).in('quarter',Object.keys(qNeed));
+      (r3.data||[]).forEach(function(x){ offByQ[x.quarter]=x; });
+    }catch(e){}
   }
   var lastDate=new Date(y,m+1,0).getDate();
   for(var d=1; d<=lastDate; d++){
@@ -34336,6 +34963,7 @@ async function mgrAttHistFetchPlan(y,m,from,to){
     if(hit){ plan[dStr]={status:hit.status, src:'일정등록'}; continue; }
     var lv=leaves.find(function(x){ return x.start_date<=dStr && x.end_date>=dStr; });
     if(lv){ plan[dStr]={status:lv.leave_type||'휴직', src:'휴직'}; continue; }
+    off=wfPickOffRow(offByQ,dStr);
     if(off){
       var dn=dayNamesK[new Date(y,m,d).getDay()];
       if(off.off_day1===dn||off.off_day2===dn){ plan[dStr]={status:'휴무', src:'고정휴무'}; }
@@ -34935,9 +35563,41 @@ async function loadWfEmployees(){
     document.getElementById('wfEmpCountLbl').textContent='전체 '+wfEmployees.length+'명';
     wfFillFilterOptions();
     wfRenderTable();
+    wfRenderQStartBar();
   }catch(e){
     wrap.innerHTML='<div style="text-align:center;padding:30px;color:#dc2626;font-size:13px">불러오기 실패: '+String(e.message||e)+'</div>';
   }
+}
+// ── 분기 휴무 적용 시작일 입력 (admin·master만 수정, 나머지는 조회만) ──
+async function wfRenderQStartBar(){
+  var q=wfCurQuarter||wfNowQuarter();
+  var lbl=document.getElementById('wfQStartLbl'), inp=document.getElementById('wfQStartInp'),
+      sv=document.getElementById('wfQStartSave'), cl=document.getElementById('wfQStartClear'), hint=document.getElementById('wfQStartHint');
+  if(!lbl) return;
+  await wfLoadQStart(true);
+  var af=WF_QSTART.map[q]||'';
+  var isAdm=!!(me&&(me.role==='admin'||me.role==='master'));
+  lbl.textContent='📅 '+wfQuarterLabel(q).replace(' 기준','')+' 휴무 적용 시작일';
+  inp.value=af; inp.style.display=isAdm?'':'none'; sv.style.display=isAdm?'':'none'; cl.style.display=(isAdm&&af)?'':'none';
+  var pq=wfQuarterLabel(wfPrevQuarter(q)).replace(' 기준','');
+  hint.textContent=af?((isAdm?'':af+' ')+'이전까지는 '+pq+' 휴무 유지, 이후부터 적용'):'미설정 — 분기 첫날부터 적용';
+}
+async function wfSaveQStart(){
+  var q=wfCurQuarter||wfNowQuarter(), v=(document.getElementById('wfQStartInp')||{}).value||'';
+  if(!(me&&(me.role==='admin'||me.role==='master'))){ toast('⚠️ 관리자만 수정할 수 있습니다'); return; }
+  if(!v){ toast('⚠️ 적용 시작일을 선택해주세요'); return; }
+  if(wfCalQuarter(v)!==q){ toast('⚠️ 적용 시작일은 '+q+' 기간 안의 날짜여야 합니다'); return; }
+  var r=await sb.from('wf_quarter_start').upsert({quarter:q, apply_from:v, updated_by:(me.name||''), updated_at:new Date().toISOString()},{onConflict:'quarter'});
+  if(r.error){ toast('⚠️ 저장 실패: '+String(_safeErrMsg(r.error)||r.error)); return; }
+  toast('✅ '+q+' 휴무 적용 시작일 '+v+' 저장'); wfRenderQStartBar();
+}
+async function wfClearQStart(){
+  var q=wfCurQuarter||wfNowQuarter();
+  if(!(me&&(me.role==='admin'||me.role==='master'))){ toast('⚠️ 관리자만 수정할 수 있습니다'); return; }
+  if(!confirm(q+' 적용 시작일을 해제할까요?\n해제하면 분기 첫날부터 새 휴무가 적용됩니다.')) return;
+  var r=await sb.from('wf_quarter_start').delete().eq('quarter',q);
+  if(r.error){ toast('⚠️ 해제 실패: '+String(_safeErrMsg(r.error)||r.error)); return; }
+  toast('적용 시작일을 해제했습니다'); wfRenderQStartBar();
 }
 function wfFillFilterOptions(){
   var teamSel=document.getElementById('wfFTeam'), grpSel=document.getElementById('wfFGroup'), posSel=document.getElementById('wfFPosition');
@@ -35843,6 +36503,39 @@ function wfRenderEditHistStats(){
   html+='<div style="font-size:12.5px;font-weight:700;color:var(--g6);margin:14px 0 8px">👤 수정자별</div>'+barList(byEditor);
   body.innerHTML=html;
 }
+// ERP 변환용: 해당 월에 필요한 분기(월이 속한 분기 + 적용 시작일 전 구간에 쓰는 직전 분기)의 휴무값·수정이력을 한 번에 로드
+async function wfLoadOffForMonth(monthVal){
+  await wfLoadQStart(true);
+  var parts=monthVal.split('-'), yy=parseInt(parts[0],10), mm=parseInt(parts[1],10);
+  var last=new Date(yy,mm,0).getDate(), qs={};
+  for(var d=1; d<=last; d++){ var ds=monthVal+'-'+String(d).padStart(2,'0'); qs[wfCalQuarter(ds)]=1; qs[wfEffQuarter(ds)]=1; }
+  var qList=Object.keys(qs), rows={}, hist={};
+  var rr=await msFetchAll(function(){ return sb.from('wf_fixed_off').select('emp_no,quarter,off_day1,off_day2').in('quarter',qList).order('emp_no').order('quarter'); });
+  (rr.data||[]).forEach(function(r){ (rows[r.quarter]=rows[r.quarter]||{})[r.emp_no]=r; });
+  try{
+    var hr=await msFetchAll(function(){ return sb.from('wf_employee_edit_log').select('emp_no,quarter,old_value,new_value,changed_at').eq('field_name','고정휴무요일').in('quarter',qList).order('changed_at',{ascending:true}); });
+    (hr.data||[]).forEach(function(r){ var h=(hist[r.quarter]=hist[r.quarter]||{}); (h[r.emp_no]=h[r.emp_no]||[]).push({effDate:toKSTDate(r.changed_at), oldVal:r.old_value, newVal:r.new_value}); });
+  }catch(histErr){ /* 이력 조회 실패시 현재값으로만 계산 */ }
+  return {rows:rows, hist:hist};
+}
+function wfParseOffStrG(s){
+  if(!s||s==='(없음)'||s==='(신규 등록)') return {off1:null, off2:null};
+  var parts=s.split('·');
+  return {off1:parts[0]||null, off2:parts[1]||null};
+}
+function wfEffOffFromLoaded(L, empNo, dateStr, cur1, cur2){
+  var eq=wfEffQuarter(dateStr), cq=wfCalQuarter(dateStr), useQ=null;
+  if(L.rows[eq]&&L.rows[eq][empNo]) useQ=eq;
+  else if(eq!==cq&&L.rows[cq]&&L.rows[cq][empNo]) useQ=cq;
+  var c1=cur1, c2=cur2;
+  if(useQ){ c1=L.rows[useQ][empNo].off_day1; c2=L.rows[useQ][empNo].off_day2; }
+  var h=(useQ&&L.hist[useQ])?L.hist[useQ][empNo]:null;
+  if(!h||!h.length) return {off1:c1, off2:c2};
+  if(dateStr<h[0].effDate) return wfParseOffStrG(h[0].oldVal);
+  var ap=h[0];
+  for(var i=0;i<h.length;i++){ if(h[i].effDate<=dateStr) ap=h[i]; else break; }
+  return wfParseOffStrG(ap.newVal);
+}
 async function wfDownloadErpForChanged(){
   if(!_wfLastChangedEmpIds.length){ toast('⚠️ 먼저 수정이력을 조회해주세요'); return; }
   var monthVal=document.getElementById('wfErpMonth').value;
@@ -35863,28 +36556,8 @@ async function wfDownloadErpForChanged(){
       return ranges.some(function(r){ return dateStr>=r.s && dateStr<=r.e; });
     }
     var weekMap=['일','월','화','수','목','금','토'];
-    var quarterStr=wfNowQuarter(start);
-    var offHistoryMap={};
-    try{
-      var histRes=await msFetchAll(function(){ return sb.from('wf_employee_edit_log').select('emp_no,old_value,new_value,changed_at').eq('field_name','고정휴무요일').eq('quarter',quarterStr).order('changed_at',{ascending:true}); });
-      (histRes.data||[]).forEach(function(r){
-        if(!offHistoryMap[r.emp_no]) offHistoryMap[r.emp_no]=[];
-        offHistoryMap[r.emp_no].push({effDate:toKSTDate(r.changed_at), oldVal:r.old_value, newVal:r.new_value});
-      });
-    }catch(histErr){ /* 이력 조회 실패시 현재값으로만 계산 */ }
-    function wfParseOffStr2(s){
-      if(!s||s==='(없음)'||s==='(신규 등록)') return {off1:null, off2:null};
-      var parts=s.split('·');
-      return {off1:parts[0]||null, off2:parts[1]||null};
-    }
-    function wfEffectiveOff2(empNo, dateStr, curOff1, curOff2){
-      var hist=offHistoryMap[empNo];
-      if(!hist||!hist.length) return {off1:curOff1, off2:curOff2};
-      if(dateStr<hist[0].effDate) return wfParseOffStr2(hist[0].oldVal);
-      var applied=hist[0];
-      for(var i=0;i<hist.length;i++){ if(hist[i].effDate<=dateStr) applied=hist[i]; else break; }
-      return wfParseOffStr2(applied.newVal);
-    }
+    var OFFL2=await wfLoadOffForMonth(monthVal);
+    function wfEffectiveOff2(empNo, dateStr, curOff1, curOff2){ return wfEffOffFromLoaded(OFFL2, empNo, dateStr, curOff1, curOff2); }
     function buildRow(e, d){
       var wdKr=weekMap[d.getDay()];
       var dg=wfCalcDayGubun(d, holidaySet);
@@ -35896,6 +36569,7 @@ async function wfDownloadErpForChanged(){
         var effOff=wfEffectiveOff2(e.emp_no, ymdDash, e.off1, e.off2);
         var offDays=[effOff.off1,effOff.off2].filter(Boolean);
         var isOff=offDays.indexOf(wdKr)!==-1;
+        if(!isOff && e.team==='행정' && holidaySet[wfYmd(d)]) isOff=true; // 사업부장·행정은 공휴일 휴무
         tm=isOff?'P26':baseTm;
       }
       return ['IAOS','1000',e.emp_no,dg,wfYmd(d),tkg,tm];
@@ -35940,28 +36614,9 @@ async function wfDownloadErp(mode){
 
     // 이 달이 속한 분기의 "고정휴무요일" 수정이력을 가져와서, 수정일 이전 날짜는 옛 값, 수정일 이후 날짜는 새 값이 적용되게 한다.
     // (예: 9/1~9/17은 월화, 9/18에 목금으로 바꿨으면 → 다운로드 시 9/1~9/17은 월화, 9/18~말일은 목금으로 나와야 함)
-    var quarterStr=wfNowQuarter(start);
-    var offHistoryMap={};
-    try{
-      var histRes=await msFetchAll(function(){ return sb.from('wf_employee_edit_log').select('emp_no,old_value,new_value,changed_at').eq('field_name','고정휴무요일').eq('quarter',quarterStr).order('changed_at',{ascending:true}); });
-      (histRes.data||[]).forEach(function(r){
-        if(!offHistoryMap[r.emp_no]) offHistoryMap[r.emp_no]=[];
-        offHistoryMap[r.emp_no].push({effDate:toKSTDate(r.changed_at), oldVal:r.old_value, newVal:r.new_value});
-      });
-    }catch(histErr){ /* 이력 조회 실패시 현재값으로만 계산(과거 방식) */ }
-    function wfParseOffStr(s){
-      if(!s||s==='(없음)'||s==='(신규 등록)') return {off1:null, off2:null};
-      var parts=s.split('·');
-      return {off1:parts[0]||null, off2:parts[1]||null};
-    }
-    function wfEffectiveOff(empNo, dateStr, curOff1, curOff2){
-      var hist=offHistoryMap[empNo];
-      if(!hist||!hist.length) return {off1:curOff1, off2:curOff2};
-      if(dateStr<hist[0].effDate) return wfParseOffStr(hist[0].oldVal);
-      var applied=hist[0];
-      for(var i=0;i<hist.length;i++){ if(hist[i].effDate<=dateStr) applied=hist[i]; else break; }
-      return wfParseOffStr(applied.newVal);
-    }
+    // 월 안에서 분기 적용 시작일(wf_quarter_start)을 반영: 시작일 전 날짜는 직전 분기 휴무, 이후는 새 분기 휴무
+    var OFFL=await wfLoadOffForMonth(monthVal);
+    function wfEffectiveOff(empNo, dateStr, curOff1, curOff2){ return wfEffOffFromLoaded(OFFL, empNo, dateStr, curOff1, curOff2); }
 
     function wfBuildErpRow(e, d){
       var wdKr=weekMap[d.getDay()];
@@ -35974,6 +36629,7 @@ async function wfDownloadErp(mode){
         var effOff=wfEffectiveOff(e.emp_no, ymdDash, e.off1, e.off2);
         var offDays=[effOff.off1,effOff.off2].filter(Boolean);
         var isOff=offDays.indexOf(wdKr)!==-1;
+        if(!isOff && e.team==='행정' && holidaySet[wfYmd(d)]) isOff=true; // 사업부장·행정은 공휴일 휴무
         tm=isOff?'P26':baseTm;
       }
       return ['IAOS','1000',e.emp_no,dg,wfYmd(d),tkg,tm];

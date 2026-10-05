@@ -149,6 +149,19 @@ s{text-decoration:none}
 .gobar{display:flex;gap:8px;margin:12px 0 0}.gobar a{flex:1;text-align:center;text-decoration:none;padding:11px 4px;border-radius:12px;font-size:13px;font-weight:800;color:#2b3a55;line-height:1.25}.gobar a small{display:block;font-size:10.5px;font-weight:600;opacity:.7}.gobar a.off{opacity:.45;pointer-events:none}
 .sm{font-size:12px;color:var(--mut);background:none;border:0;padding:4px}
 :focus-visible{outline:3px solid #6FA0EC;outline-offset:2px}
+.ma-sum{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin:6px 0 8px}
+.ma-sum div{background:#fff;border-radius:10px;padding:5px 0;text-align:center;font-size:10px;color:var(--mut)}
+.ma-sum b{display:block;font-size:15px;color:var(--ink);font-variant-numeric:tabular-nums}
+.ma-div{border-radius:14px;padding:10px 11px;margin-bottom:8px}
+.ma-div .hdr{display:flex;justify-content:space-between;align-items:center;font-size:13px;font-weight:800}
+.ma-div .hdr small{font-weight:600;color:var(--mut);font-size:11px}
+.ma-team{font-size:11px;color:var(--mut);font-weight:700;margin:7px 0 3px}
+.ma-chips{display:flex;flex-wrap:wrap;gap:5px}
+.ma-chip{display:inline-flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--line);border-radius:99px;padding:3px 9px;font-size:12px;font-weight:600}
+.ma-chip em{font-style:normal;font-size:10px;color:var(--mut);font-weight:700}
+.ma-chip.w{border-color:#9ADBC8;background:#E7F7F1}.ma-chip.e{border-color:#A9C4F2;background:#E8F0FD}.ma-chip.o{border-color:#F6C9A0;background:#FFF1E2}.ma-chip.x{color:#9AA0AB;background:#F3F4F6}
+.ma-chip select{border:0;background:transparent;font:inherit;font-size:11px;color:var(--mut);padding:0;max-width:62px}
+.ma-more{width:100%;margin-top:6px;border:0;background:#ffffffaa;border-radius:10px;padding:6px;font-size:11px;color:var(--mut);font-weight:700}
 @media print{.tabs,.ex,.live,.chips,#logout{display:none!important}.pane{display:block!important}body{background:#fff}.card,.hero,.kp div,.pt{break-inside:avoid}}
 @media (prefers-reduced-motion:no-preference){.gcol div,.share i,.br .b i{transition:all .5s ease}}
 </style>
@@ -359,10 +372,64 @@ function renderNow(rows){
     +'<div style="font-size:12px;font-weight:800;margin:12px 0 4px">시설물 고장 유형</div>'+hbars(sumObj(o,'fac'),'#6FA0EC','시설물 고장 없음')
     +'<div style="font-size:12px;font-weight:800;margin:12px 0 4px">민원 유형</div>'+hbars(sumObj(o,'vcat'),'#B69AE8','민원 없음')
     +'<div style="font-size:12px;font-weight:800;margin:12px 0 4px">안전사고 재해형태</div>'+hbars(sumObj(o,'atype'),'#E2705F','✅ 이상 없음')+'</div>';
-  el.innerHTML=nav+kpi+today1+'<div class="card" style="padding:12px 12px 4px"><h3>사업부별 현황 <small>카드를 누르면 사업부 앱으로 이동</small></h3>'+cards+'</div>'+ana
+  el.innerHTML=nav+kpi+today1+'<div id="mgrAttCard"></div><div class="card" style="padding:12px 12px 4px"><h3>사업부별 현황 <small>카드를 누르면 사업부 앱으로 이동</small></h3>'+cards+'</div>'+ana
     +'<button class="dl" id="dashXl" type="button">📥 엑셀 다운로드 (사업부별)</button>'
     +'<div class="note">근무율 = 근무인원 ÷ 사업부 정원(정원 미등록 사업부는 –). 월간·연간은 일평균 기준입니다.</div>';
   var xb=$('dashXl'); if(xb) xb.onclick=dashExcel;
+  loadMgrAtt();
+}
+
+/* ---------- 관리자 출근현황 (사업부 합산) ---------- */
+var MGR={rows:[],open:{},date:'',canEdit:false};
+var MGR_ST=['출근','교육','출장','휴무','연차','경조','건강검진','기타'];
+function mgrKind(r){
+  if(!r.checked) return 'x';
+  var s=r.status||'출근';
+  return s==='출근'?'w':(s==='교육'||s==='출장')?'e':'o';
+}
+function mgrDate(){var rg=dashRange();return DASH.mode==='day'?rg.from:ymd(today().y,today().m,today().d);}
+function mgrCard(){
+  var h='<div class="card"><h3>👔 관리자 출근 현황 <small>'+esc(MGR.date)+(MGR.canEdit?' · 그룹 소속은 수정 가능':'')+'</small></h3>';
+  if(!MGR.rows.length) return h+'<div class="empty">오늘 입력된 관리자 출근 기록이 없어요.</div></div>';
+  var tot={w:0,e:0,o:0,x:0};
+  divs.forEach(function(d){
+    var rows=MGR.rows.filter(function(r){return r.division_id===d.id;});
+    if(!rows.length) return;
+    var c={w:0,e:0,o:0,x:0}; rows.forEach(function(r){c[mgrKind(r)]++;}); for(var k in c) tot[k]+=c[k];
+    var teams={}; rows.forEach(function(r){(teams[r.team||'-']=teams[r.team||'-']||[]).push(r);});
+    var open=!!MGR.open[d.id], all=rows.length;
+    h+='<div class="ma-div" style="background:'+d.soft+'"><div class="hdr"><span><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+d.color+';margin-right:5px"></i>'+esc(d.short)+'</span><small>총 '+all+'명</small></div>'
+      +'<div class="ma-sum"><div>출근<b>'+c.w+'</b></div><div>교육·출장<b>'+c.e+'</b></div><div>휴무·휴가<b>'+c.o+'</b></div><div>미체크<b>'+c.x+'</b></div></div>';
+    if(open){
+      Object.keys(teams).forEach(function(t){
+        h+='<div class="ma-team">'+esc(t)+'</div><div class="ma-chips">'+teams[t].map(function(r){
+          var st=r.checked?(r.status||'출근'):'미체크';
+          var sel=MGR.canEdit?'<select data-mgrset="'+esc(d.id)+'|'+esc(r.team)+'|'+esc(r.name)+'" aria-label="상태">'+['미체크'].concat(MGR_ST).map(function(o){return '<option'+(o===st?' selected':'')+'>'+o+'</option>';}).join('')+'</select>':'<em>'+esc(st)+'</em>';
+          return '<span class="ma-chip '+mgrKind(r)+'">'+esc(r.name)+(r.role?'<em>'+esc(r.role)+'</em>':'')+sel+'</span>';
+        }).join('')+'</div>';
+      });
+    }
+    h+='<button type="button" class="ma-more" data-mgropen="'+esc(d.id)+'">'+(open?'접기 ▲':'명단 보기 ▼')+'</button></div>';
+  });
+  h+='<div class="note" style="margin-top:2px">출근 '+tot.w+' · 교육·출장 '+tot.e+' · 휴무·휴가 '+tot.o+' · 미체크 '+tot.x+' (전 사업부 합산)</div></div>';
+  return h;
+}
+function mgrPaint(){var el=$('mgrAttCard'); if(el) el.innerHTML=mgrCard();}
+function loadMgrAtt(){
+  MGR.date=mgrDate();
+  MGR.canEdit=(state.role==='master'||(state.role==='admin'&&state.myDiv==='ALL'));
+  return rpc('group_mgr_attendance',{p_date:MGR.date}).then(function(r){MGR.rows=r;mgrPaint();}).catch(function(e){
+    var el=$('mgrAttCard'); if(el) el.innerHTML='<div class="card empty">관리자 출근현황을 불러오지 못했어요.<br>'+esc((e&&e.message)||'')+'</div>';
+  });
+}
+function mgrSet(sel){
+  var p=sel.dataset.mgrset.split('|'), v=sel.value;
+  var checked=v!=='미체크', status=checked?v:null;
+  sel.disabled=true;
+  rpc('group_mgr_attendance_set',{p_division_id:p[0],p_date:MGR.date,p_team:p[1],p_name:p[2],p_checked:checked,p_status:status}).then(function(){
+    MGR.rows.forEach(function(r){ if(r.division_id===p[0]&&r.team===p[1]&&r.name===p[2]){r.checked=checked;r.status=status;} });
+    mgrPaint();
+  }).catch(function(e){alert('저장하지 못했어요: '+((e&&e.message)||''));mgrPaint();});
 }
 function dashExcel(){
   var L=DASH.last; if(!L||!window.XLSX){return;}
@@ -734,7 +801,9 @@ function init(){
   $('logout').onclick=function(){try{localStorage.removeItem('t1_auth');localStorage.removeItem('t1_me');sessionStorage.removeItem('iaos_app');}catch(e){} toLogin();};
   $('refresh').onclick=load;
   document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){showTab(b.dataset.t);};});
+  document.addEventListener('change',function(e){var s=e.target.closest('[data-mgrset]'); if(s) mgrSet(s);});
   document.addEventListener('click',function(e){
+    var mo=e.target.closest('[data-mgropen]'); if(mo){var k=mo.dataset.mgropen; MGR.open[k]=!MGR.open[k]; mgrPaint(); return;}
     var t=e.target.closest('[data-month],[data-kpi],[data-rep],[data-dmove],[data-dmode],[data-dlive],[data-smove],[data-smode],[data-sopen],[data-rmove],[data-rmode],[data-rsub],[data-ritem]'); if(!t) return;
     if(t.dataset.rmove){repMove(+t.dataset.rmove);return;}
     if(t.dataset.rmode){REP.mode=t.dataset.rmode;load();return;}

@@ -174,6 +174,7 @@ s{text-decoration:none}
 .sp-item b{font-size:14px}.sp-item small{display:block;color:var(--mut);font-size:11px;margin-top:3px}
 .sp-ch{display:inline-flex;gap:4px;margin-top:7px;flex-wrap:wrap}.sp-ch span{font-size:11px;font-weight:700;padding:2px 9px;border-radius:99px;background:#F0F1F4;color:#9AA0AB}.sp-ch span.on{color:#2B2F36}
 .sp-tbl{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}.sp-tbl th{font-size:11px;color:var(--mut);font-weight:700;padding:6px 3px;border-bottom:1px solid var(--line);text-align:right}.sp-tbl th:first-child,.sp-tbl td:first-child{text-align:left}.sp-tbl td{padding:6px 3px;border-bottom:1px solid #F0F1F4;text-align:right}.sp-tbl tr.tot td{font-weight:800;background:#FAFAFB}.sp-tbl td.sm{font-weight:800}
+.ck-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}.ck{display:flex;align-items:center;gap:6px;border:1.5px solid var(--line);border-radius:12px;padding:8px 12px;font-size:13px;font-weight:800;background:#fff}.ck input{width:18px;height:18px}
 .sp-in{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:14px;margin-bottom:8px;background:#fff}
 .sp-btn{border:0;border-radius:12px;padding:10px 14px;font-weight:800;font-size:13px;background:#2B2F36;color:#fff}.sp-btn.g{background:#E6E8EC;color:var(--ink)}.sp-btn.r{background:#FDE9ED;color:#C0485F}
 .tabs button{font-size:12px}
@@ -580,11 +581,15 @@ function spEdit(){
     +'<div class="card"><h3>'+(E.id?'그룹 행사 수정':'그룹 행사 만들기')+'</h3>'
     +'<input class="sp-in" id="spTitle" placeholder="그룹 행사 이름 (예: 2026 추석 특별근무)" value="'+esc(E.title)+'">'
     +'<input class="sp-in" id="spMemo" placeholder="메모 (선택)" value="'+esc(E.memo)+'">'
-    +'<div style="font-size:12px;font-weight:800;margin:6px 0">사업부 행사 연결</div>'
+    +'<select class="sp-in" id="spType">'+['성수기','명절','기타'].map(function(k){return '<option'+(k===E.type?' selected':'')+'>'+k+'</option>';}).join('')+'</select>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input class="sp-in" type="date" id="spS" value="'+esc(E.start)+'"><input class="sp-in" type="date" id="spE" value="'+esc(E.end)+'"></div>'
+    +'<div style="font-size:12px;font-weight:800;margin:4px 0 6px">👥 참가 사업부 <span style="font-weight:600;color:var(--mut)">(체크한 사업부의 특별근무에 이 행사가 자동으로 만들어져요)</span></div>'
+    +'<div class="ck-row">'+divs.map(function(d){return '<label class="ck" style="border-color:'+d.color+'"><input type="checkbox" data-spdiv="'+esc(d.id)+'"'+((E.divs||[]).indexOf(d.id)>=0?' checked':'')+'><span>'+esc(d.short)+'</span></label>';}).join('')+'</div>'
+    +'<div style="font-size:12px;font-weight:800;margin:6px 0">사업부 행사 직접 연결 <span style="font-weight:600;color:var(--mut)">(선택 · 비워두면 자동 생성)</span></div>'
     +divs.map(function(d){
       var opts=SP.avail.filter(function(a){return a.division_id===d.id;});
       return '<div style="font-size:12px;color:var(--mut);margin:4px 0 2px;font-weight:700"><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+d.color+';margin-right:4px"></i>'+esc(d.short)+'</div>'
-        +'<select class="sp-in" data-splink="'+esc(d.id)+'"><option value="">연결 안 함</option>'+opts.map(function(o){return '<option value="'+esc(o.event_id)+'"'+(E.links[d.id]===o.event_id?' selected':'')+'>'+esc(o.title)+' ('+esc(String(o.start_date).slice(5,10))+'~'+esc(String(o.end_date).slice(5,10))+')</option>';}).join('')+'</select>';
+        +'<select class="sp-in" data-splink="'+esc(d.id)+'"><option value="">자동 생성(연결 안 함)</option>'+opts.map(function(o){return '<option value="'+esc(o.event_id)+'"'+(E.links[d.id]===o.event_id?' selected':'')+'>'+esc(o.title)+' ('+esc(String(o.start_date).slice(5,10))+'~'+esc(String(o.end_date).slice(5,10))+')</option>';}).join('')+'</select>';
     }).join('')
     +'<div style="display:flex;gap:6px;margin-top:6px"><button type="button" class="sp-btn" data-spsave="1" style="flex:1">저장</button>'
     +(E.id?'<button type="button" class="sp-btn r" data-spdel="'+esc(E.id)+'">삭제</button>':'')+'</div></div>';
@@ -605,14 +610,18 @@ function spStartEdit(g){
   return rpc('group_special_available').then(function(a){
     SP.avail=Array.isArray(a)?a:[];
     var links={}; (g?g.links:[]).forEach(function(l){links[l.division_id]=l.event_id;});
-    SP.ed={id:g?g.id:null,title:g?g.title:'',memo:g?(g.memo||''):'',links:links}; SP.view='edit'; renderSp(); window.scrollTo(0,0);
+    SP.ed={id:g?g.id:null,title:g?g.title:'',memo:g?(g.memo||''):'',links:links,type:g?(g.period_type||'성수기'):'성수기',start:g&&g.start_date?String(g.start_date).slice(0,10):'',end:g&&g.end_date?String(g.end_date).slice(0,10):'',divs:g&&g.share_divs&&g.share_divs.length?g.share_divs:divs.map(function(d){return d.id;})}; SP.view='edit'; renderSp(); window.scrollTo(0,0);
   }).catch(function(e){alert('불러오지 못했어요: '+((e&&e.message)||''));});
 }
 function spSave(){
   var title=($('spTitle').value||'').trim(), memo=($('spMemo').value||'').trim(), links=[];
   document.querySelectorAll('[data-splink]').forEach(function(s){ if(s.value) links.push({division_id:s.dataset.splink,event_id:s.value}); });
   if(!title){alert('행사 이름을 입력해주세요.');return;}
-  rpc('group_special_save',{p_id:SP.ed.id,p_title:title,p_memo:memo,p_links:links}).then(function(id){SP.view='list';return loadSp();}).catch(function(e){alert('저장하지 못했어요: '+((e&&e.message)||''));});
+  var st=$('spS').value||null, en=$('spE').value||st, pd=Array.prototype.slice.call(document.querySelectorAll('[data-spdiv]')).filter(function(c){return c.checked;}).map(function(c){return c.dataset.spdiv;});
+  if(!pd.length){alert('참가 사업부를 한 곳 이상 선택해주세요.');return;}
+  if(en&&st&&en<st){alert('종료일이 시작일보다 빠릅니다.');return;}
+  if(!st&&!links.length&&!SP.ed.id){alert('기간(시작일·종료일)을 입력하면 사업부 특별근무에 자동으로 만들어져요.');return;}
+  rpc('group_special_save',{p_id:SP.ed.id,p_title:title,p_memo:memo,p_links:links,p_start:st,p_end:en,p_type:$('spType').value,p_divs:pd}).then(function(id){SP.view='list';return loadSp();}).catch(function(e){alert('저장하지 못했어요: '+((e&&e.message)||''));});
 }
 function spDelete(id){
   if(!confirm('이 그룹 행사 연결을 삭제할까요?\n(사업부의 특별근무 데이터는 지워지지 않습니다)')) return;
@@ -644,7 +653,7 @@ function scCal(){
   h+='<div class="card" style="margin-top:10px"><h3>'+esc(parseInt(SC.sel.slice(5,7),10)+'월 '+parseInt(SC.sel.slice(8),10))+'일 일정 <small>'+list.length+'건</small></h3>';
   if(scCanEdit()) h+='<button type="button" class="sp-btn" data-scnew="1" style="width:100%;margin-bottom:8px">＋ 그룹 일정 추가</button>';
   h+=list.length?list.map(function(it){var m=scSrcMeta(it.src), sd=String(it.start_date).slice(0,10), ed=String(it.end_date).slice(0,10);
-    return '<div class="cl-it"><i style="background:'+m.color+'"></i><div style="flex:1"><b>'+KIND_ICON[it.kind]+' '+esc(it.title)+'</b><small>'+esc(m.name)+' · '+esc(it.kind)+(sd!==ed?' · '+sd.slice(5)+'~'+ed.slice(5):'')+(it.place?' · '+esc(it.place):'')+'</small>'+(it.memo&&it.src==='GROUP'?'<small>'+esc(it.memo)+'</small>':'')+'</div>'
+    return '<div class="cl-it"><i style="background:'+m.color+'"></i><div style="flex:1"><b>'+KIND_ICON[it.kind]+' '+esc(it.title)+'</b><small>'+esc(m.name)+' · '+esc(it.kind)+(sd!==ed?' · '+sd.slice(5)+'~'+ed.slice(5):'')+(it.place?' · '+esc(it.place):'')+'</small>'+(it.src==='GROUP'&&(it.share||[]).length?'<small>📢 공유: '+it.share.map(function(id){var d=divs.filter(function(x){return x.id===id;})[0];return esc(d?d.short:id);}).join(', ')+'</small>':'')+(it.memo&&it.src==='GROUP'?'<small>'+esc(it.memo)+'</small>':'')+'</div>'
       +(it.src==='GROUP'&&scCanEdit()?'<button type="button" class="sp-btn g" style="padding:5px 10px" data-scedit="'+esc(it.id)+'">수정</button>':'')+'</div>';}).join(''):'<div class="empty" style="padding:10px 0">일정이 없어요.</div>';
   return h+'</div>';
 }
@@ -655,6 +664,8 @@ function scForm(){
    +'<input class="sp-in" id="scTitle" placeholder="제목" value="'+esc(E.title)+'">'
    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><input class="sp-in" type="date" id="scS" value="'+esc(E.start)+'"><input class="sp-in" type="date" id="scE" value="'+esc(E.end)+'"></div>'
    +'<input class="sp-in" id="scPlace" placeholder="장소 (선택)" value="'+esc(E.place)+'"><input class="sp-in" id="scMemo" placeholder="메모 (선택)" value="'+esc(E.memo)+'">'
+   +'<div style="font-size:12px;font-weight:800;margin:4px 0 6px">📢 공유할 사업부 <span style="font-weight:600;color:var(--mut)">(체크한 사업부 앱에 읽기 전용으로 보여요)</span></div>'
+   +'<div class="ck-row">'+divs.map(function(d){return '<label class="ck" style="border-color:'+d.color+'"><input type="checkbox" data-scshare="'+esc(d.id)+'"'+((E.share||[]).indexOf(d.id)>=0?' checked':'')+'><span>'+esc(d.short)+'</span></label>';}).join('')+'</div>'
    +'<div style="display:flex;gap:6px"><button type="button" class="sp-btn" data-scsave="1" style="flex:1">저장</button>'+(E.id?'<button type="button" class="sp-btn r" data-scdel="'+esc(E.id)+'">삭제</button>':'')+'</div></div>';
 }
 function scMeet(){
@@ -685,7 +696,8 @@ function loadSc(){
 function scSave(){
   var title=($('scTitle').value||'').trim(), s=$('scS').value, e=$('scE').value||s;
   if(!title){alert('제목을 입력해주세요.');return;} if(!s){alert('시작일을 선택해주세요.');return;} if(e<s){alert('종료일이 시작일보다 빠릅니다.');return;}
-  rpc('group_schedule_save',{p_id:SC.ed.id,p_kind:$('scKind').value,p_title:title,p_start:s,p_end:e,p_place:$('scPlace').value.trim()||null,p_memo:$('scMemo').value.trim()||null})
+  rpc('group_schedule_save',{p_id:SC.ed.id,p_kind:$('scKind').value,p_title:title,p_start:s,p_end:e,p_place:$('scPlace').value.trim()||null,p_memo:$('scMemo').value.trim()||null,
+    p_share:Array.prototype.slice.call(document.querySelectorAll('[data-scshare]')).filter(function(c){return c.checked;}).map(function(c){return c.dataset.scshare;})})
     .then(function(){SC.sub='cal';return loadSc();}).catch(function(err){alert('저장하지 못했어요: '+((err&&err.message)||''));});
 }
 
@@ -1204,8 +1216,8 @@ function init(){
       else if(q.scmove){SC.m+=+q.scmove; if(SC.m<1){SC.m=12;SC.y--;} if(SC.m>12){SC.m=1;SC.y++;} SC.sel=ymd(SC.y,SC.m,1); loadSc();}
       else if(q.scflt){SC.flt[q.scflt]=!SC.flt[q.scflt]; renderSc();}
       else if(q.scday){SC.sel=q.scday; renderSc();}
-      else if(q.scnew){SC.ed={id:null,kind:'교육',title:'',start:SC.sel,end:SC.sel,place:'',memo:''};SC.sub='form';renderSc();}
-      else if(q.scedit){var it=SC.items.filter(function(x){return x.id===q.scedit;})[0]; if(it){SC.ed={id:it.id,kind:it.kind,title:it.title,start:String(it.start_date).slice(0,10),end:String(it.end_date).slice(0,10),place:it.place||'',memo:it.memo||''};SC.sub='form';renderSc();}}
+      else if(q.scnew){SC.ed={id:null,kind:'교육',title:'',start:SC.sel,end:SC.sel,place:'',memo:'',share:divs.map(function(d){return d.id;})};SC.sub='form';renderSc();}
+      else if(q.scedit){var it=SC.items.filter(function(x){return x.id===q.scedit;})[0]; if(it){SC.ed={id:it.id,kind:it.kind,title:it.title,start:String(it.start_date).slice(0,10),end:String(it.end_date).slice(0,10),place:it.place||'',memo:it.memo||'',share:it.share||[]};SC.sub='form';renderSc();}}
       else if(q.scback){SC.sub='cal';renderSc();}
       else if(q.scsave){scSave();}
       else if(q.scdel){ if(confirm('이 그룹 일정을 삭제할까요?')) rpc('group_schedule_delete',{p_id:q.scdel}).then(function(){SC.sub='cal';return loadSc();}).catch(function(err){alert('삭제하지 못했어요: '+((err&&err.message)||''));}); }

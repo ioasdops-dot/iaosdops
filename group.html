@@ -932,7 +932,7 @@ function repCard(it,sm,rg){
   var dayAvg=isAvg?null:Math.round(cur/rg.days*10)/10;
   var share=divs.map(function(d){var v=repVal(sm,it.k,d).cur;return '<i style="width:'+(cur?v/cur*100:0)+'%;background:'+d.color+'"></i>';}).join('');
   var legend=divs.map(function(d){var v=repVal(sm,it.k,d).cur;return '<span><i style="background:'+d.color+'"></i>'+esc(d.short)+' '+repFmt(isAvg?Math.round(v):v,it.unit)+'</span>';}).join('');
-  return '<div class="card"><h3>'+it.label+(it.per?' · '+it.per:'')+'<small>'+esc(rg.label)+'</small></h3>'
+  return '<div class="card" data-rpage="'+it.id+'" style="cursor:pointer"><h3>'+it.label+(it.per?' · '+it.per:'')+'<small>'+esc(rg.label)+' ›</small></h3>'
     +'<div style="display:flex;align-items:baseline;gap:6px"><b style="font-size:26px;font-weight:800;font-variant-numeric:tabular-nums">'+repFmt(cur,it.unit)+'</b>'+pctTxt(cur,prev,it.k)+'</div>'
     +(dayAvg!==null?'<div style="font-size:11px;color:var(--mut);margin-top:2px">일평균 '+(it.unit==='kg'?n0(cur/rg.days)+'kg':dayAvg+it.unit)+'</div>':'')
     +'<div class="share" style="height:10px;margin-top:9px">'+share+'</div><div class="lg" style="justify-content:flex-start;margin-top:6px">'+legend+'</div>'
@@ -984,28 +984,107 @@ function repDetail(it,sm,det,rg){
 function renderRep(data){
   REP.data=data; REP.rank=rankMap(data.rank||[]); var av=(data.rank||[]).filter(function(r){return r.metric==='voc_avgdays'&&Number(r.v)>0;}).map(function(r){return Number(r.v);}); REP.avgDays=av.length?Math.round(av.reduce(function(a,b){return a+b;},0)/av.length*10)/10:null; var el=$('p-rep'), rg=repRange(), sm=statMap(data.stats), det=detMap(data.detail);
   REP.last={rg:rg,sm:sm};
+  if(REP.page){renderRepPage(rg,sm,det);return;}
   var hc=sumMetric(sm,'headcount_avg','cur'), acc=sumMetric(sm,'accident','cur');
   var nav='<div class="dp"><div class="nv"><button type="button" data-rmove="-1" aria-label="이전">◀</button><b>'+esc(rg.label)+'</b><button type="button" data-rmove="1" aria-label="다음">▶</button></div>'
     +'<div class="md">'+[['month','월간'],['year','연간']].map(function(x){return '<button type="button" data-rmode="'+x[0]+'" class="'+(REP.mode===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div></div>';
   var hero='<div class="hero"><p>'+rg.label+(rg.span?' · '+rg.span:'')+'</p><h2>하루 평균 <mark>'+n0(hc)+'명</mark>이 근무했고, 안전사고는 <mark>'+n0(acc)+'건</mark>이에요</h2></div>';
-  var tabs='<div class="chips" style="margin-top:12px">'+[['sum','요약'],['det','상세']].map(function(x){return '<button type="button" data-rsub="'+x[0]+'" class="'+(REP.sub===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div>';
-  var body;
-  if(REP.sub==='sum') body=RITEMS.map(function(it){return repCard(it,sm,rg);}).join('');
-  else{
-    var chips='<div class="chips">'+RITEMS.map(function(it){return '<button type="button" data-ritem="'+it.id+'" class="'+(REP.item===it.id?'on':'')+'">'+it.label+'</button>';}).join('')+'</div>';
-    var cur=RITEMS.filter(function(it){return it.id===REP.item;})[0]||RITEMS[0];
-    body=chips+repDetail(cur,sm,det,rg);
-  }
+  var tabs='<div style="font-size:11px;color:var(--mut);margin:10px 2px 0">카드를 누르면 상세 페이지가 열려요</div>';
+  var body=RITEMS.map(function(it){return repCard(it,sm,rg);}).join('');
   var pts=divs.map(function(d){
     return '<div class="pt" style="background:'+d.soft+'"><div class="ic" style="background:'+d.color+'">'+esc(d.short.length>3?d.short.slice(0,2):d.short)+'</div><div><b>'+esc(d.name)+'</b>'+esc(highlights(sm,d,data.kpi,data.kpiT))+'</div></div>';
   }).join('');
-  el.innerHTML=nav+hero+tabs+body+(REP.sub==='sum'?'<div class="card"><h3>사업부별 한 줄 요약</h3>'+pts.replace(/class="pt"/g,'class="pt" data-x="1"')+'</div>':'')
+  el.innerHTML=nav+hero+tabs+body+'<div class="card"><h3>사업부별 한 줄 요약</h3>'+pts.replace(/class="pt"/g,'class="pt" data-x="1"')+'</div>'
    +'<div class="ex"><button type="button" id="pdfBtn">PDF로 저장</button><button type="button" id="imgBtn">이미지로 저장</button></div>'
    +'<button class="dl" id="repXl" type="button">📥 엑셀 다운로드 (사업부별)</button>'
    +'<div class="note">전기간 = '+esc(rg.cmp)+'</div>';
   $('pdfBtn').onclick=function(){window.print();};
   $('imgBtn').onclick=saveImage;
   $('repXl').onclick=repExcel;
+}
+
+/* 리포트 상세 페이지 (카드 → 전체 화면): 합산 → 사업부별 → 건별 목록 */
+var RECCOLS={acc:['안전사고','팀','유형'],voc:['민원','','유형'],ho:['인수인계','팀','시설'],lost:['습득물','','품목'],waste:['폐기물','팀','근무'],veh:['공사차량','팀','차량'],jw:['공동작업','근무','작업명']};
+REP.page=null; REP.rec={}; REP.rf='all'; REP.rn=30; REP.mpd={};
+function repBack(){REP.page=null;REP.rf='all';REP.rn=30;if(REP.data)renderRep(REP.data);window.scrollTo(0,0);}
+function repOpen(id){REP.page=id;REP.rf='all';REP.rn=30;if(REP.data)renderRep(REP.data);window.scrollTo(0,0);}
+function repGroupCount(rows,key,fmt){
+  var o={}; rows.forEach(function(r){var k=(fmt?fmt(r):r[key])||'(미기재)'; o[k]=(o[k]||0)+1;}); return o;
+}
+function repRecHtml(it,rg){
+  var key=it.id+'|'+rg.from+'|'+rg.to, rows=REP.rec[key];
+  if(rows===undefined) return '<div class="card"><h3>건별 목록</h3><div style="color:var(--mut);font-size:12px">불러오는 중…</div></div>';
+  if(rows===null) return '<div class="card"><h3>건별 목록</h3><div style="color:#E2705F;font-size:12px">불러오지 못했어요. SQL 23번을 실행했는지 확인해 주세요.</div></div>';
+  var cols=RECCOLS[it.id]||['','',''];
+  var f=REP.rf, list=rows.filter(function(r){return f==='all'||r.division_id===f;});
+  var chips='<div class="chips">'+[{id:'all',short:'전체'}].concat(divs).map(function(d){
+    var c=d.id==='all'?rows.length:rows.filter(function(r){return r.division_id===d.id;}).length;
+    return '<button type="button" data-rrf="'+d.id+'" class="'+(f===d.id?'on':'')+'">'+esc(d.short)+' '+c+'</button>';}).join('')+'</div>';
+  var h='<div class="card"><h3>건별 목록<small>'+n0(list.length)+'건'+(rows.length>=1000?' (최근 1000건까지)':'')+'</small></h3>'+chips;
+  if(!list.length) h+='<div style="color:var(--mut);font-size:12px;padding:8px 0">기록이 없어요</div>';
+  list.slice(0,REP.rn).forEach(function(r){
+    var d=divs.filter(function(x){return x.id===r.division_id;})[0]||{short:r.division_id,color:'#999',soft:'#eee'};
+    var ex=r.extra?(it.unit==='kg'?n0(r.extra)+'kg':(it.id==='veh'?n0(r.extra)+'km':(it.id==='jw'?n0(r.extra)+'명':esc(r.extra)))):'';
+    h+='<div style="border-top:1px solid var(--line);padding:9px 0;font-size:12px;line-height:1.5">'
+      +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"><span style="background:'+d.soft+';color:'+d.color+';font-weight:800;border-radius:6px;padding:1px 7px">'+esc(d.short)+'</span>'
+      +'<b>'+esc(String(r.d).slice(5))+'</b>'+(r.team?'<span style="color:var(--mut)">'+esc(r.team)+'</span>':'')
+      +(r.title?'<b>'+esc(r.title)+'</b>':'')+(ex?'<span style="margin-left:auto;color:var(--mut);font-weight:700">'+ex+'</span>':'')+'</div>'
+      +(r.place?'<div style="color:var(--mut)">📍 '+esc(r.place)+'</div>':'')
+      +(r.body?'<div style="white-space:pre-wrap;word-break:break-all">'+esc(String(r.body).slice(0,200))+(String(r.body).length>200?'…':'')+'</div>':'')+'</div>';
+  });
+  if(list.length>REP.rn) h+='<button type="button" class="dl" data-rmore="1" style="margin-top:8px">더 보기 ('+n0(list.length-REP.rn)+'건 남음)</button>';
+  return h+'</div>';
+}
+function repVehHtml(rows){
+  if(!rows||!rows.length) return '';
+  var km=0; rows.forEach(function(r){km+=Number(r.extra)||0;});
+  var byVeh=repGroupCount(rows,'title'), byTeam=repGroupCount(rows,'team'), byDiv=repGroupCount(rows,'division_id',function(r){var d=divs.filter(function(x){return x.id===r.division_id;})[0];return d?d.short:r.division_id;});
+  return '<div class="card"><h3>공사차량 운행 분석</h3><div style="font-size:12px;margin-bottom:4px">총 운행 <b>'+n0(rows.length)+'건</b> · 주행거리 <b>'+n0(km)+'km</b></div>'
+    +'<div style="font-size:12px;font-weight:800;margin:10px 0 4px">사업부별 운행 건수</div>'+hbars(byDiv,'#6FA0EC','내역이 없어요')
+    +'<div style="font-size:12px;font-weight:800;margin:10px 0 4px">차량별 운행 건수</div>'+hbars(byVeh,'#E3A04C','내역이 없어요')
+    +'<div style="font-size:12px;font-weight:800;margin:10px 0 4px">팀별 운행 건수</div>'+hbars(byTeam,'#4DBDB2','내역이 없어요')+'</div>';
+}
+function repMpHtml(rg){
+  var key=rg.from+'|'+rg.to, m=REP.mpd[key];
+  if(m===undefined) return '<div class="card"><h3>조별 일평균 근무</h3><div style="color:var(--mut);font-size:12px">불러오는 중…</div></div>';
+  if(m===null) return '<div class="card"><h3>조별 일평균 근무</h3><div style="color:#E2705F;font-size:12px">불러오지 못했어요. SQL 20번을 확인해 주세요.</div></div>';
+  var h='<div class="card"><h3>조별 일평균 근무<small>사업부별</small></h3>';
+  divs.forEach(function(d){
+    var teams=(m[d.id]&&m[d.id].teams)||[], o={};
+    teams.forEach(function(t){o[t.team_code]=Math.round(Number(t.avg)*10)/10;});
+    var tot=0; teams.forEach(function(t){tot+=Number(t.avg)||0;});
+    h+='<div style="font-size:12px;font-weight:800;margin:12px 0 4px;color:'+d.color+'">'+esc(d.name)+' · 합계 '+n0(tot)+'명</div>'+hbars(o,d.color,'내역이 없어요');
+  });
+  return h+'</div>';
+}
+function renderRepPage(rg,sm,det){
+  var it=RITEMS.filter(function(x){return x.id===REP.page;})[0]||RITEMS[0], el=$('p-rep');
+  var nav='<div class="dp"><div class="nv"><button type="button" data-rmove="-1" aria-label="이전">◀</button><b>'+esc(rg.label)+'</b><button type="button" data-rmove="1" aria-label="다음">▶</button></div>'
+    +'<div class="md">'+[['month','월간'],['year','연간']].map(function(x){return '<button type="button" data-rmode="'+x[0]+'" class="'+(REP.mode===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div></div>';
+  var back='<button type="button" data-rback="1" style="margin:10px 0 0;padding:7px 14px;border-radius:99px;border:1px solid var(--line);background:#fff;font-weight:800;font-size:12px">‹ 리포트로 돌아가기</button>';
+  var body=repCard(it,sm,rg).replace(' data-rpage="'+it.id+'" style="cursor:pointer"','').replace(' ›</small>','</small>')+repDetail(it,sm,det,rg);
+  if(it.id==='mp') body+=repMpHtml(rg);
+  else{
+    var key=it.id+'|'+rg.from+'|'+rg.to;
+    if(it.id==='veh') body+=repVehHtml(REP.rec[key]);
+    body+=repRecHtml(it,rg);
+  }
+  el.innerHTML=nav+back+body;
+  // 데이터 불러오기
+  if(it.id==='mp'){
+    var mk=rg.from+'|'+rg.to;
+    if(REP.mpd[mk]===undefined){
+      REP.mpd[mk]=null; var o={},n=divs.length;
+      divs.forEach(function(d){rpc('group_division_status',{p_division:d.id,p_from:rg.from,p_to:rg.to}).then(function(r){o[d.id]=r&&!Array.isArray(r)?r:(r&&r[0])||{};}).catch(function(){o[d.id]={};}).then(function(){if(--n===0){REP.mpd[mk]=o;if(REP.page==='mp')renderRep(REP.data);}});});
+      REP.mpd[mk]=undefined;
+    }
+  } else {
+    var k2=it.id+'|'+rg.from+'|'+rg.to;
+    if(REP.rec[k2]===undefined&&!REP.recBusy){
+      REP.recBusy=true;
+      rpc('group_report_records',{p_item:it.id,p_from:rg.from,p_to:rg.to}).then(function(r){REP.rec[k2]=Array.isArray(r)?r:[];}).catch(function(){REP.rec[k2]=null;}).then(function(){REP.recBusy=false;if(REP.page===it.id)renderRep(REP.data);});
+    }
+  }
 }
 function repExcel(){
   var L=REP.last; if(!L||!window.XLSX) return;
@@ -1138,13 +1217,13 @@ function init(){
       if(dd.spnew){spStartEdit(null);} else if(dd.spopen){spOpen(dd.spopen);} else if(dd.spback){SP.view=(SP.view==='edit'&&SP.detail&&SP.ed&&SP.ed.id)?'detail':'list';renderSp();}
       else if(dd.spedit){var g=SP.list.filter(function(x){return x.id===dd.spedit;})[0]||SP.detail; spStartEdit(g);} else if(dd.spsave){spSave();} else if(dd.spdel){spDelete(dd.spdel);}
       return;}
+    var rp=e.target.closest('[data-rpage],[data-rback],[data-rrf],[data-rmore]');
+    if(rp){ if(rp.dataset.rpage){repOpen(rp.dataset.rpage);} else if(rp.dataset.rback){repBack();} else if(rp.dataset.rrf){REP.rf=rp.dataset.rrf;REP.rn=30;renderRep(REP.data);} else if(rp.dataset.rmore){REP.rn+=50;renderRep(REP.data);} return; }
     var dvb=e.target.closest('[data-dvidx]'); if(dvb){dvGo(+dvb.dataset.dvidx);return;}
     var mo=e.target.closest('[data-mgropen]'); if(mo){var k=mo.dataset.mgropen; MGR.open[k]=!MGR.open[k]; mgrPaint(); return;}
     var t=e.target.closest('[data-month],[data-kpi],[data-rep],[data-dmove],[data-dmode],[data-dlive],[data-smove],[data-smode],[data-sopen],[data-rmove],[data-rmode],[data-rsub],[data-ritem]'); if(!t) return;
     if(t.dataset.rmove){repMove(+t.dataset.rmove);return;}
     if(t.dataset.rmode){REP.mode=t.dataset.rmode;load();return;}
-    if(t.dataset.rsub){REP.sub=t.dataset.rsub;if(REP.data)renderRep(REP.data);return;}
-    if(t.dataset.ritem){REP.item=t.dataset.ritem;if(REP.data)renderRep(REP.data);return;}
     if(t.dataset.smove){statMove(+t.dataset.smove);return;}
     if(t.dataset.smode){STAT.mode=t.dataset.smode;load();return;}
     if(t.dataset.sopen){STAT.open=(STAT.open===t.dataset.sopen?null:t.dataset.sopen);if(STAT.data){renderStat(STAT.data);}return;}

@@ -187,6 +187,9 @@ s{text-decoration:none}
 .cl-sub{display:flex;gap:4px;background:#E6E8EC;border-radius:10px;padding:3px;margin-bottom:8px}.cl-sub button{flex:1;border:0;background:none;border-radius:8px;padding:7px 0;font-size:12.5px;font-weight:700;color:var(--mut)}.cl-sub button.on{background:#fff;color:var(--ink)}
 .mt-it{border-top:1px solid #F0F1F4;padding:6px 0;font-size:12.5px}.mt-it small{color:var(--mut)}
 .mt-bar{height:6px;background:#EDEFF2;border-radius:4px;overflow:hidden;margin-top:3px}.mt-bar i{display:block;height:100%}
+.tabs{overflow-x:auto;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}.tabs button{flex:1 0 auto;padding:9px 11px;white-space:nowrap}
+.lb-cats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}.lb-cats button{border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:9px 2px;font-size:12px;font-weight:700;color:var(--mut);line-height:1.3}.lb-cats button b{display:block;font-size:20px;margin-bottom:1px}.lb-cats button.on{border-color:#2B2F36;color:var(--ink);background:#FFF6D2}
+.lb-it{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #F0F1F4;padding:10px 2px}.lb-it:last-child{border:0}.lb-it .ic{font-size:22px}.lb-it b{font-size:13.5px;display:block;word-break:break-all}.lb-it small{color:var(--mut);font-size:11px}.lb-grp{font-size:12px;font-weight:800;color:var(--mut);margin:10px 0 2px}
 @media print{.tabs,.ex,.live,.chips,#logout{display:none!important}.pane{display:block!important}body{background:#fff}.card,.hero,.kp div,.pt{break-inside:avoid}}
 @media (prefers-reduced-motion:no-preference){.gcol div,.share i,.br .b i{transition:all .5s ease}}
 </style>
@@ -225,6 +228,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
     <button data-t="div" role="tab">사업부</button>
     <button data-t="sp" role="tab">특별근무</button>
     <button data-t="sc" role="tab">일정</button>
+    <button data-t="lb" role="tab">자료실</button>
     <button data-t="stat" role="tab">통계</button>
     <button data-t="rep" role="tab">리포트</button>
   </div>
@@ -234,6 +238,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
   <section class="pane" id="p-div"></section>
   <section class="pane" id="p-sp"></section>
   <section class="pane" id="p-sc"></section>
+  <section class="pane" id="p-lb"></section>
   <section class="pane" id="p-stat"></section>
   <section class="pane" id="p-rep"></section>
 </div>
@@ -683,6 +688,57 @@ function scSave(){
   rpc('group_schedule_save',{p_id:SC.ed.id,p_kind:$('scKind').value,p_title:title,p_start:s,p_end:e,p_place:$('scPlace').value.trim()||null,p_memo:$('scMemo').value.trim()||null})
     .then(function(){SC.sub='cal';return loadSc();}).catch(function(err){alert('저장하지 못했어요: '+((err&&err.message)||''));});
 }
+
+/* ---------- 자료실 (사업부 공통 열람자료) ---------- */
+var LB_CATS=[
+  {k:'reg',  ic:'📜',name:'사규',          table:'regulation_files',        bucket:'regulations'},
+  {k:'iso',  ic:'🏅',name:'ISO',           table:'iso9001_files',           bucket:'iso9001'},
+  {k:'news', ic:'📰',name:'회사소식',      table:'companynews_files',       bucket:'companynews'},
+  {k:'safe', ic:'🦺',name:'안전작업절차서',table:'safety_files',            bucket:'safety-procedures'},
+  {k:'risk', ic:'⚠️',name:'위험성평가',    table:'risk_assessment_files',   bucket:'riskassessment'},
+  {k:'train',ic:'🎓',name:'교육자료',      table:'training_material_files', bucket:'trainingmaterial'}];
+var LB={cat:'reg',q:'',rows:{},posts:null,cnt:{},loaded:{},openP:null};
+function lbCur(){return LB_CATS.filter(function(c){return c.k===LB.cat;})[0];}
+function lbIcon(n){n=String(n||'').toLowerCase();return /\.pdf$/.test(n)?'📕':/\.(xlsx?|csv)$/.test(n)?'📗':/\.(docx?|hwp|hwpx)$/.test(n)?'📘':/\.(pptx?)$/.test(n)?'📙':/\.(png|jpe?g|gif|webp)$/.test(n)?'🖼':'📄';}
+function lbToken(){return sb.auth.getSession().then(function(r){return r&&r.data&&r.data.session?r.data.session.access_token:SUPABASE_ANON_KEY;});}
+function lbOpen(bucket,path,win){
+  return lbToken().then(function(tk){
+    return fetch(SUPABASE_URL+'/storage/v1/object/'+bucket+'/'+String(path).split('/').map(encodeURIComponent).join('/'),{headers:{apikey:SUPABASE_ANON_KEY,Authorization:'Bearer '+tk}});
+  }).then(function(r){ if(!r.ok) throw new Error('파일을 열 수 없어요 ('+r.status+')'); return r.blob(); })
+  .then(function(b){ var u=URL.createObjectURL(b); if(win&&!win.closed) win.location.href=u; else window.open(u,'_blank'); })
+  .catch(function(e){ if(win&&!win.closed) win.close(); alert((e&&e.message)||'파일을 열 수 없어요.'); });
+}
+function lbRender(){
+  var el=$('p-lb'), c=lbCur(), q=LB.q.trim().toLowerCase();
+  var h='<div class="lb-cats">'+LB_CATS.map(function(x){return '<button type="button" data-lbcat="'+x.k+'" class="'+(x.k===LB.cat?'on':'')+'"><b>'+x.ic+'</b>'+esc(x.name)+(LB.cnt[x.k]!=null?' <span style="font-weight:600">'+LB.cnt[x.k]+'</span>':'')+'</button>';}).join('')+'</div>'
+    +'<input class="sp-in" id="lbQ" placeholder="'+esc(c.name)+' 검색" value="'+esc(LB.q)+'" autocomplete="off">';
+  var rows=(LB.rows[c.k]||[]).filter(function(r){return !q||String(r.name||'').toLowerCase().indexOf(q)>=0||String(r.cert_type||'').toLowerCase().indexOf(q)>=0;});
+  h+='<div class="card"><h3>'+c.ic+' '+esc(c.name)+' <small>모든 사업부 공통 자료 · 열람 전용</small></h3>';
+  if(c.k==='news'){
+    var ps=(LB.posts||[]).filter(function(p){return !q||String(p.title||'').toLowerCase().indexOf(q)>=0||String(p.content||'').toLowerCase().indexOf(q)>=0;});
+    if(ps.length) h+='<div class="lb-grp">소식 글</div>'+ps.map(function(p){var o=LB.openP===p.id;
+      return '<div style="border-bottom:1px solid #F0F1F4;padding:9px 2px"><button type="button" data-lbpost="'+esc(p.id)+'" style="width:100%;text-align:left;border:0;background:none;padding:0"><b style="font-size:13.5px">📰 '+esc(p.title||'(제목 없음)')+'</b><small style="display:block;color:var(--mut);font-size:11px">'+esc(String(p.uploaded_at||'').slice(0,10))+' '+(o?'▲':'▼')+'</small></button>'
+        +(o?'<div style="font-size:13px;line-height:1.55;margin-top:6px;white-space:pre-wrap">'+esc(p.content||'')+'</div>'+(p.image_path?'<button type="button" class="sp-btn g" style="margin-top:6px" data-lbimg="'+esc(p.image_path)+'">🖼 첨부 이미지 보기</button>':''):'')+'</div>';}).join('');
+    if(rows.length) h+='<div class="lb-grp">문서</div>';
+  }
+  if(c.k==='iso'){
+    var by={}; rows.forEach(function(r){var k=r.cert_type||'기타'; (by[k]=by[k]||[]).push(r);});
+    h+=Object.keys(by).sort().map(function(k){return '<div class="lb-grp">'+esc(k)+'</div>'+by[k].map(lbRow).join('');}).join('');
+  } else h+=rows.map(lbRow).join('');
+  if(!rows.length&&!(c.k==='news'&&LB.posts&&LB.posts.length)) h+='<div class="empty">'+(q?'검색 결과가 없어요.':'등록된 자료가 없어요.')+'</div>';
+  el.innerHTML=h+'</div>';
+  var qi=$('lbQ'); if(qi&&LB._focus){qi.focus();var v=qi.value;qi.value='';qi.value=v;}
+}
+function lbRow(r){return '<button type="button" class="lb-it" data-lbfile="'+esc(r.path)+'"><span class="ic">'+lbIcon(r.name)+'</span><span style="flex:1"><b>'+esc(r.name)+'</b><small>'+esc(String(r.uploaded_at||'').slice(0,10))+(r.uploaded_by?' · '+esc(r.uploaded_by):'')+'</small></span><span style="color:var(--mut)">›</span></button>';}
+function lbLoadCat(c){
+  if(LB.loaded[c.k]) return Promise.resolve();
+  var jobs=[sb.from(c.table).select('*').order('uploaded_at',{ascending:false}).limit(500).then(function(r){if(r.error)throw r.error;LB.rows[c.k]=r.data||[];})];
+  if(c.k==='news') jobs.push(sb.from('companynews_posts').select('id,title,content,image_path,uploaded_at').order('uploaded_at',{ascending:false}).limit(100).then(function(r){if(r.error)throw r.error;LB.posts=r.data||[];}));
+  return Promise.all(jobs).then(function(){LB.loaded[c.k]=true;LB.cnt[c.k]=(LB.rows[c.k]||[]).length+(c.k==='news'?(LB.posts||[]).length:0);});
+}
+function loadLb(){
+  return lbLoadCat(lbCur()).then(lbRender).catch(function(e){$('p-lb').innerHTML='<div class="card empty">자료를 불러오지 못했어요.<br>'+esc((e&&e.message)||'')+'</div>';});
+}
 function dashExcel(){
   var L=DASH.last; if(!L||!window.XLSX){return;}
   var aoa=[['환경미화운영그룹 현황판', L.rg.label+' ('+L.rg.from+(L.rg.from!==L.rg.to?' ~ '+L.rg.to:'')+')'+(L.rg.avg?' · 일평균':'')],[],
@@ -1007,7 +1063,7 @@ function loadStat(){
 }
 function load(){
   stamp();
-  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : (state.tab==='stat' ? loadStat() : loadRep()));
+  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : (state.tab==='stat' ? loadStat() : loadRep()));
   return p.catch(function(e){
     var msg=(e&&e.message)||'알 수 없는 오류';
     $('p-'+state.tab).innerHTML='<div class="card empty">데이터를 불러오지 못했어요.<br>'+esc(msg)+'<br>잠시 후 새로고침을 눌러 주세요.</div>';
@@ -1016,7 +1072,7 @@ function load(){
 function showTab(t){
   state.tab=t;
   document.querySelectorAll('.tabs button').forEach(function(b){var on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
-  ['now','div','sp','sc','stat','rep'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
+  ['now','div','sp','sc','lb','stat','rep'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
   load();
 }
 
@@ -1053,8 +1109,16 @@ function init(){
   $('logout').onclick=function(){try{localStorage.removeItem('t1_auth');localStorage.removeItem('t1_me');sessionStorage.removeItem('iaos_app');}catch(e){} toLogin();};
   $('refresh').onclick=load;
   document.querySelectorAll('.tabs button').forEach(function(b){b.onclick=function(){showTab(b.dataset.t);};});
+  document.addEventListener('input',function(e){if(e.target&&e.target.id==='lbQ'){LB.q=e.target.value;LB._focus=true;lbRender();}});
   document.addEventListener('change',function(e){var s=e.target.closest('[data-mgrset]'); if(s) mgrSet(s);});
   document.addEventListener('click',function(e){
+    var lbt=e.target.closest('[data-lbcat],[data-lbfile],[data-lbpost],[data-lbimg]');
+    if(lbt){var z=lbt.dataset;
+      if(z.lbcat){LB.cat=z.lbcat;LB.q='';LB._focus=false;LB.openP=null;loadLb();}
+      else if(z.lbpost){LB.openP=(LB.openP===z.lbpost?null:z.lbpost);lbRender();}
+      else if(z.lbfile){var w=window.open('','_blank'); lbOpen(lbCur().bucket,z.lbfile,w);}
+      else if(z.lbimg){var w2=window.open('','_blank'); lbOpen('companynews',z.lbimg,w2);}
+      return;}
     var sc=e.target.closest('[data-scsub],[data-scmove],[data-scflt],[data-scday],[data-scnew],[data-scedit],[data-scback],[data-scsave],[data-scdel],[data-scmt],[data-scwk]');
     if(sc){var q=sc.dataset;
       if(q.scsub){SC.sub=q.scsub;loadSc();}

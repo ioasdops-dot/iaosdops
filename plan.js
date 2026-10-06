@@ -1,10 +1,10 @@
-/* IAOS 휴무계획 공용 모듈 — PL v1 (그룹앱·사업부 앱이 같이 씁니다)
+/* IAOS 휴무계획 공용 모듈 — PL v2 (그룹앱·사업부 앱이 같이 씁니다)
    사용: var P=IAOSPlan.init({rpc,canEdit,today,divName,render,div,divs,back,accounts}); html=P.view(); P.load();
    host.rpc(name,args)=Promise(결과) / host.render()=화면 다시 그리기 */
 (function(){
 'use strict';
 if(window.IAOSPlan)return;
-var VERSION='PL v1';
+var VERSION='PL v2';
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function pad(n){return(n<10?'0':'')+n;}
 function ymd(y,m,d){return y+'-'+pad(m)+'-'+pad(d);}
@@ -152,12 +152,47 @@ function plEmpRead(){
   var g=function(k){return plVal('plE_'+k);},c=function(k){var v=g(k);return v==='__new'?g(k+'_new').trim():v;};
   return{no:g('no'),name:g('name'),pos:g('pos'),grp:g('grp'),team:g('team'),hq:g('hq'),area:g('area'),shift:g('shift'),days:((PL.sheet&&PL.sheet.days)||[]).slice(),lt:g('lt'),ls:g('ls'),le:g('le'),tkg:c('tkg'),tm:c('tm')};
 }
+
+/* 통계: 선택한 분기의 고정휴무요일을 요일·팀·근무조로 집계 */
+function plStatsView(){
+  var q=PL.q,qs=plQList(),E=PL.emps,tot=E.length,cnt={},none=0,combo={},teams={},shifts={};
+  PL_WK.forEach(function(w){cnt[w]=0;});
+  function bucket(m,k,o){var b=m[k]=m[k]||{n:0,none:0,d:{}};b.n++;if(!o.length)b.none++;o.forEach(function(w){b.d[w]=(b.d[w]||0)+1;});}
+  E.forEach(function(e){
+    var o=plParseOff(plOffOf(e.emp_no,q).split('').join('·')),k=o.join('·');
+    if(!o.length)none++;else{o.forEach(function(w){if(cnt[w]!==undefined)cnt[w]++;});combo[k]=(combo[k]||0)+1;}
+    bucket(teams,e.team||'(팀 없음)',o);bucket(shifts,e.shift_type||e.work_area||'(미지정)',o);
+  });
+  var mx=Math.max.apply(null,PL_WK.map(function(w){return cnt[w];}).concat([1]));
+  var h='<div class="card"><h3>📊 휴무 통계 <small>'+esc(plDivName(PL.div))+' · '+tot+'명</small></h3>'
+   +'<select class="sp-in" data-plf="q">'+qs.map(function(x){return'<option value="'+x+'"'+(x===q?' selected':'')+'>'+plQLabel(x)+' 기준</option>';}).join('')+'</select>'
+   +'<div style="font-size:12px;color:var(--mut);margin-bottom:8px">휴무요일 미등록 <b style="color:'+(none?'#C0485F':'inherit')+'">'+none+'명</b>'+(PL.qs[q]?' · 적용 시작일 '+esc(PL.qs[q]):'')+'</div>';
+  if(!tot)return h+'<div class="empty">등록된 직원이 없어요.</div></div>';
+  h+='<div style="font-size:12px;font-weight:800;margin:6px 0">요일별 휴무 인원</div>'
+   +PL_WK.map(function(w){var v=cnt[w],pc=Math.round(v/mx*100);
+     return'<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><b style="width:18px;font-size:13px;color:'+(w==='토'?'#3b6fd4':w==='일'?'#C0485F':'inherit')+'">'+w+'</b>'
+      +'<div style="flex:1;background:#EDEFF2;border-radius:99px;height:16px;overflow:hidden"><div style="width:'+pc+'%;height:100%;background:#2B2F36;border-radius:99px"></div></div>'
+      +'<span style="width:44px;text-align:right;font-size:13px;font-weight:800">'+v+'명</span></div>';}).join('')
+   +'<div style="font-size:11px;color:var(--mut);margin:2px 0 10px">한 사람이 2일 쉬므로 합계는 인원의 2배예요. 특정 요일에 몰리면 그날 근무 인원이 부족할 수 있어요.</div>'
+   +'<div style="font-size:12px;font-weight:800;margin:6px 0">휴무요일 조합</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">'
+   +Object.keys(combo).sort(function(a,b){return combo[b]-combo[a];}).map(function(k){return'<span style="background:#F0F1F4;border-radius:99px;padding:4px 10px;font-size:12px;font-weight:700">'+esc(k)+' <b>'+combo[k]+'</b></span>';}).join('')+'</div></div>';
+  var tbl=function(title,m,ord){
+    var keys=Object.keys(m).sort(ord||function(a,b){return(parseInt(a)||99)-(parseInt(b)||99)||(a<b?-1:1);});
+    return'<div class="card"><h3>'+title+' <small>요일별 휴무 인원</small></h3><div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12px;text-align:center">'
+     +'<tr style="color:var(--mut)"><th style="text-align:left;padding:4px">구분</th><th>인원</th>'+PL_WK.map(function(w){return'<th>'+w+'</th>';}).join('')+'<th>미등록</th></tr>'
+     +keys.map(function(k){var b=m[k];return'<tr style="border-top:1px solid var(--line)"><td style="text-align:left;padding:6px 4px;font-weight:700">'+esc(k)+'</td><td>'+b.n+'</td>'
+       +PL_WK.map(function(w){var v=b.d[w]||0;return'<td style="font-weight:'+(v?800:400)+';color:'+(v?'inherit':'#C5C9D1')+'">'+v+'</td>';}).join('')
+       +'<td style="color:'+(b.none?'#C0485F':'#C5C9D1')+'">'+b.none+'</td></tr>';}).join('')+'</table></div></div>';
+  };
+  return h+tbl(PL.div==='ALL'?'조직별':'팀별',teams)+tbl('근무조별',shifts,function(a,b){return a<b?-1:1;});
+}
 function plView(){
   var ed=H.canEdit(),q=PL.q,qs=plQList();
   var h=(H.back?'<div style="margin-bottom:8px"><button type="button" class="sp-btn g" data-atback="1">← 근태 현황</button></div>':'')
    +((H.divs&&H.divs.length<2)?'':'<div class="dp" style="margin-bottom:8px"><div class="md" style="width:100%">'+(H.divs||[['ALL','그룹'],['T1','T1'],['T2','T2'],['BD','부대']]).map(function(x){return'<button type="button" data-plx="div|'+x[0]+'" class="'+(PL.div===x[0]?'on':'')+'" style="flex:1">'+x[1]+'</button>';}).join('')+'</div></div>')
-   +'<div class="dp" style="margin-bottom:8px"><div class="md" style="width:100%">'+[['list','🏠 목록'],['log','🕘 수정이력']].map(function(x){return'<button type="button" data-plx="tab|'+x[0]+'" class="'+(PL.tab===x[0]?'on':'')+'" style="flex:1">'+x[1]+'</button>';}).join('')+'</div></div>';
+   +'<div class="dp" style="margin-bottom:8px"><div class="md" style="width:100%">'+[['list','🏠 목록'],['stats','📊 통계'],['log','🕘 수정이력']].map(function(x){return'<button type="button" data-plx="tab|'+x[0]+'" class="'+(PL.tab===x[0]?'on':'')+'" style="flex:1">'+x[1]+'</button>';}).join('')+'</div></div>';
   if(!PL.loaded)return h+'<div class="card empty">불러오는 중…</div>';
+  if(PL.tab==='stats')return h+plStatsView()+plSheet();
   if(PL.tab==='log'){
     return h+'<div class="card"><h3>수정이력 <small>누가 언제 바꿨는지</small></h3><div style="display:grid;grid-template-columns:1fr 1fr auto;gap:6px"><input class="sp-in" type="date" data-plf="lf" value="'+esc(PL.lf)+'"><input class="sp-in" type="date" data-plf="lt" value="'+esc(PL.lt)+'"><button type="button" class="sp-btn" data-plx="logq" style="margin-bottom:8px">조회</button></div><div id="plLog">'+plLogBody()+'</div></div>'+plSheet();
   }

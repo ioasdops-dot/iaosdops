@@ -17,6 +17,11 @@ html,body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-syst
 body{padding:0 0 max(24px,env(safe-area-inset-bottom))}
 button{font:inherit;color:inherit;cursor:pointer}
 .wrap{max-width:560px;margin:0 auto;padding:0 16px}
+.vh-grid{display:block}
+@media (min-width:900px){
+  .wrap{max-width:1100px}
+  .vh-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.vh-grid .card{margin-bottom:0}
+}
 .hd{display:flex;justify-content:space-between;align-items:center;padding:calc(14px + env(safe-area-inset-top)) 0 0}
 .hd .bn{display:flex;align-items:center;gap:10px}
 .hd .bn img{width:38px;height:38px;border-radius:50%;box-shadow:0 1px 6px #2b2f3630;flex:none}
@@ -807,7 +812,7 @@ function dvGo(i){ if(!divs.length) return; DV.idx=(i+divs.length)%divs.length; r
 })();
 
 /* ---------- 차량 대장 · 운행일지 ---------- */
-var VH={sub:'reg',div:'ALL',vehs:[],all:[],logs:[],veh:null,month:null,ed:null,sheet:null};
+var VH={kind:'all',sub:'reg',div:'ALL',vehs:[],all:[],logs:[],veh:null,month:null,ed:null,sheet:null};
 var VH_PUR=['업무','폐기물처리','고소작업','유리작업','순찰','기타'];
 function vhDivs(){return [AT_GRP].concat(divs);}
 function vhDivName(id){var a=vhDivs().filter(function(d){return d.id===id;})[0];return a?a.short:id;}
@@ -824,6 +829,11 @@ function loadVh(){
     renderVh();
   });
 }
+function vhKindBar(list){
+  var n=function(k){return list.filter(function(v){return k==='all'||v.kind===k;}).length;};
+  return '<div class="dv-pills" style="top:auto;position:static">'+[['all','전체'],['공사','공사 차량'],['자사','자사 차량']].map(function(k){var on=VH.kind===k[0];return '<button type="button" data-vx="kind" data-v="'+k[0]+'" class="'+(on?'on':'')+'" style="'+(on?'background:#6B7280':'')+'">'+k[1]+' '+n(k[0])+'</button>';}).join('')+'</div>';
+}
+function vhByKind(list){return list.filter(function(v){return VH.kind==='all'||v.kind===VH.kind;});}
 function vhSubBar(){
   return '<div class="dv-pills" style="top:auto;position:static">'
    +[['reg','차량 대장'],['log','운행일지(그룹)']].map(function(s){return '<button type="button" data-vx="sub" data-v="'+s[0]+'" class="'+(VH.sub===s[0]?'on':'')+'" style="'+(VH.sub===s[0]?'background:#2B2F36':'')+'">'+s[1]+'</button>';}).join('')+'</div>';
@@ -836,20 +846,22 @@ function renderVh(){
 }
 function vhReg(){
   var h='<div class="dv-pills" style="top:auto;position:static">'+vhDivs().map(function(d){var on=VH.div===d.id;return '<button type="button" data-vx="div" data-v="'+d.id+'" class="'+(on?'on':'')+'" style="'+(on?'background:'+d.color:'')+'">'+esc(d.short)+'</button>';}).join('')+'</div>';
-  h+='<div class="card"><h3 style="margin:0 0 8px;font-size:15px">'+esc(vhDivName(VH.div))+' 차량 <small style="color:var(--mut);font-weight:600">'+VH.vehs.length+'대</small></h3>';
+  h+=vhKindBar(VH.vehs);
+  var shown=vhByKind(VH.vehs);
+  h+='<div class="card"><h3 style="margin:0 0 8px;font-size:15px">'+esc(vhDivName(VH.div))+(VH.kind==='all'?' 차량':' '+VH.kind+' 차량')+' <small style="color:var(--mut);font-weight:600">'+shown.length+'대</small></h3>';
   if(atCanEdit()) h+='<button type="button" class="sp-btn" data-vx="vnew" style="width:100%">＋ 차량 등록</button>'; else h+='<div class="note" style="margin:0">조회만 가능해요. 등록·수정은 그룹 관리자만 할 수 있어요.</div>';
   h+='</div>';
-  if(!VH.vehs.length) return h+'<div class="card empty">등록된 차량이 없어요.</div>';
-  return h+VH.vehs.map(function(v){
+  if(!shown.length) return h+'<div class="card empty">등록된 '+(VH.kind==='all'?'':VH.kind+' ')+'차량이 없어요.</div>';
+  return h+'<div class="vh-grid">'+shown.map(function(v){
     var cur=v.last_km!=null?v.last_km:v.start_km;
     return '<div class="card" style="'+(v.active?'':'opacity:.55')+'"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:16px">'+esc(v.plate)+'</b>'
      +'<span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;background:'+(v.kind==='자사'?'#E8F0FD':'#FFF1E2')+'">'+esc(v.kind)+(v.active?'':' · 사용 안 함')+'</span></div>'
      +'<div style="font-size:12px;color:var(--mut);margin-top:6px;line-height:1.7">목적 '+esc(v.purpose||'-')+' · 소속 '+esc(v.team||'-')+'<br>투입 '+esc(v.start_date?String(v.start_date).slice(0,10):'-')+' · 시작 '+vhKm(v.start_km)+'km · 현재 '+vhKm(cur)+'km'+(v.log_count>0?' · 일지 '+v.log_count+'건':'')+(v.memo?'<br>비고 '+esc(v.memo):'')+'</div>'
      +(atCanEdit()?'<div class="at-btns" style="margin-top:8px"><button type="button" class="sp-btn g" data-vx="vedit" data-id="'+esc(v.id)+'">수정</button><button type="button" class="sp-btn r" data-vx="vdel" data-id="'+esc(v.id)+'">삭제</button></div>':'')+'</div>';
-  }).join('');
+  }).join('')+'</div>';
 }
 function vhVehSheet(){
-  var E=VH.ed||{}, dv=E.division_id||VH.div;
+  var E=VH.ed||{}, dv=E.division_id||VH.div; if(!E.id&&!E.kind&&VH.kind!=='all') E=Object.assign({},E,{kind:VH.kind});
   var f=function(l,c){return '<label style="font-size:11px;font-weight:700;color:var(--mut)">'+l+'</label>'+c;};
   return '<div class="at-sheet" data-vx="vclose"><div class="at-sh" style="max-height:92vh;overflow:auto"><h3>'+(E.id?'차량 수정':'차량 등록')+' <small>'+esc(vhDivName(dv))+'</small></h3>'
    +f('구분','<select class="sp-in" id="vhKind"><option'+(E.kind==='자사'?' selected':'')+'>자사</option><option'+(E.kind!=='자사'?' selected':'')+'>공사</option></select>')
@@ -866,7 +878,11 @@ function vhVehOf(id){return VH.all.filter(function(v){return v.id===id;})[0];}
 function vhLog(){
   var h='<div class="dp"><button type="button" class="sm" data-vx="mv" data-v="-1">◀</button><b>'+VH.month.replace('-','년 ')+'월</b><button type="button" class="sm" data-vx="mv" data-v="1">▶</button></div>';
   if(!VH.all.length) return h+'<div class="card empty">그룹 차량이 없어요.<br>‘차량 대장’에서 그룹 차량을 먼저 등록해 주세요.</div>';
-  h+='<div class="at-btns" style="margin-bottom:8px">'+VH.all.filter(function(v){return v.active;}).map(function(v){var on=VH.veh===v.id;return '<button type="button" class="sp-btn '+(on?'':'g')+'" data-vx="veh" data-v="'+esc(v.id)+'">'+esc(v.plate)+'</button>';}).join('')+'</div>';
+  h=h+vhKindBar(VH.all);
+  var lv=vhByKind(VH.all).filter(function(v){return v.active;});
+  if(!lv.some(function(v){return v.id===VH.veh;})&&lv.length) VH.veh=lv[0].id;
+  if(!lv.length) return h+'<div class="card empty">'+(VH.kind==='all'?'':VH.kind+' ')+'그룹 차량이 없어요.</div>';
+  h+='<div class="at-btns" style="margin-bottom:8px">'+lv.map(function(v){var on=VH.veh===v.id;return '<button type="button" class="sp-btn '+(on?'':'g')+'" data-vx="veh" data-v="'+esc(v.id)+'">'+esc(v.plate)+'</button>';}).join('')+'</div>';
   var v=vhVehOf(VH.veh), rows=VH.logs.filter(function(l){return l.vehicle_id===VH.veh;}).sort(function(a,b){return String(a.work_date)<String(b.work_date)?1:-1;});
   var tot=0; rows.forEach(function(l){if(l.start_km!=null&&l.end_km!=null) tot+=Number(l.end_km)-Number(l.start_km);});
   h+='<div class="card"><h3 style="margin:0 0 6px;font-size:15px">'+esc(v?v.plate:'')+' 운행일지 <small style="color:var(--mut);font-weight:600">'+rows.length+'건 · 주행 '+vhKm(tot)+'km</small></h3>';
@@ -915,6 +931,7 @@ function vhAct(el){
   if(a==='vclose'){ if(el.classList.contains('at-sheet')&&event.target!==el) return; VH.sheet=null;VH.ed=null;renderVh();return; }
   if(a==='sub'){VH.sub=v;load();return;}
   if(a==='div'){VH.div=v;load();return;}
+  if(a==='kind'){VH.kind=v;renderVh();return;}
   if(a==='veh'){VH.veh=v;renderVh();return;}
   if(a==='mv'){var y=+VH.month.slice(0,4),m=+VH.month.slice(5,7)+(+v);if(m<1){m=12;y--;}if(m>12){m=1;y++;}VH.month=y+'-'+pad(m);load();return;}
   if(a==='vnew'){VH.ed=null;VH.sheet='veh';renderVh();return;}

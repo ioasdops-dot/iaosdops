@@ -15719,7 +15719,7 @@ function vregLastKm(kind, plate){
 }
 function vhRowPlate(r){ if(r.plate) return r.plate; var ja=VREG.filter(function(v){return v.kind==='자사';}); return ja.length===1?ja[0].plate:''; }
 // ── 차량 등록·관리 창 ──
-var VREG_ED=null;
+var VREG_ED=null, VREG_K='all';
 function vregOpen(){
   if(!vregCan()){ toast('차량 등록은 사업부 관리자만 할 수 있습니다'); return; }
   var ov=document.getElementById('vregOv');
@@ -15746,9 +15746,12 @@ function vregRender(){
      +'<div id="vrErr" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:6px"></div>'
      +'<div style="display:flex;gap:8px"><button class="btn-prim" style="background:var(--g2);color:var(--g6);flex:1" onclick="VREG_ED=null;vregRender()">취소</button><button class="btn-prim" style="flex:1" onclick="vregSave()">저장</button></div>';
   } else {
-    h+='<button class="btn-prim" style="width:100%;margin-bottom:10px" onclick="VREG_ED={kind:\'공사\',active:true};vregRender()">＋ 차량 등록</button>';
-    if(!VREG.length) h+='<div style="text-align:center;padding:22px;color:var(--g4);font-size:14px">등록된 차량이 없습니다</div>';
-    VREG.forEach(function(v){
+    h+='<button class="btn-prim" style="width:100%;margin-bottom:10px" onclick="VREG_ED={kind:(VREG_K==\'자사\'?\'자사\':\'공사\'),active:true};vregRender()">＋ 차량 등록</button>';
+    var kn=function(k){return VREG.filter(function(v){return k==='all'||v.kind===k;}).length;};
+    h+='<div style="display:flex;gap:6px;margin-bottom:10px">'+[['all','전체'],['공사','공사 차량'],['자사','자사 차량']].map(function(k){var on=VREG_K===k[0];return '<button onclick="VREG_K=\''+k[0]+'\';vregRender()" style="flex:1;padding:9px 0;border-radius:99px;font-size:13px;font-weight:800;cursor:pointer;border:1.5px solid '+(on?'var(--teal)':'var(--g2)')+';background:'+(on?'var(--teal)':'#fff')+';color:'+(on?'#fff':'var(--g5)')+'">'+k[1]+' '+kn(k[0])+'</button>';}).join('')+'</div>';
+    var shownV=VREG.filter(function(v){return VREG_K==='all'||v.kind===VREG_K;});
+    if(!shownV.length) h+='<div style="text-align:center;padding:22px;color:var(--g4);font-size:14px">등록된 '+(VREG_K==='all'?'':VREG_K+' ')+'차량이 없습니다</div>';
+    shownV.forEach(function(v){
       h+='<div style="border:1px solid var(--g2);border-radius:14px;padding:11px 13px;margin-bottom:8px;'+(v.active?'':'opacity:.55')+'"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">'+vregE(v.plate)+'</b><span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;background:'+(v.kind==='자사'?'#E8F0FD':'#FFF1E2')+'">'+vregE(v.kind)+(v.active?'':' · 사용 안 함')+'</span></div>'
        +'<div style="font-size:12px;color:var(--g4);margin-top:5px;line-height:1.7">목적 '+vregE(v.purpose||'-')+' · 소속 '+vregE(v.team||'-')+'<br>투입 '+vregE(v.start_date?String(v.start_date).slice(0,10):'-')+' · 시작 '+(v.start_km==null?'-':Number(v.start_km).toLocaleString())+'km'+(v.memo?'<br>비고 '+vregE(v.memo):'')+'</div>'
        +'<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-prim" style="background:var(--g2);color:var(--g6);flex:1;padding:8px" onclick="vregEdit(\''+v.id+'\')">수정</button><button class="btn-prim" style="background:var(--danger-bg);color:var(--danger);flex:1;padding:8px" onclick="vregDel(\''+v.id+'\')">삭제</button></div></div>';

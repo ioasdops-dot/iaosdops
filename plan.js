@@ -1,16 +1,16 @@
-/* IAOS 휴무계획 공용 모듈 — PL v2 (그룹앱·사업부 앱이 같이 씁니다)
+/* IAOS 휴무계획 공용 모듈 — PL v3 (그룹앱·사업부 앱이 같이 씁니다)
    사용: var P=IAOSPlan.init({rpc,canEdit,today,divName,render,div,divs,back,accounts}); html=P.view(); P.load();
    host.rpc(name,args)=Promise(결과) / host.render()=화면 다시 그리기 */
 (function(){
 'use strict';
 if(window.IAOSPlan)return;
-var VERSION='PL v2';
+var VERSION='PL v3';
 function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
 function pad(n){return(n<10?'0':'')+n;}
 function ymd(y,m,d){return y+'-'+pad(m)+'-'+pad(d);}
 function daysIn(y,m){return new Date(y,m,0).getDate();}
 function $(id){return document.getElementById(id);}
-function injectCss(){if($('plxCss'))return;var st=document.createElement('style');st.id='plxCss';st.textContent="\n.plx{--card:#fff;--ink:#2B2F36;--mut:#7A8190;--line:#E3E6EB;font-family:-apple-system,\"Apple SD Gothic Neo\",\"Noto Sans KR\",sans-serif;color:var(--ink);font-size:14px;line-height:1.4}\n.plx *{box-sizing:border-box}\n.plx .card{background:var(--card);border-radius:18px;padding:13px 14px;margin-bottom:10px;border:1px solid var(--line)}\n.plx .card h3{font-size:13px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;font-weight:800}\n.plx .card h3 small{font-weight:500;color:var(--mut);font-size:11px}\n.plx .empty{color:var(--mut);font-size:13px;text-align:center;padding:18px 0;line-height:1.5}\n.plx .note{font-size:11px;color:#9AA0AB;text-align:center;margin-top:10px}\n.plx .dp{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}\n.plx .dp .md{display:flex;background:#E6E8EC;border-radius:99px;padding:2px}\n.plx .dp .md button{border:0;background:none;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;color:var(--mut);font-family:inherit}\n.plx .dp .md button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px #2b2f3620}\n.plx .at-sheet{position:fixed;inset:0;background:rgba(20,24,32,.45);display:flex;align-items:flex-end;justify-content:center;z-index:100000}\n.plx .at-sh{background:#fff;border-radius:18px 18px 0 0;padding:16px 14px 20px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto}\n.plx .at-sh h3{margin:0 0 10px;font-size:15px}.plx .at-sh h3 small{font-weight:600;color:var(--mut);font-size:11px;margin-left:6px}\n.plx .sp-in{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:14px;margin-bottom:8px;background:#fff;min-width:0;color:var(--ink)}\n.plx input.sp-in[type=date]{min-height:42px}\n.plx .sp-btn{border:0;border-radius:12px;padding:10px 14px;font-weight:800;font-size:13px;background:#2B2F36;color:#fff;font-family:inherit;cursor:pointer}\n.plx .sp-btn.g{background:#E6E8EC;color:var(--ink)}.plx .sp-btn.r{background:#FDE9ED;color:#C0485F}\n";document.head.appendChild(st);}
+function injectCss(){if($('plxCss'))return;var st=document.createElement('style');st.id='plxCss';st.textContent="\n.plx{--card:#fff;--ink:#2B2F36;--mut:#7A8190;--line:#E3E6EB;font-family:-apple-system,\"Apple SD Gothic Neo\",\"Noto Sans KR\",sans-serif;color:var(--ink);font-size:14px;line-height:1.4}\n.plx *{box-sizing:border-box}\n.plx .card{background:var(--card);border-radius:18px;padding:13px 14px;margin-bottom:10px;border:1px solid var(--line)}\n.plx .card h3{font-size:13px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;font-weight:800}\n.plx .card h3 small{font-weight:500;color:var(--mut);font-size:11px}\n.plx .empty{color:var(--mut);font-size:13px;text-align:center;padding:18px 0;line-height:1.5}\n.plx .note{font-size:11px;color:#9AA0AB;text-align:center;margin-top:10px}\n.plx .dp{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:10px}\n.plx .dp .md{display:flex;background:#E6E8EC;border-radius:99px;padding:2px}\n.plx .dp .md button{border:0;background:none;padding:5px 12px;border-radius:99px;font-size:12px;font-weight:700;color:var(--mut);font-family:inherit}\n.plx .dp .md button.on{background:#fff;color:var(--ink);box-shadow:0 1px 3px #2b2f3620}\n.plx .at-sheet{position:fixed;inset:0;background:rgba(20,24,32,.45);display:flex;align-items:flex-end;justify-content:center;z-index:100000}\n.plx .at-sh{background:#fff;border-radius:18px 18px 0 0;padding:16px 14px 20px;width:100%;max-width:560px;max-height:92vh;overflow-y:auto}\n.plx .at-sh h3{margin:0 0 10px;font-size:15px}.plx .at-sh h3 small{font-weight:600;color:var(--mut);font-size:11px;margin-left:6px}\n.plx .sp-in{width:100%;padding:10px;border:1.5px solid var(--line);border-radius:12px;font:inherit;font-size:14px;margin-bottom:8px;background:#fff;min-width:0;color:var(--ink)}\n.plx input.sp-in[type=date]{min-height:42px}\n.plx .sp-btn{border:0;border-radius:12px;padding:10px 14px;font-weight:800;font-size:13px;background:var(--ac,#2B2F36);color:#fff;font-family:inherit;cursor:pointer}\n.plx .sp-btn.g{background:#E6E8EC;color:var(--ink)}.plx .sp-btn.r{background:#FDE9ED;color:#C0485F}\n";document.head.appendChild(st);}
 var H=null;
 function init(host){
 H=host;injectCss();
@@ -132,7 +132,7 @@ function plSheet(){
    +(PL.div==='ALL'?'':'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 6px">'+f('team','근무팀(예: 1팀)',E.team)+f('hq','총괄(해당 시)',E.hq_team)+f('area','근무구역(오전/오후/야간)',E.work_area)+'</div>')
    +'<div style="display:flex;gap:6px;align-items:flex-end"><label style="flex:1;font-size:11px;color:var(--mut)">근무조(ERP 코드 기준)<select class="sp-in" id="plE_shift" style="margin-bottom:6px"><option value="">(기본값)</option>'+(R0.shifts||[]).map(function(x){return'<option'+(shiftSel===x.name?' selected':'')+'>'+esc(x.name)+'</option>';}).join('')+'</select></label>'
    +'<button type="button" class="sp-btn g" data-plx="shiftedit" style="padding:10px 12px;margin-bottom:6px;white-space:nowrap">✎ 근무조 편집</button></div>'
-   +'<div style="font-size:11px;color:var(--mut);margin:2px 0 4px">고정휴무요일 <b>(2일 선택)</b></div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:8px">'+PL_WK.map(function(w){var on=S.days.indexOf(w)>=0;return'<button type="button" data-plx="day|'+w+'" style="border:1.5px solid '+(on?'#2B2F36':'#E1E5EC')+';background:'+(on?'#2B2F36':'#fff')+';color:'+(on?'#fff':'#2B2F36')+';border-radius:12px;padding:12px 0;font:inherit;font-size:14px;font-weight:800">'+w+'</button>';}).join('')+'</div>'
+   +'<div style="font-size:11px;color:var(--mut);margin:2px 0 4px">고정휴무요일 <b>(2일 선택)</b></div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:8px">'+PL_WK.map(function(w){var on=S.days.indexOf(w)>=0;return'<button type="button" data-plx="day|'+w+'" style="border:1.5px solid '+(on?'var(--ac,#2B2F36)':'#E1E5EC')+';background:'+(on?'var(--ac,#2B2F36)':'#fff')+';color:'+(on?'#fff':'var(--ac,#2B2F36)')+';border-radius:12px;padding:12px 0;font:inherit;font-size:14px;font-weight:800">'+w+'</button>';}).join('')+'</div>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 6px">'+f('lt','휴직 구분',E.leave_type)+'<label style="font-size:11px;color:var(--mut)">시작<input class="sp-in" type="date" id="plE_ls" value="'+esc(gv('ls',String(E.leave_start||'').slice(0,10)))+'" style="margin-bottom:6px"></label><label style="font-size:11px;color:var(--mut)">종료<input class="sp-in" type="date" id="plE_le" value="'+esc(gv('le',String(E.leave_end||'').slice(0,10)))+'" style="margin-bottom:6px"></label></div>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 8px">'+csel('tkg','ERP 근무조코드',gv('tkg',E.tkg_code),cat.tkg,cat.tkgLab,'(근무조 표/기본값 사용)')+csel('tm','ERP 시간코드',gv('tm',E.tm_code_base),cat.tm,cat.tmLab,'(근무조 표/기본값 사용)')+'</div>'
    +'<button type="button" class="sp-btn" data-plx="esave" style="width:100%">저장</button>'
@@ -171,7 +171,7 @@ function plStatsView(){
   h+='<div style="font-size:12px;font-weight:800;margin:6px 0">요일별 휴무 인원</div>'
    +PL_WK.map(function(w){var v=cnt[w],pc=Math.round(v/mx*100);
      return'<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px"><b style="width:18px;font-size:13px;color:'+(w==='토'?'#3b6fd4':w==='일'?'#C0485F':'inherit')+'">'+w+'</b>'
-      +'<div style="flex:1;background:#EDEFF2;border-radius:99px;height:16px;overflow:hidden"><div style="width:'+pc+'%;height:100%;background:#2B2F36;border-radius:99px"></div></div>'
+      +'<div style="flex:1;background:#EDEFF2;border-radius:99px;height:16px;overflow:hidden"><div style="width:'+pc+'%;height:100%;background:var(--ac,#2B2F36);border-radius:99px"></div></div>'
       +'<span style="width:44px;text-align:right;font-size:13px;font-weight:800">'+v+'명</span></div>';}).join('')
    +'<div style="font-size:11px;color:var(--mut);margin:2px 0 10px">한 사람이 2일 쉬므로 합계는 인원의 2배예요. 특정 요일에 몰리면 그날 근무 인원이 부족할 수 있어요.</div>'
    +'<div style="font-size:12px;font-weight:800;margin:6px 0">휴무요일 조합</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px">'
@@ -364,7 +364,8 @@ function plAct(x){
 }
 
 
-function view(){return'<div class="plx" data-plv="'+VERSION+'">'+plView()+'</div>';}
+var AC={T1:'#2F9E93',T2:'#4A7FD6',BD:'#E08A1E'};
+function view(){return'<div class="plx" data-plv="'+VERSION+'" style="--ac:'+(AC[PL.div]||'#2B2F36')+'">'+plView()+'</div>';}
 document.addEventListener('click',function(e){
   var at=e.target.closest&&e.target.closest('.plx [data-plx]');if(!at)return;
   if(at.classList.contains('at-sheet')&&e.target!==at)return;

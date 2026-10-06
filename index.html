@@ -9809,7 +9809,7 @@ function applyRoleUI(){
   var wvb=document.getElementById('workVehMenuBtn');
   if(wvb) wvb.style.display=isExecView?'flex':'none';
   // 현장점검·창고재고관리: master/admin/manager/leader/acting_leader만 메뉴 노출 (그 외 전부 숨김)
-  var canInspectWh=(me.role==='master'||me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader');
+  var canInspectWh=(me.role==='master'||me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||me.role==='group_viewer');
   var miBtn=document.getElementById('menuInspectBtn'); if(miBtn) miBtn.style.display=canInspectWh?'flex':'none';
   var mwBtn=document.getElementById('menuWarehouseBtn'); if(mwBtn) mwBtn.style.display=canInspectWh?'flex':'none';
   var twBtn=document.getElementById('tabbarWarehouseBtn'); if(twBtn) twBtn.style.display=canInspectWh?'flex':'none';

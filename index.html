@@ -886,6 +886,7 @@ html{overflow-x:hidden}
     })();
   </script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
+<script src="plan.js?v=PL1"></script>
 <!-- ★ 2026-09-23 인력현황 실시간(웹소켓) 반영용 — mp_data 변경 발생 시에만 갱신하기 위해 추가 -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 </head>
@@ -4192,6 +4193,7 @@ textarea.rpt-edit{resize:vertical;min-height:36px}
     <div id="wfMainT0" onclick="wfMainTab(0)" style="flex:1;text-align:center;padding:10px 0;font-size:14px;font-weight:700;color:var(--teal);border-bottom:2.5px solid var(--teal);cursor:pointer;margin-bottom:-2px">목록</div>
     <div id="wfMainT1" onclick="wfMainTab(1)" style="flex:1;text-align:center;padding:10px 0;font-size:14px;font-weight:700;color:var(--g5);cursor:pointer">📊 통계</div>
     <div id="wfMainT2" onclick="wfMainTab(2)" style="flex:1;text-align:center;padding:10px 0;font-size:14px;font-weight:700;color:var(--g5);cursor:pointer">📝 수정이력</div>
+    <div id="wfMainT3" onclick="wfMainTab(3)" style="display:none;flex:1;text-align:center;padding:10px 0;font-size:14px;font-weight:700;color:var(--g5);cursor:pointer">🛠 관리</div>
   </div>
   <div id="wfMainP0" style="padding:12px">
     <!-- 필터바 -->
@@ -4234,6 +4236,7 @@ textarea.rpt-edit{resize:vertical;min-height:36px}
   <div id="wfMainP1" style="display:none;padding:12px">
     <div id="wfStatsBody"><div style="text-align:center;padding:20px;color:var(--g3);font-size:14px">불러오는 중...</div></div>
   </div>
+  <div id="wfMainP3" style="display:none;padding:12px"><div id="wfPlanBody"></div></div>
   <div id="wfMainP2" style="display:none;padding:12px">
     <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:12px">
       <span style="font-size:13px;font-weight:700;color:var(--g6);white-space:nowrap">🔍 조회 기간</span>
@@ -9620,7 +9623,7 @@ function go(name){
   }
   if(name==='eduevent'){ eeTab(0); }
   if(name==='mtgmaterial'){ mtgTab(_mtgLastTab); }
-  if(name==='workschedule'){ loadWfEmployees(); }
+  if(name==='workschedule'){ loadWfEmployees(); try{ wfPlanInit(); }catch(e){} }
   if(name==='specialwork'){ wfSpLoadEvents(); }
   if(name==='campaign'){ cpLoadList(); }
   if(name==='veh'){
@@ -35790,6 +35793,34 @@ function wfTeamSortKey(team){
   var m=team.match(/(\d+)/);
   return m?parseInt(m[1],10):8888;
 }
+/* ═══ 휴무계획 새 관리 탭 — 공용 모듈 plan.js (PL v1, 그룹앱과 같은 코드). 못 불러오면 이 탭만 숨겨지고 기존 화면은 그대로 ═══ */
+var _wfPlanP=null;
+function wfPlanDiv(){ var d=''; try{ d=iaosDID(); }catch(e){} return ['T1','T2','BD'].indexOf(d)>=0?d:null; }
+function wfPlanOk(){ return !!(window.IAOSPlan && me && (me.role==='admin'||me.role==='master') && wfPlanDiv()); }
+function wfPlanInit(){
+  var t=document.getElementById('wfMainT3'); if(t) t.style.display=wfPlanOk()?'block':'none';
+}
+function wfPlanRender(){ var el=document.getElementById('wfPlanBody'); if(el&&_wfPlanP) el.innerHTML=_wfPlanP.view(); }
+function wfPlanTabUi(n){
+  var t=document.getElementById('wfMainT3'), p=document.getElementById('wfMainP3'); if(!t||!p) return;
+  t.style.color=n===3?'var(--teal)':'var(--g5)'; t.style.borderBottom=n===3?'2.5px solid var(--teal)':'none';
+  p.style.display=n===3?'block':'none';
+  if(n===3) wfPlanOpen();
+}
+function wfPlanOpen(){
+  var d=wfPlanDiv(); if(!wfPlanOk()){ toast('⚠️ 이 화면은 해당 사업부 관리자만 쓸 수 있어요'); return; }
+  if(!_wfPlanP){
+    _wfPlanP=IAOSPlan.init({
+      div:d, divs:[[d,iaosDivName(d)||d]], back:false,
+      rpc:function(n,a){ return sb.rpc(n,a||{}).then(function(r){ if(r.error) throw r.error; return r.data||[]; }); },
+      canEdit:function(){ return !!(me&&(me.role==='admin'||me.role==='master')); },
+      today:function(){ var k=new Date(Date.now()+9*3600000); return {y:k.getUTCFullYear(),m:k.getUTCMonth()+1,d:k.getUTCDate()}; },
+      divName:function(id){ return iaosDivName(id)||id; },
+      render:wfPlanRender, accounts:function(){ return []; }
+    });
+  }
+  wfPlanRender(); _wfPlanP.setDiv(d);
+}
 function wfMainTab(n){
   document.getElementById('wfMainT0').style.color = n===0?'var(--teal)':'var(--g5)';
   document.getElementById('wfMainT0').style.borderBottom = n===0?'2.5px solid var(--teal)':'none';
@@ -35800,6 +35831,7 @@ function wfMainTab(n){
   document.getElementById('wfMainP0').style.display = n===0?'block':'none';
   document.getElementById('wfMainP1').style.display = n===1?'block':'none';
   document.getElementById('wfMainP2').style.display = n===2?'block':'none';
+  wfPlanTabUi(n);
   if(n===1) wfRenderStatsTab();
   if(n===2 && !document.getElementById('wfEditFrom').value){
     var now=new Date(); var y=now.getFullYear(), m=now.getMonth();

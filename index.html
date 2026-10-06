@@ -1181,7 +1181,7 @@ html{overflow-x:hidden}
       <button class="menu-btn" id="workVehMenuBtn" onclick="go('workveh')" style="display:none">
         <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M15 17a2 2 0 1 0 4 0a2 2 0 1 0 -4 0" /><path d="M5 17h-2v-11a1 1 0 0 1 1 -1h9v12m-4 0h6m4 0h2v-6h-8m0 -5h5l3 5" /></svg></span>
         <div class="menu-title">공사업무용차량 운행일지</div>
-        <div class="menu-desc">88러7396·88러7397·809나1745 운행 기록</div>
+        <div class="menu-desc" id="workVehMenuDesc">공사업무용 차량 운행 기록</div>
         <span class="menu-arrow">보기 →</span>
       </button>
     </div>
@@ -6056,7 +6056,7 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
 
 <div id="sVeh" class="scr">
   <div class="app-hd">
-    <div class="logo-w"><div class="logo-img"><img src="logo.png" alt="logo"></div><div class="logo-t"><h2>차량운행기록부</h2><p><span class="div-nm">T1 환경미화사업부</span> 스타리아 821로8915</p></div></div>
+    <div class="logo-w"><div class="logo-img"><img src="logo.png" alt="logo"></div><div class="logo-t"><h2>차량운행기록부</h2><p><span class="div-nm" id="vhHdrDiv">T1 환경미화사업부</span> <span id="vhHdrVeh">차량</span></p></div></div>
     <button class="back-hd" onclick="go('main')" id="vehBackBtn">← 메인</button>
     <button id="vehLogoutBtn" onclick="doLogout()" style="display:none;padding:6px 12px;background:var(--danger-bg);color:var(--danger);border:1.5px solid var(--danger);border-radius:20px;font-size:13px;font-weight:700;cursor:pointer">로그아웃</button>
   </div>
@@ -6065,9 +6065,11 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
     <div id="vhT1" style="flex:1;padding:11px;text-align:center;font-size:14px;font-weight:700;color:var(--g5);cursor:pointer" onclick="vhTab(1)">운행 이력</div>
     <div id="vhT2" style="flex:1;padding:11px;text-align:center;font-size:14px;font-weight:700;color:var(--g5);cursor:pointer" onclick="vhTab(2)">다운로드</div>
   </div>
+  <div id="vregBarVh" style="display:none;padding:8px 13px 0"><button class="btn-prim" style="background:var(--g1);color:var(--teal2);border:1.5px solid var(--teal);padding:9px" onclick="vregOpen()">🚗 차량 등록·관리</button></div>
   <div id="vhP0">
     <div class="pg-hd"><div><h1>운행 기록 작성</h1></div></div>
     <div class="card"><div class="cb">
+      <div class="fg"><label class="f-lbl">🚗 차량 선택 *</label><div class="rg" id="vhVehGrp" style="flex-wrap:wrap;gap:6px"></div></div>
       <div class="fg"><label class="f-lbl">📅 사용일자 *</label><input type="date" id="vhDate" class="ri" style="margin-bottom:0;width:100%;max-width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none"></div>
       <div class="fg"><label class="f-lbl">🏢 소속 *</label><input type="text" id="vhDept" class="ri" placeholder="예: 오전1팀" style="margin-bottom:0"></div>
       <div class="fg"><label class="f-lbl">👤 성명 *</label><input type="text" id="vhName" class="ri" placeholder="홍길동" style="margin-bottom:0"></div>
@@ -6135,14 +6137,11 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
     <div id="wvT3" style="flex:1;padding:11px;text-align:center;font-size:14px;font-weight:700;color:var(--g5);cursor:pointer" onclick="wvTab(3)">통계</div>
     <div id="wvT2" style="flex:1;padding:11px;text-align:center;font-size:14px;font-weight:700;color:var(--g5);cursor:pointer" onclick="wvTab(2)">다운로드</div>
   </div>
+  <div id="vregBarWv" style="display:none;padding:8px 13px 0"><button class="btn-prim" style="background:var(--g1);color:var(--teal2);border:1.5px solid var(--teal);padding:9px" onclick="vregOpen()">🚗 차량 등록·관리</button></div>
   <div id="wvP0">
     <div class="pg-hd"><div><h1>운행 기록 작성</h1></div></div>
     <div class="card"><div class="cb">
-      <div class="fg"><label class="f-lbl">🚛 차량 선택 *</label><div class="rg" id="wvVehGrp" style="flex-wrap:wrap;gap:6px">
-        <div class="rp" onclick="pickWvVehicle(this)" data-val="88러 7396">88러 7396</div>
-        <div class="rp" onclick="pickWvVehicle(this)" data-val="88러 7397">88러 7397</div>
-        <div class="rp" onclick="pickWvVehicle(this)" data-val="809나 1745">809나 1745</div>
-      </div></div>
+      <div class="fg"><label class="f-lbl">🚛 차량 선택 *</label><div class="rg" id="wvVehGrp" style="flex-wrap:wrap;gap:6px"></div></div>
       <div class="fg"><label class="f-lbl">📅 사용일자 *</label><input type="date" id="wvDate" class="ri" style="margin-bottom:0;width:100%;max-width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none"></div>
       <div class="fg"><label class="f-lbl">🏢 소속 *</label><input type="text" id="wvDept" class="ri" placeholder="예: 오전1팀" style="margin-bottom:0"></div>
       <div class="fg"><label class="f-lbl">👤 성명 *</label><input type="text" id="wvName" class="ri" placeholder="홍길동" style="margin-bottom:0"></div>
@@ -6196,9 +6195,6 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
       <input type="month" id="wvFilterMonth" onchange="renderWorkVehList(workVehData)" style="flex:1;padding:8px 10px;border:1.5px solid var(--g2);border-radius:var(--r2);font-size:14px;background:white">
       <select id="wvFilterVeh" onchange="renderWorkVehList(workVehData)" style="flex:1;padding:8px 10px;border:1.5px solid var(--g2);border-radius:var(--r2);font-size:14px;background:white">
         <option value="">전체 차량</option>
-        <option value="88러 7396">88러 7396</option>
-        <option value="88러 7397">88러 7397</option>
-        <option value="809나 1745">809나 1745</option>
       </select>
       
       <button onclick="document.getElementById('wvFilterMonth').value='';renderWorkVehList(workVehData)" style="padding:8px 12px;background:var(--g1);border:none;border-radius:var(--r2);font-size:14px;font-weight:700;color:var(--g5);cursor:pointer">전체</button>
@@ -6930,11 +6926,7 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
     <button onclick="closeWvEdit()" style="background:rgba(255,255,255,.2);border:none;border-radius:50%;width:26px;height:26px;color:white;font-size:17px;cursor:pointer">×</button>
   </div>
   <div style="padding:17px;max-height:78vh;overflow-y:auto">
-    <div class="fg"><label class="f-lbl">🚛 차량 선택 *</label><div class="rg" id="wveVehGrp" style="flex-wrap:wrap;gap:6px">
-      <div class="rp" onclick="pickWvVehicle(this,true)" data-val="88러 7396">88러 7396</div>
-      <div class="rp" onclick="pickWvVehicle(this,true)" data-val="88러 7397">88러 7397</div>
-      <div class="rp" onclick="pickWvVehicle(this,true)" data-val="809나 1745">809나 1745</div>
-    </div></div>
+    <div class="fg"><label class="f-lbl">🚛 차량 선택 *</label><div class="rg" id="wveVehGrp" style="flex-wrap:wrap;gap:6px"></div></div>
     <div class="fg"><label class="f-lbl">📅 사용일자 *</label><input type="date" id="wveDate" class="ri" style="margin-bottom:0;width:100%;max-width:100%;box-sizing:border-box;-webkit-appearance:none;appearance:none"></div>
     <div class="fg"><label class="f-lbl">🏢 소속 *</label><input type="text" id="wveDept" class="ri" placeholder="예: 오전1팀" style="margin-bottom:0"></div>
     <div class="fg"><label class="f-lbl">👤 성명 *</label><input type="text" id="wveName" class="ri" placeholder="홍길동" style="margin-bottom:0"></div>
@@ -9627,7 +9619,7 @@ function go(name){
   if(name==='specialwork'){ wfSpLoadEvents(); }
   if(name==='campaign'){ cpLoadList(); }
   if(name==='veh'){
-    loadVehicleFromDB().then(function(){ autoFillBefore(); renderVhRecentChips(); });
+    vregLoad().then(function(){ return loadVehicleFromDB(); }).then(function(){ autoFillBefore(); renderVhRecentChips(); });
     // 소속/성명 자동입력
     var _vn=document.getElementById('vhName'); if(_vn&&me&&!_vn.value) _vn.value=me.name||'';
     var _vd=document.getElementById('vhDept'); if(_vd&&me&&!_vd.value) _vd.value=me.team||'';
@@ -9639,6 +9631,7 @@ function go(name){
     }
   }
   if(name==='workveh'){
+    vregLoad();
     loadWorkVehData();
     var _wvn=document.getElementById('wvName'); if(_wvn&&me&&!_wvn.value) _wvn.value=me.name||'';
     var _wvd=document.getElementById('wvDept'); if(_wvd&&me&&!_wvd.value) _wvd.value=me.team||'';
@@ -9808,6 +9801,7 @@ function applyRoleUI(){
   if(dcb) dcb.style.display=isAdmin?'flex':'none';
   var wvb=document.getElementById('workVehMenuBtn');
   if(wvb) wvb.style.display=isExecView?'flex':'none';
+  try{ vregLoad(); }catch(e){}
   // 현장점검·창고재고관리: master/admin/manager/leader/acting_leader만 메뉴 노출 (그 외 전부 숨김)
   var canInspectWh=(me.role==='master'||me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||me.role==='group_viewer');
   var miBtn=document.getElementById('menuInspectBtn'); if(miBtn) miBtn.style.display=canInspectWh?'flex':'none';
@@ -15321,9 +15315,14 @@ function renderVhRecentChips(){
   purBox.innerHTML=chipHtml(recentUnique('purpose'), 'vhPurpose');
 }
 function autoFillBefore(){
-  if(!vehData||!vehData.length)return;
-  var last=vehData[0];
   var el=document.getElementById('vhBefore');
+  if(!_vhSelPlate) return;
+  var lk=vregLastKm('자사',_vhSelPlate); if(!lk) return;
+  if(lk.from==='start'){
+    if(el){ el.value=lk.km; el.style.borderColor='var(--teal)'; el.style.background='var(--teal-bg)'; calcDist(); var h0=document.getElementById('vhAutoHint'); if(h0){ h0.textContent='차량 등록 시 입력한 시작 계기판 '+lk.km.toLocaleString()+'km 자동입력'; h0.style.display='block'; } }
+    return;
+  }
+  var last=lk.row;
   if(el&&last.after){
     el.value=last.after;el.style.borderColor='var(--teal)';el.style.background='var(--teal-bg)';
     calcDist();
@@ -15342,6 +15341,8 @@ function subVeh(){
   var dest=document.getElementById('vhDest').value.trim();
   var purpose=document.getElementById('vhPurpose').value.trim();
   var etc=document.getElementById('vhEtc').value.trim();
+  if(vregOf('자사').length&&!_vhSelPlate){toast('차량을 선택해주세요');return;}
+  if(!vregOf('자사').length){toast('등록된 자사 차량이 없습니다. 차량을 먼저 등록해주세요');return;}
   if(!date){toast('사용일자를 입력해주세요');return;}
   var dept2=document.getElementById('vhDept')?document.getElementById('vhDept').value.trim():'';
   if(!name){toast('성명을 입력해주세요');return;}
@@ -15359,6 +15360,7 @@ function subVeh(){
   // DB 저장 즉시 실행
   (async function(){
     var res = await sb.from('vehicle_log').insert({
+      plate: _vhSelPlate||null,
       date: record.date,
       driver: record.name,
       team: record.dept||iaosDN(),
@@ -15662,10 +15664,125 @@ function wvResetDest(grp,etcId){
   document.querySelectorAll(grp+' .rp').forEach(function(b){ b.classList.remove('on'); b.removeAttribute('data-ord'); var bd=b.querySelector('.rp-ord'); if(bd) bd.textContent=''; });
   var e=document.getElementById(etcId); if(e){ e.style.display='none'; e.value=''; }
 }
+// ═══ 차량 대장 연결 (그룹 앱과 같은 대장 사용: 사업부별 차량 등록·수정·삭제) ═══
+var VREG=[], VREG_LOADED=false, _vhSelPlate='';
+function vregDiv(){ var d=''; try{ d=iaosDID(); }catch(e){} return ['T1','T2','BD'].indexOf(d)>=0?d:''; }
+function vregCan(){ return !!(me&&(me.role==='admin'||me.role==='master')&&vregDiv()); }
+function vregOf(kind){ return VREG.filter(function(v){ return v.kind===kind&&v.active; }); }
+async function vregLoad(){
+  var d=vregDiv(); if(!d){ VREG=[]; VREG_LOADED=true; vregApply(); return; }
+  try{
+    var r=await sb.rpc('dvv_list',{p_div:d});
+    if(r.error) throw r.error;
+    VREG=r.data||[];
+  }catch(e){ console.error('차량 대장 로드 오류:',e); VREG=[]; }
+  VREG_LOADED=true; vregApply();
+}
+function vregApply(){
+  var gong=vregOf('공사'), ja=vregOf('자사');
+  var esc2=function(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); };
+  var none=function(k){ return '<div style="font-size:13px;color:var(--danger);font-weight:700;padding:6px 2px">등록된 '+k+' 차량이 없습니다.'+(vregCan()?' 위의 [차량 등록·관리]에서 등록하세요.':' 관리자에게 차량 등록을 요청하세요.')+'</div>'; };
+  // 공사업무용 화면
+  var plates=gong.map(function(v){return v.plate;});
+  WV_VEHICLES=plates.slice();
+  (workVehData||[]).forEach(function(r){ if(r.vehicle&&WV_VEHICLES.indexOf(r.vehicle)<0) WV_VEHICLES.push(r.vehicle); });
+  var g1=document.getElementById('wvVehGrp'), g2=document.getElementById('wveVehGrp');
+  if(g1){ var keep=_wvSelectedVehicle; g1.innerHTML=plates.length?plates.map(function(p){return '<div class="rp'+(p===keep?' on':'')+'" onclick="pickWvVehicle(this)" data-val="'+esc2(p)+'">'+esc2(p)+'</div>';}).join(''):none('공사'); }
+  if(g2){ g2.innerHTML=WV_VEHICLES.map(function(p){return '<div class="rp" onclick="pickWvVehicle(this,true)" data-val="'+esc2(p)+'">'+esc2(p)+'</div>';}).join(''); }
+  var vf=document.getElementById('wvFilterVeh');
+  if(vf){ var cur=vf.value; vf.innerHTML='<option value="">전체 차량</option>'+WV_VEHICLES.map(function(p){return '<option value="'+esc2(p)+'">'+esc2(p)+'</option>';}).join(''); vf.value=cur; }
+  var dn=''; try{ dn=iaosDN(); }catch(e){}
+  var lb=document.getElementById('wvVehLabel'); if(lb) lb.textContent=dn+(plates.length?' · '+plates.join('·'):' · 등록된 차량 없음');
+  var md=document.getElementById('workVehMenuDesc'); if(md) md.textContent=plates.length?plates.join('·')+' 운행 기록':'등록된 공사 차량 없음 — 차량 등록 필요';
+  // 자사 차량운행기록부 화면
+  var vg=document.getElementById('vhVehGrp');
+  if(vg){
+    if(ja.length&&!ja.some(function(v){return v.plate===_vhSelPlate;})) _vhSelPlate=ja.length===1?ja[0].plate:'';
+    vg.innerHTML=ja.length?ja.map(function(v){return '<div class="rp'+(v.plate===_vhSelPlate?' on':'')+'" onclick="pickVhVehicle(this)" data-val="'+esc2(v.plate)+'">'+esc2(v.plate)+(v.memo?' <span style="font-weight:500;font-size:12px;color:var(--g4)">'+esc2(v.memo)+'</span>':'')+'</div>';}).join(''):none('자사');
+  }
+  var hl=document.getElementById('vhHdrVeh'); if(hl) hl.textContent=ja.length?ja.map(function(v){return v.plate;}).join('·'):'등록된 차량 없음';
+  var vdn=document.getElementById('vhHdrDiv'); if(vdn&&dn) vdn.textContent=dn;
+  ['vregBarVh','vregBarWv'].forEach(function(id){ var b=document.getElementById(id); if(b) b.style.display=vregCan()?'block':'none'; });
+  try{ if(typeof renderWorkVehList==='function'&&document.getElementById('wvList')) renderWorkVehList(workVehData); }catch(e){}
+}
+function pickVhVehicle(el){
+  document.querySelectorAll('#vhVehGrp .rp').forEach(function(b){b.classList.remove('on');});
+  el.classList.add('on'); _vhSelPlate=el.dataset.val; autoFillBefore();
+}
+// 이 차량의 마지막 주행 후 km (기록이 없으면 대장의 시작km)
+function vregLastKm(kind, plate){
+  var v=VREG.filter(function(x){return x.plate===plate&&x.kind===kind;})[0];
+  var rows=kind==='공사'?(workVehData||[]).filter(function(r){return r.vehicle===plate;}):(vehData||[]).filter(function(r){return vhRowPlate(r)===plate;});
+  if(rows.length&&rows[0].after) return {km:rows[0].after,from:'prev',row:rows[0]};
+  if(v&&v.start_km!=null) return {km:Number(v.start_km),from:'start'};
+  return null;
+}
+function vhRowPlate(r){ if(r.plate) return r.plate; var ja=VREG.filter(function(v){return v.kind==='자사';}); return ja.length===1?ja[0].plate:''; }
+// ── 차량 등록·관리 창 ──
+var VREG_ED=null;
+function vregOpen(){
+  if(!vregCan()){ toast('차량 등록은 사업부 관리자만 할 수 있습니다'); return; }
+  var ov=document.getElementById('vregOv');
+  if(!ov){ ov=document.createElement('div'); ov.id='vregOv'; ov.style.cssText='position:fixed;inset:0;background:rgba(20,24,32,.5);z-index:9000;display:flex;align-items:flex-end;justify-content:center'; document.body.appendChild(ov); }
+  ov.style.display='flex'; VREG_ED=null; vregRender();
+}
+function vregClose(){ var ov=document.getElementById('vregOv'); if(ov) ov.style.display='none'; }
+function vregE(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/"/g,'&quot;'); }
+function vregRender(){
+  var ov=document.getElementById('vregOv'); if(!ov) return;
+  var h='<div style="background:#fff;border-radius:18px 18px 0 0;width:100%;max-width:520px;max-height:92vh;overflow:auto;padding:16px 14px 22px" onclick="event.stopPropagation()">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="font-size:16px">🚗 차량 등록·관리 <span style="font-size:12px;color:var(--g4);font-weight:600">'+vregE((function(){try{return iaosDN();}catch(e){return '';}})())+'</span></b><button onclick="vregClose()" style="border:0;background:var(--g1);border-radius:50%;width:30px;height:30px;font-size:18px;cursor:pointer">×</button></div>';
+  if(VREG_ED){
+    var E=VREG_ED, f=function(l,c){return '<div class="fg"><label class="f-lbl">'+l+'</label>'+c+'</div>';};
+    h+='<div style="font-weight:800;margin-bottom:8px">'+(E.id?'차량 수정':'차량 등록')+'</div>'
+     +f('구분 *','<select id="vrKind" class="ri" style="margin-bottom:0"><option'+(E.kind==='자사'?' selected':'')+'>자사</option><option'+(E.kind!=='자사'?' selected':'')+'>공사</option></select>')
+     +f('차량번호 *','<input id="vrPlate" class="ri" style="margin-bottom:0" placeholder="예: 821로8915" value="'+vregE(E.plate)+'">')
+     +f('목적','<input id="vrPur" class="ri" style="margin-bottom:0" list="vrPurL" placeholder="업무, 폐기물처리, 고소작업 …" value="'+vregE(E.purpose)+'"><datalist id="vrPurL"><option value="업무"><option value="폐기물처리"><option value="고소작업"><option value="유리작업"><option value="순찰"><option value="기타"></datalist>')
+     +f('소속(해당 팀)','<input id="vrTeam" class="ri" style="margin-bottom:0" placeholder="예: 고소작업조" value="'+vregE(E.team)+'">')
+     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+f('투입일자','<input id="vrSd" type="date" class="ri" style="margin-bottom:0;width:100%;box-sizing:border-box" value="'+vregE(E.start_date?String(E.start_date).slice(0,10):'')+'">')+f('시작 km','<input id="vrKm" type="number" inputmode="decimal" class="ri" style="margin-bottom:0" value="'+vregE(E.start_km==null?'':E.start_km)+'">')+'</div>'
+     +'<div style="font-size:11px;color:var(--g4);margin:-6px 0 10px">시작 km = 이 차량 첫 운행의 주행 전 계기판으로 자동 입력됩니다.</div>'
+     +f('비고','<input id="vrMemo" class="ri" style="margin-bottom:0" value="'+vregE(E.memo)+'">')
+     +(E.id?f('사용 여부','<select id="vrAct" class="ri" style="margin-bottom:0"><option value="1"'+(E.active!==false?' selected':'')+'>사용 중</option><option value="0"'+(E.active===false?' selected':'')+'>사용 안 함</option></select>'):'')
+     +'<div id="vrErr" style="color:var(--danger);font-size:12px;min-height:16px;margin-bottom:6px"></div>'
+     +'<div style="display:flex;gap:8px"><button class="btn-prim" style="background:var(--g2);color:var(--g6);flex:1" onclick="VREG_ED=null;vregRender()">취소</button><button class="btn-prim" style="flex:1" onclick="vregSave()">저장</button></div>';
+  } else {
+    h+='<button class="btn-prim" style="width:100%;margin-bottom:10px" onclick="VREG_ED={kind:\'공사\',active:true};vregRender()">＋ 차량 등록</button>';
+    if(!VREG.length) h+='<div style="text-align:center;padding:22px;color:var(--g4);font-size:14px">등록된 차량이 없습니다</div>';
+    VREG.forEach(function(v){
+      h+='<div style="border:1px solid var(--g2);border-radius:14px;padding:11px 13px;margin-bottom:8px;'+(v.active?'':'opacity:.55')+'"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:16px">'+vregE(v.plate)+'</b><span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;background:'+(v.kind==='자사'?'#E8F0FD':'#FFF1E2')+'">'+vregE(v.kind)+(v.active?'':' · 사용 안 함')+'</span></div>'
+       +'<div style="font-size:12px;color:var(--g4);margin-top:5px;line-height:1.7">목적 '+vregE(v.purpose||'-')+' · 소속 '+vregE(v.team||'-')+'<br>투입 '+vregE(v.start_date?String(v.start_date).slice(0,10):'-')+' · 시작 '+(v.start_km==null?'-':Number(v.start_km).toLocaleString())+'km'+(v.memo?'<br>비고 '+vregE(v.memo):'')+'</div>'
+       +'<div style="display:flex;gap:8px;margin-top:8px"><button class="btn-prim" style="background:var(--g2);color:var(--g6);flex:1;padding:8px" onclick="vregEdit(\''+v.id+'\')">수정</button><button class="btn-prim" style="background:var(--danger-bg);color:var(--danger);flex:1;padding:8px" onclick="vregDel(\''+v.id+'\')">삭제</button></div></div>';
+    });
+  }
+  ov.innerHTML=h+'</div>'; ov.onclick=vregClose;
+}
+function vregEdit(id){ VREG_ED=VREG.filter(function(v){return v.id===id;})[0]||null; vregRender(); }
+async function vregSave(){
+  var g=function(i){var e=document.getElementById(i);return e?e.value.trim():'';};
+  var err=function(m){var e=document.getElementById('vrErr');if(e)e.textContent=m;};
+  if(!g('vrPlate')){ err('차량번호를 입력해주세요'); return; }
+  if(VREG_ED&&VREG_ED.id&&!confirm('이 차량 정보를 수정할까요?')) return;
+  var km=g('vrKm');
+  try{
+    var r=await sb.rpc('dvv_save',{p_id:(VREG_ED&&VREG_ED.id)||null,p_div:vregDiv(),p_kind:g('vrKind'),p_plate:g('vrPlate'),p_purpose:g('vrPur'),p_team:g('vrTeam'),p_start_date:g('vrSd')||null,p_start_km:km===''?null:Number(km),p_memo:g('vrMemo'),p_active:document.getElementById('vrAct')?document.getElementById('vrAct').value==='1':true});
+    if(r.error) throw r.error;
+    VREG_ED=null; toast('저장되었습니다'); await vregLoad(); vregRender();
+  }catch(e){ err((e&&e.message)||'저장하지 못했습니다'); }
+}
+async function vregDel(id){
+  var v=VREG.filter(function(x){return x.id===id;})[0]; if(!v) return;
+  if(!confirm(v.plate+' 차량을 삭제할까요?\n(운행 기록이 있으면 삭제되지 않고, 수정에서 \'사용 안 함\'으로 바꿔야 합니다)')) return;
+  try{
+    var r=await sb.rpc('dvv_delete',{p_id:id,p_div:vregDiv()});
+    if(r.error) throw r.error;
+    toast('삭제되었습니다'); await vregLoad(); vregRender();
+  }catch(e){ alert((e&&e.message)||'삭제하지 못했습니다'); }
+}
+
 // ═══ 공사업무용차량 - 차량별 통계 (일/월/연) ═══
 var wvStatMode='day';
 var wvStatY=0, wvStatM=0, wvStatD=0;
-var WV_VEHICLES=['88러 7396','88러 7397','809나 1745'];
+var WV_VEHICLES=[];
 var WV_DEST_TYPES=['자원회수시설','자원분류처리장','집하장(동편)','집하장(서편)','에이원모터스','태영특장','차량수리'];
 function wvStatInitDate(){
   if(!wvStatY){ var n=edKst?edKst():new Date(Date.now()+9*3600000); wvStatY=n.getUTCFullYear(); wvStatM=n.getUTCMonth()+1; wvStatD=n.getUTCDate(); }
@@ -15809,10 +15926,14 @@ function calcDistWv(){
   else{if(wrap)wrap.style.display='none';}
 }
 function autoFillBeforeWv(){
-  if(!_wvSelectedVehicle||!workVehData||!workVehData.length) return;
-  var last=workVehData.filter(function(r){return r.vehicle===_wvSelectedVehicle;})[0];
-  if(!last) return;
+  if(!_wvSelectedVehicle) return;
+  var last=(workVehData||[]).filter(function(r){return r.vehicle===_wvSelectedVehicle;})[0];
   var el=document.getElementById('wvBefore');
+  if(!last){
+    var lk=vregLastKm('공사',_wvSelectedVehicle);
+    if(lk&&el){ el.value=lk.km; el.style.borderColor='var(--teal)'; el.style.background='var(--teal-bg)'; calcDistWv(); var h0=document.getElementById('wvAutoHint'); if(h0){ h0.textContent='차량 등록 시 입력한 시작 계기판 '+lk.km.toLocaleString()+'km 자동입력'; h0.style.display='block'; } }
+    return;
+  }
   if(el&&last.after){
     el.value=last.after;el.style.borderColor='var(--teal)';el.style.background='var(--teal-bg)';
     calcDistWv();
@@ -16131,7 +16252,7 @@ async function loadWorkVehicleFromDB(){
         co_rider:r.co_rider, fuel:r.fuel, washed:r.washed, etc:r.etc
       };
     });
-    renderWorkVehList(workVehData);
+    if(VREG_LOADED) vregApply(); else renderWorkVehList(workVehData);
   }catch(e){ console.error('공사업무용차량 로드 예외:', e); }
 }
 // ═══ 공동작업 (오전·오후 겹침시간 공동작업 기록) ═══
@@ -23121,6 +23242,7 @@ async function loadVehicleFromDB(){
         name: r.driver,
         dept: r.team,
         dest: r.vehicle,
+        plate: r.plate||'',
         purpose: r.purpose,
         before: r.start_km,
         after: r.end_km,

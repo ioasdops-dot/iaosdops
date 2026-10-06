@@ -281,6 +281,10 @@ function kstParts(d){
 function ymd(y,m,d){return y+'-'+pad(m)+'-'+pad(d);}
 function daysIn(y,m){return new Date(y,m,0).getDate();}
 function today(){var p=kstParts();return {y:p.y,m:p.m,d:p.d};}
+/* 근무일: 새벽 00~06시는 야간조가 아직 근무 중이라 전날을 근무일로 봅니다 (현황판·사업부 탭의 '오늘') */
+function wdayEarly(){return (+kstParts().hh)<6;}
+function wday(){var p=kstParts();if((+p.hh)<6){var x=new Date(Date.UTC(p.y,p.m-1,p.d-1));return {y:x.getUTCFullYear(),m:x.getUTCMonth()+1,d:x.getUTCDate()};}return {y:p.y,m:p.m,d:p.d};}
+function wdNote(rg){if(!rg||!rg.isToday||!wdayEarly())return '';var w=wday();return '<div class="note" style="margin:-4px 0 8px;text-align:left">🌙 새벽 6시 전이라 야간 근무일(전날 '+w.m+'/'+w.d+') 기준으로 보여줘요</div>';}
 function monthRange(ym){
   var y=+ym.slice(0,4), m=+ym.slice(5,7), t=today(), cur=(t.y===y&&t.m===m);
   var toD = cur ? t.d : daysIn(y,m);
@@ -339,16 +343,16 @@ function delta(cur,prev,key){
 
 /* ---------- 현황판 탭 ---------- */
 var DASH={mode:'day',y:0,m:0,d:0,last:null};
-function dashInit(){var t=today(); if(!DASH.y){DASH.y=t.y;DASH.m=t.m;DASH.d=t.d;}}
+function dashInit(){var t=wday(); if(!DASH.y){DASH.y=t.y;DASH.m=t.m;DASH.d=t.d;}}
 function dashRange(){
-  dashInit(); var t=today(), tStr=ymd(t.y,t.m,t.d), from,to,label;
-  if(DASH.mode==='day'){from=to=ymd(DASH.y,DASH.m,DASH.d); label=(from===tStr)?'오늘':from;}
+  dashInit(); var t=today(), tStr=ymd(t.y,t.m,t.d), wd=wday(), wStr=ymd(wd.y,wd.m,wd.d), from,to,label;
+  if(DASH.mode==='day'){from=to=ymd(DASH.y,DASH.m,DASH.d); label=(from===wStr)?'오늘':from;}
   else if(DASH.mode==='month'){from=ymd(DASH.y,DASH.m,1); to=ymd(DASH.y,DASH.m,daysIn(DASH.y,DASH.m)); if(to>tStr)to=tStr; label=(DASH.y===t.y&&DASH.m===t.m)?'이번 달':(DASH.y+'년 '+DASH.m+'월');}
   else {from=ymd(DASH.y,1,1); to=ymd(DASH.y,12,31); if(to>tStr)to=tStr; label=(DASH.y===t.y)?'올해':(DASH.y+'년');}
-  return {from:from,to:to,label:label,isToday:(DASH.mode==='day'&&from===tStr),avg:DASH.mode!=='day'};
+  return {from:from,to:to,label:label,isToday:(DASH.mode==='day'&&from===wStr),avg:DASH.mode!=='day'};
 }
 function dashMove(n){
-  var t=today();
+  var t=wday();
   if(DASH.mode==='day'){var x=new Date(Date.UTC(DASH.y,DASH.m-1,DASH.d+n)); DASH.y=x.getUTCFullYear();DASH.m=x.getUTCMonth()+1;DASH.d=x.getUTCDate();}
   else if(DASH.mode==='month'){DASH.m+=n; if(DASH.m<1){DASH.m=12;DASH.y--;} if(DASH.m>12){DASH.m=1;DASH.y++;}}
   else DASH.y+=n;
@@ -389,7 +393,7 @@ function renderNow(rows){
   var pl=rg.label+(rg.avg?' 일평균':'');
   var nav='<div class="dp"><div class="nv"><button type="button" data-dmove="-1" aria-label="이전">◀</button><b>'+esc(rg.label)+'</b><button type="button" data-dmove="1" aria-label="다음">▶</button>'
     +(rg.isToday?'':'<button type="button" data-dlive="1">오늘</button>')+'</div>'
-    +'<div class="md">'+[['day','일간'],['month','월간'],['year','연간']].map(function(x){return '<button type="button" data-dmode="'+x[0]+'" class="'+(DASH.mode===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div></div>';
+    +'<div class="md">'+[['day','일간'],['month','월간'],['year','연간']].map(function(x){return '<button type="button" data-dmode="'+x[0]+'" class="'+(DASH.mode===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div></div>'+wdNote(rg);
   var kpi='<div class="kg">'
     +kcell(pl+' 근무인원',n0(staff),'명')
     +kcell('근무율 (정원 대비)',rate==null?'–':rate,rate==null?'':'%',rate==null?'':(rate>=80?'ok':(rate>=60?'wn':'dg')))
@@ -737,7 +741,7 @@ var NS_LBL={carpet:'카페트',pbb:'PBB',wax:'왁스',stone:'석재',wood:'우�
 function dvNav(rg){
   return '<div class="dp"><div class="nv"><button type="button" data-dmove="-1" aria-label="이전">◀</button><b>'+esc(rg.label)+'</b><button type="button" data-dmove="1" aria-label="다음">▶</button>'
     +(rg.isToday?'':'<button type="button" data-dlive="1">오늘</button>')+'</div>'
-    +'<div class="md">'+[['day','일간'],['month','월간'],['year','연간']].map(function(x){return '<button type="button" data-dmode="'+x[0]+'" class="'+(DASH.mode===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div></div>';
+    +'<div class="md">'+[['day','일간'],['month','월간'],['year','연간']].map(function(x){return '<button type="button" data-dmode="'+x[0]+'" class="'+(DASH.mode===x[0]?'on':'')+'">'+x[1]+'</button>';}).join('')+'</div></div>'+wdNote(rg);
 }
 function dvFloor(f,color){
   var h='<div class="card"><h3>🏢 층별 전체 인력현황 <small>'+(f?esc(String(f.report_date).slice(5))+' '+(f.slot||'')+' 리포트':'')+'</small></h3>';
@@ -835,6 +839,25 @@ function spDetail(){
   h+='<div class="card" style="overflow-x:auto"><h3>날짜별 투입 인원 <small>편성 기준</small></h3><table class="sp-tbl"><tr><th>날짜</th>'+cols.map(function(c){return '<th style="color:'+c.color+'">'+esc(c.short)+'</th>';}).join('')+'<th>합계</th></tr>'
     +ds.map(function(d){return '<tr><td>'+d.slice(5)+'</td>'+cols.map(function(c){return '<td>'+n0(by[d][c.id]||0)+'</td>';}).join('')+'<td class="sm">'+n0(by[d]._t)+'</td></tr>';}).join('')
     +'<tr class="tot"><td>합계</td>'+cols.map(function(c){return '<td>'+n0(totD[c.id]||0)+'</td>';}).join('')+'<td>'+n0(grand)+'</td></tr></table></div>';
+  h+=spCompare(D,ds,cols,by);
+  return h;
+}
+/* 편성 인원 vs 같은 날 인력현황에 입력된 실제 근무 인원 (참고용) */
+function spCompare(D,ds,cols,by){
+  if(D.actual===null||D.actual===undefined) return '<div class="card"><h3>편성 vs 실제 근무 <small>참고용</small></h3><div class="empty">비교 함수(SQL 32)가 아직 적용되지 않았어요.</div></div>';
+  var act={}; D.actual.forEach(function(r){var d=String(r.work_date).slice(0,10);(act[d]=act[d]||{})[r.division_id]=Number(r.actual)||0;});
+  var hasAny=D.actual.length>0;
+  var h='<div class="card" style="overflow-x:auto"><h3>편성 vs 실제 근무 <small>참고용 · 당일 인력현황 입력 기준</small></h3>';
+  if(!hasAny) return h+'<div class="empty">해당 날짜에 사업부 앱 인력현황 입력이 아직 없어요.</div></div>';
+  h+='<table class="sp-tbl"><tr><th>날짜</th><th>편성</th><th>실제 근무</th><th>편성 비중</th></tr>';
+  var tp=0,ta=0;
+  ds.forEach(function(d){
+    var p=by[d]._t||0,a=0,has=false; cols.forEach(function(c){if(act[d]&&act[d][c.id]!==undefined){a+=act[d][c.id];has=true;}});
+    tp+=p; if(has)ta+=a;
+    h+='<tr><td>'+d.slice(5)+'</td><td>'+n0(p)+'</td><td>'+(has?n0(a):'<span style="color:#C5C9D1">미입력</span>')+'</td><td class="sm">'+(has&&a>0?Math.round(p/a*100)+'%':'–')+'</td></tr>';
+  });
+  h+='<tr class="tot"><td>합계</td><td>'+n0(tp)+'</td><td>'+n0(ta)+'</td><td>'+(ta>0?Math.round(tp/ta*100)+'%':'–')+'</td></tr></table>'
+   +'<div class="note" style="text-align:left">편성은 특별근무로 투입하기로 한 인원, 실제 근무는 같은 날 사업부 앱 인력현황에 입력된 근무 인원 합계예요. 편성 비중은 그날 근무 인원 중 특별 투입이 차지하는 비율입니다.</div></div>';
   return h;
 }
 function spEdit(){
@@ -864,10 +887,11 @@ function renderSp(){
 }
 function loadSp(){
   return rpc('group_special_list').then(function(r){SP.list=Array.isArray(r)?r:[];
-    if(SP.view==='detail'&&SP.detail) return rpc('group_special_detail',{p_id:SP.detail.id}).then(function(d){SP.detail=d;});
+    if(SP.view==='detail'&&SP.detail) return Promise.all([rpc('group_special_detail',{p_id:SP.detail.id}),spActual(SP.detail.id)]).then(function(r){r[0].actual=r[1];SP.detail=r[0];});
   }).then(renderSp);
 }
-function spOpen(id){return rpc('group_special_detail',{p_id:id}).then(function(d){SP.detail=d;SP.view='detail';renderSp();window.scrollTo(0,0);}).catch(function(e){alert('불러오지 못했어요: '+((e&&e.message)||''));});}
+function spActual(id){return rpc('group_special_actual',{p_id:id}).then(function(a){return Array.isArray(a)?a:[];}).catch(function(){return null;});}
+function spOpen(id){return Promise.all([rpc('group_special_detail',{p_id:id}),spActual(id)]).then(function(r){var d=r[0];d.actual=r[1];SP.detail=d;SP.view='detail';renderSp();window.scrollTo(0,0);}).catch(function(e){alert('불러오지 못했어요: '+((e&&e.message)||''));});}
 function spStartEdit(g){
   return rpc('group_special_available').then(function(a){
     SP.avail=Array.isArray(a)?a:[];
@@ -1505,7 +1529,7 @@ function init(){
     if(t.dataset.sopen){STAT.open=(STAT.open===t.dataset.sopen?null:t.dataset.sopen);if(STAT.data){renderStat(STAT.data);}return;}
     if(t.dataset.dmove){dashMove(+t.dataset.dmove);return;}
     if(t.dataset.dmode){DASH.mode=t.dataset.dmode;load();return;}
-    if(t.dataset.dlive){var tt=today();DASH.y=tt.y;DASH.m=tt.m;DASH.d=tt.d;load();return;}
+    if(t.dataset.dlive){var tt=wday();DASH.y=tt.y;DASH.m=tt.m;DASH.d=tt.d;load();return;}
     if(t.dataset.month) state.month=t.dataset.month;
     if(t.dataset.kpi) state.kpi=+t.dataset.kpi;
     if(t.dataset.rep) state.repMode=t.dataset.rep;

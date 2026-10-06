@@ -650,7 +650,7 @@ function atLeaveView(){
 }
 /* ═══ 휴무계획 (분기별 · TOPS식) ═══ */
 var PL={emps:[],off:{},qs:{},rule:null,hol:[],hist:[],q:'',tab:'list',f:{off:'',pos:'',s:''},sheet:null,log:[],lf:'',lt:'',month:'',loaded:false};
-var PL_DEF={company:'IAOS',site:'1000',day_weekday:'1',day_sat:'2',day_sun:'3',day_holiday:'7',tkg_code:'B0008',tm_base:'P01',tm_off:'P26',tm_leave:'P27',holiday_off:true,extra_holidays:[]};
+var PL_DEF={company:'IAOS',site:'1000',day_weekday:'1',day_sat:'2',day_sun:'3',day_holiday:'7',tkg_code:'B0008',tm_base:'P01',tm_off:'P26',tm_leave:'P27',holiday_off:true,extra_holidays:[],shifts:[{name:'일근',tkg:'B0008',tm:'P01'},{name:'총괄',tkg:'B0009',tm:'S03'},{name:'오전',tkg:'B0010',tm:'S01'},{name:'오후',tkg:'B0011',tm:'S06'},{name:'야간',tkg:'B0012',tm:'S07'}]};
 var PL_WD=['일','월','화','수','목','금','토'], PL_WK=['월','화','수','목','금','토','일'];
 function plQNow(){var t=today();return t.y+'-Q'+Math.ceil(t.m/3);}
 function plQLabel(q){return q.slice(2,4)+'년 '+q.slice(6)+'분기';}
@@ -700,7 +700,7 @@ function plListBody(){
   return rows.map(function(e){
     var off=plOffOf(e.emp_no,q);
     return'<div '+(atCanEdit()?'data-plx="edit|'+esc(e.emp_no)+'" ':'')+'style="display:flex;align-items:center;gap:8px;border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin-bottom:6px;background:#fff'+(atCanEdit()?';cursor:pointer':'')+'">'
-     +'<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:800">'+esc(e.name)+' <small style="font-weight:600;color:var(--mut)">'+esc(e.position||'')+(e.group_name?' · '+esc(e.group_name):'')+'</small></div>'
+     +'<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:800">'+esc(e.name)+' <small style="font-weight:600;color:var(--mut)">'+esc(e.position||'')+(e.group_name?' · '+esc(e.group_name):'')+(e.shift_type?' · '+esc(e.shift_type):'')+'</small></div>'
      +'<div style="font-size:11px;color:var(--mut);margin-top:2px">'+esc(e.emp_no)+(e.leave_type?' · <b style="color:#C0392B">'+esc(e.leave_type)+' '+String(e.leave_start||'').slice(5)+'~'+String(e.leave_end||'').slice(5)+'</b>':'')+'</div></div>'
      +(off?'<span style="background:#F1F5F9;color:#334155;border-radius:10px;padding:6px 10px;font-size:13px;font-weight:800">'+off[0]+'·'+off[1]+'</span>':'<span style="color:#C0485F;font-size:12px;font-weight:700">미등록</span>')+'</div>';
   }).join('');
@@ -719,13 +719,18 @@ function plSheet(){
   var S=PL.sheet;if(!S)return'';
   var opt=function(sel){return'<option value="">(없음)</option>'+PL_WK.map(function(w){return'<option'+(w===sel?' selected':'')+'>'+w+'</option>';}).join('');};
   if(S.type==='rule'){
-    var R=plRule(),fld=function(k,l){return'<label style="font-size:11px;color:var(--mut)">'+l+'<input class="sp-in" id="plR_'+k+'" value="'+esc(R[k])+'" style="margin-bottom:6px"></label>';};
-    return'<div class="at-sheet" data-plx="close"><div class="at-sh"><h3>⚙ ERP 생성 규칙 <small>여기서 수정한 값으로 다운로드 파일이 만들어져요</small></h3>'
+    var R=S.R||plRule(),fld=function(k,l){return'<label style="font-size:11px;color:var(--mut)">'+l+'<input class="sp-in" id="plR_'+k+'" value="'+esc(R[k])+'" style="margin-bottom:6px"></label>';};
+    var sh=(R.shifts||[]).map(function(x,i){return'<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr auto;gap:6px;align-items:start"><input class="sp-in" id="plRS_n'+i+'" value="'+esc(x.name||'')+'" placeholder="이름"><input class="sp-in" id="plRS_t'+i+'" value="'+esc(x.tkg||'')+'" placeholder="근무조코드"><input class="sp-in" id="plRS_m'+i+'" value="'+esc(x.tm||'')+'" placeholder="시간코드"><button type="button" class="sp-btn r" data-plx="rdelrow|'+i+'" style="padding:10px 11px">✕</button></div>';}).join('');
+    return'<div class="at-sheet" data-plx="close"><div class="at-sh" style="max-height:88vh;overflow:auto"><h3>⚙ ERP 생성 규칙 <small>수정한 값으로 다운로드 파일이 만들어져요</small></h3>'
+     +'<div style="font-size:12px;font-weight:800;margin:2px 0 6px">근무조 · 시간코드 표</div>'
+     +'<div style="display:grid;grid-template-columns:1.1fr 1fr 1fr auto;gap:6px;font-size:10.5px;color:var(--mut);margin-bottom:2px"><span>근무조 이름</span><span>근무조코드</span><span>시간코드</span><span style="width:38px"></span></div>'+sh
+     +'<button type="button" class="sp-btn g" data-plx="radd" style="width:100%;margin-bottom:8px">＋ 근무조 추가</button>'
+     +'<div class="note" style="margin:0 0 10px">직원 수정 화면에서 근무조를 고르면 이 표의 코드가 적용돼요. 근무조를 안 고른 직원은 아래 기본값을 써요.</div>'
+     +'<div style="font-size:12px;font-weight:800;margin:2px 0 6px">공통 코드</div>'
      +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 8px">'+fld('company','회사코드')+fld('site','사업장코드')+fld('day_weekday','일구분: 평일')+fld('day_sat','일구분: 토요일')+fld('day_sun','일구분: 일요일(주휴)')+fld('day_holiday','일구분: 공휴일')
-     +fld('tkg_code','근무조코드(기본)')+fld('tm_base','시간코드: 근무(기본)')+fld('tm_off','시간코드: 휴무')+fld('tm_leave','시간코드: 휴직')+'</div>'
+     +fld('tkg_code','기본 근무조코드')+fld('tm_base','기본 시간코드(근무)')+fld('tm_off','시간코드: 휴무')+fld('tm_leave','시간코드: 휴직')+'</div>'
      +'<label style="display:flex;gap:6px;align-items:center;font-size:13px;margin:4px 0 8px"><input type="checkbox" id="plR_holiday_off"'+(R.holiday_off?' checked':'')+'> 공휴일은 휴무 처리(행정·일근 방식)</label>'
      +'<label style="font-size:11px;color:var(--mut)">추가 공휴일 (날짜를 쉼표로, 예: 2026-12-24,2026-12-31)<input class="sp-in" id="plR_extra" value="'+esc((R.extra_holidays||[]).join(','))+'"></label>'
-     +'<div class="note" style="margin-bottom:8px">직원별 개별 코드는 직원을 눌러 수정할 수 있어요. 비어 있으면 위 기본값을 써요.</div>'
      +'<button type="button" class="sp-btn" data-plx="rsave" style="width:100%">규칙 저장</button><button type="button" class="sp-btn g" data-plx="rdef" style="width:100%;margin-top:6px">기본값으로 되돌리기(저장 전 확인)</button><button type="button" class="sp-btn g" data-plx="close" style="width:100%;margin-top:6px">닫기</button></div></div>';
   }
   var E=S.emp||{},isNew=!S.emp,q=PL.q,off=isNew?'':plOffOf(E.emp_no,q),
@@ -733,7 +738,8 @@ function plSheet(){
   var f=function(id,l,v,ro){return'<label style="font-size:11px;color:var(--mut)">'+l+'<input class="sp-in" id="plE_'+id+'" value="'+esc(v==null?'':v)+'"'+(ro?' readonly style="margin-bottom:6px;background:#F4F6F9"':' style="margin-bottom:6px"')+'></label>';};
   return'<div class="at-sheet" data-plx="close"><div class="at-sh"><h3>'+(isNew?'직원 추가':esc(E.name)+' 수정')+' <small>'+esc(plQLabel(q))+' 기준</small></h3>'
    +(isNew&&acc.length?'<select class="sp-in" id="plE_pick" data-plf="pick"><option value="">가입 계정에서 이름 고르기(선택)</option>'+acc.map(function(p){return'<option>'+esc(p.name)+'</option>';}).join('')+'</select>':'')
-   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 8px">'+f('no','사번',E.emp_no,!isNew)+f('name','성명',E.name)+f('pos','직책',E.position)+f('grp','근무조',E.group_name)+'</div>'
+   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 8px">'+f('no','사번',E.emp_no,!isNew)+f('name','성명',E.name)+f('pos','직책',E.position)+f('grp','조(A/B조)',E.group_name)+'</div>'
+   +'<label style="font-size:11px;color:var(--mut)">근무조(ERP 코드 기준)<select class="sp-in" id="plE_shift" style="margin-bottom:6px"><option value="">(기본값)</option>'+(plRule().shifts||[]).map(function(x){return'<option'+(E.shift_type===x.name?' selected':'')+'>'+esc(x.name)+'</option>';}).join('')+'</select></label>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><select class="sp-in" id="plE_d1">'+opt(off?off[0]:'')+'</select><select class="sp-in" id="plE_d2">'+opt(off?off[1]:'')+'</select></div>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 6px">'+f('lt','휴직 구분',E.leave_type)+'<label style="font-size:11px;color:var(--mut)">시작<input class="sp-in" type="date" id="plE_ls" value="'+esc(String(E.leave_start||'').slice(0,10))+'" style="margin-bottom:6px"></label><label style="font-size:11px;color:var(--mut)">종료<input class="sp-in" type="date" id="plE_le" value="'+esc(String(E.leave_end||'').slice(0,10))+'" style="margin-bottom:6px"></label></div>'
    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:0 8px">'+f('tkg','ERP 근무조코드(비우면 기본값)',E.tkg_code)+f('tm','ERP 근무 시간코드(비우면 기본값)',E.tm_code_base)+'</div>'
@@ -833,10 +839,10 @@ function plErp(){
   var R=plRule(),y=+m.slice(0,4),mo=+m.slice(5),last=daysIn(y,mo),hs={};
   PL.hol.concat(R.extra_holidays||[]).forEach(function(d){hs[String(d).slice(0,10)]=1;});
   var row=function(e,d){
-    var ds=ymd(y,mo,d),wd=new Date(y,mo-1,d).getDay(),dg=hs[ds]?R.day_holiday:wd===6?R.day_sat:wd===0?R.day_sun:R.day_weekday,tm;
+    var sh=(R.shifts||[]).filter(function(z){return z.name===e.shift_type;})[0],ds=ymd(y,mo,d),wd=new Date(y,mo-1,d).getDay(),dg=hs[ds]?R.day_holiday:wd===6?R.day_sat:wd===0?R.day_sun:R.day_weekday,tm;
     if(e.leave_type&&e.leave_start&&ds>=String(e.leave_start).slice(0,10)&&ds<=String(e.leave_end).slice(0,10))tm=R.tm_leave;
-    else{var isOff=plOffOn(e.emp_no,ds).indexOf(PL_WD[wd])>=0;if(!isOff&&R.holiday_off&&hs[ds])isOff=true;tm=isOff?R.tm_off:(e.tm_code_base||R.tm_base);}
-    return[R.company,R.site,e.emp_no,plNum(dg),ds.replace(/-/g,''),e.tkg_code||R.tkg_code,tm];
+    else{var isOff=plOffOn(e.emp_no,ds).indexOf(PL_WD[wd])>=0;if(!isOff&&R.holiday_off&&hs[ds])isOff=true;tm=isOff?R.tm_off:(e.tm_code_base||(sh&&sh.tm)||R.tm_base);}
+    return[R.company,R.site,e.emp_no,plNum(dg),ds.replace(/-/g,''),e.tkg_code||(sh&&sh.tkg)||R.tkg_code,tm];
   };
   var head=['회사코드','사업장코드','사원번호','일구분코드','시작일','근무조코드','시간코드'],cols=[{wch:10},{wch:10},{wch:10},{wch:10},{wch:12},{wch:12},{wch:10}];
   var q=[],all=[head];
@@ -851,6 +857,12 @@ function plErp(){
   alert('📥 파일 '+q.length+'개를 내려받습니다 (전체 '+(all.length-1)+'행).');
 }
 function plVal(id){var el=$(id);return el?el.value:'';}
+function plRuleRead(){
+  var R={};['company','site','day_weekday','day_sat','day_sun','day_holiday','tkg_code','tm_base','tm_off','tm_leave'].forEach(function(k){R[k]=plVal('plR_'+k).trim();});
+  R.holiday_off=!!($('plR_holiday_off')||{}).checked;R.extra_holidays=plVal('plR_extra').split(/[,\s]+/).filter(function(d){return/^\d{4}-\d{2}-\d{2}$/.test(d);});
+  R.shifts=[];for(var i=0;$('plRS_n'+i);i++){R.shifts.push({name:plVal('plRS_n'+i).trim(),tkg:plVal('plRS_t'+i).trim(),tm:plVal('plRS_m'+i).trim()});}
+  return R;
+}
 function plAct(x){
   var p=String(x).split('|'),a=p[0],arg=p.slice(1).join('|'),fail=function(m){return function(e){alert(m+((e&&e.message)||''));};};
   if(a==='close'){PL.sheet=null;renderAt();return;}
@@ -861,18 +873,20 @@ function plAct(x){
   if(a==='erp')return plErp();
   if(a==='add'){PL.sheet={type:'emp',emp:null};renderAt();return;}
   if(a==='edit'){var e=PL.emps.filter(function(z){return z.emp_no===arg;})[0];if(e){PL.sheet={type:'emp',emp:e};renderAt();}return;}
-  if(a==='rule'){PL.sheet={type:'rule'};renderAt();return;}
-  if(a==='rdef'){var D=PL_DEF;['company','site','day_weekday','day_sat','day_sun','day_holiday','tkg_code','tm_base','tm_off','tm_leave'].forEach(function(k){var el=$('plR_'+k);if(el)el.value=D[k];});var h=$('plR_holiday_off');if(h)h.checked=true;var ex=$('plR_extra');if(ex)ex.value='';return;}
+  if(a==='rule'){PL.sheet={type:'rule',R:JSON.parse(JSON.stringify(plRule()))};renderAt();return;}
+  if(a==='radd'){var R1=plRuleRead();R1.shifts.push({name:'',tkg:'',tm:''});PL.sheet.R=R1;renderAt();return;}
+  if(a==='rdelrow'){var R2=plRuleRead();R2.shifts.splice(+arg,1);PL.sheet.R=R2;renderAt();return;}
+  if(a==='rdef'){if(!confirm('모든 ERP 규칙을 기본값으로 되돌립니다 (저장 버튼을 눌러야 확정돼요).'))return;PL.sheet.R=JSON.parse(JSON.stringify(PL_DEF));renderAt();return;}
   if(a==='rsave'){
-    var R={};['company','site','day_weekday','day_sat','day_sun','day_holiday','tkg_code','tm_base','tm_off','tm_leave'].forEach(function(k){R[k]=plVal('plR_'+k).trim();});
-    R.holiday_off=!!($('plR_holiday_off')||{}).checked;R.extra_holidays=plVal('plR_extra').split(/[,\s]+/).filter(function(d){return/^\d{4}-\d{2}-\d{2}$/.test(d);});
+    var R=plRuleRead();
+    var nm={};for(var i=0;i<R.shifts.length;i++){var sx=R.shifts[i];if(!sx.name){alert('근무조 이름을 입력해주세요.');return;}if(nm[sx.name]){alert('근무조 이름이 중복돼요: '+sx.name);return;}nm[sx.name]=1;}
     return rpc('group_wf_rule_save',{p_rule:R}).then(function(){PL.sheet=null;return plLoad();}).catch(fail('저장하지 못했어요: '));
   }
   if(a==='esave'){
     var no=plVal('plE_no').trim(),nm=plVal('plE_name').trim();if(!no||!nm){alert('사번과 성명은 필수예요.');return;}
     var d1=plVal('plE_d1'),d2=plVal('plE_d2');if((d1&&!d2)||(!d1&&d2)||(d1&&d1===d2)){alert('휴무요일은 서로 다른 2개를 골라주세요.');return;}
     var lt=plVal('plE_lt').trim(),ls=plVal('plE_ls'),le=plVal('plE_le');if(lt&&(!ls||!le)){alert('휴직은 시작일과 종료일이 필요해요.');return;}
-    var old=PL.sheet&&PL.sheet.emp,em={emp_no:no,name:nm,position:plVal('plE_pos').trim(),team:'그룹',group_name:plVal('plE_grp').trim(),tkg_code:plVal('plE_tkg').trim(),tm_code_base:plVal('plE_tm').trim(),clear_codes:true,
+    var old=PL.sheet&&PL.sheet.emp,em={emp_no:no,name:nm,position:plVal('plE_pos').trim(),team:'그룹',group_name:plVal('plE_grp').trim(),shift_type:plVal('plE_shift'),tkg_code:plVal('plE_tkg').trim(),tm_code_base:plVal('plE_tm').trim(),clear_codes:true,
       leave_type:lt,leave_start:ls,leave_end:le,clear_leave:!lt};
     var cur=old?plOffOf(no,PL.q):'',offs=[];if((d1+d2)!==cur)offs.push({emp_no:no,quarter:PL.q,off_day1:d1,off_day2:d2});
     return rpc('group_wf_save',{p_emps:[em],p_offs:offs,p_source:'앱수정'}).then(function(){PL.sheet=null;return plLoad();}).catch(fail('저장하지 못했어요: '));

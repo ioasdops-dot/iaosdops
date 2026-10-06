@@ -18,6 +18,10 @@ body{padding:0 0 max(24px,env(safe-area-inset-bottom))}
 button{font:inherit;color:inherit;cursor:pointer}
 .wrap{max-width:560px;margin:0 auto;padding:0 16px}
 .vh-grid{display:block}
+.wx{margin-top:10px;display:flex;flex-direction:column;gap:8px}
+.wx-b{border-radius:14px;padding:11px 13px;cursor:pointer}
+.wx-b b{display:block;font-size:14px;margin-bottom:3px}.wx-b span{display:block;font-size:12px;line-height:1.5;opacity:.93}.wx-b small{display:block;font-size:11px;opacity:.78;margin-top:3px}
+.wx-now{font-size:11px;color:var(--mut);text-align:center;margin-top:2px}
 @media (min-width:900px){
   .wrap{max-width:1100px}
   .vh-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.vh-grid .card{margin-bottom:0}
@@ -249,6 +253,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
     <button data-t="rep" role="tab">리포트</button>
   </div>
 
+  <div id="wxAlert"></div>
   <div id="goBar" class="gobar"></div>
   <section class="pane on" id="p-now"></section>
   <section class="pane" id="p-div"></section>
@@ -810,6 +815,39 @@ function dvGo(i){ if(!divs.length) return; DV.idx=(i+divs.length)%divs.length; r
   document.addEventListener('touchstart',function(e){ on=(state.tab==='div'&&!!e.target.closest('#p-div')&&!e.target.closest('select,input')); if(on){sx=e.touches[0].clientX;sy=e.touches[0].clientY;} },{passive:true});
   document.addEventListener('touchend',function(e){ if(!on) return; on=false; var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy; if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5) dvGo(DV.idx+(dx<0?1:-1)); },{passive:true});
 })();
+
+/* ---------- 기상특보 (인천공항 기준, 사업부앱과 같은 기준·Open-Meteo) ---------- */
+var WX={at:0,lat:37.4602,lng:126.4407};
+var WX_HEAT=[{min:38,label:'폭염중대경보',icon:'🌡️',color:'#fff',bg:'linear-gradient(135deg,#B91C1C,#7F1D1D)',guide:'긴급 조치 작업을 제외한 모든 야외활동 및 옥외작업을 즉시 중지하세요.'},{min:35,label:'폭염경보',icon:'🌡️',color:'#fff',bg:'linear-gradient(135deg,#EA580C,#9A3412)',guide:'오후 2시~5시 무더위 시간대 옥외작업·야외활동을 자제·중지하고, 매시간 휴식을 부여하세요.'},{min:33,label:'폭염주의보',icon:'🌡️',color:'#3A2A00',bg:'linear-gradient(135deg,#FBBF24,#F59E0B)',guide:'낮 12시~오후 5시 가장 더운 시간대 야외활동을 자제하고, 규칙적으로 휴식을 제공하세요.'}];
+var WX_COLD=[{max:-15,label:'한파경보',icon:'🥶',color:'#fff',bg:'linear-gradient(135deg,#1E3A8A,#1E293B)',guide:'옥외작업을 자제하고, 방한장비(방한복·장갑) 착용 및 실내 휴식공간을 확보하세요.'},{max:-12,label:'한파주의보',icon:'🥶',color:'#fff',bg:'linear-gradient(135deg,#3B82F6,#1E3A8A)',guide:'옥외작업 시 체감온도에 유의하고, 규칙적으로 실내에서 몸을 녹이는 시간을 가지세요.'}];
+var WX_WIND=[{min:21,gustMin:26,label:'강풍경보(태풍성 가능)',icon:'🌀',color:'#fff',bg:'linear-gradient(135deg,#6D28D9,#4C1D95)',guide:'모든 옥외작업·고소작업을 즉시 중지하고, 실외 이동을 자제하세요.'},{min:14,gustMin:20,label:'강풍주의보',icon:'💨',color:'#fff',bg:'linear-gradient(135deg,#7C3AED,#5B21B6)',guide:'고소작업·비계작업 등 옥외 고위험 작업을 자제하세요.'}];
+var WX_RAIN=[{min3h:90,min12h:180,label:'호우경보',icon:'⛈️',color:'#fff',bg:'linear-gradient(135deg,#0E7490,#164E63)',guide:'모든 옥외작업을 중지하고, 침수·감전 위험구역 접근을 금지하세요.'},{min3h:60,min12h:110,label:'호우주의보',icon:'🌧️',color:'#fff',bg:'linear-gradient(135deg,#0891B2,#155E75)',guide:'배수로·저지대 작업을 자제하고, 우천 시 감전·미끄럼 사고에 유의하세요.'}];
+function wxBanner(l,title,detail){
+  return '<div class="wx-b" data-wxkma="1" style="background:'+l.bg+';color:'+l.color+'"><b>'+l.icon+' '+l.label+' — '+esc(title)+'</b><span>'+esc(l.guide)+'</span><small>'+esc(detail)+' · 눌러서 기상청 특보 확인 →</small></div>';
+}
+function wxRender(w){
+  var box=$('wxAlert'); if(!box) return;
+  var h='', f=function(a,fn){for(var i=0;i<a.length;i++) if(fn(a[i])) return a[i]; return null;};
+  var heat=f(WX_HEAT,function(l){return w.feels>=l.min;}); if(heat) h+=wxBanner(heat,'체감온도 '+Math.round(w.feels)+'℃','기온 '+Math.round(w.temp)+'℃ · 습도 '+Math.round(w.hum)+'%');
+  var cold=f(WX_COLD,function(l){return w.temp<=l.max;}); if(cold) h+=wxBanner(cold,'기온 '+Math.round(w.temp)+'℃','체감온도 '+Math.round(w.feels)+'℃');
+  var wind=f(WX_WIND,function(l){return w.wind>=l.min||(w.gust!=null&&w.gust>=l.gustMin);}); if(wind) h+=wxBanner(wind,'풍속 '+Math.round(w.wind)+'m/s','순간최대풍속 '+Math.round(w.gust||w.wind)+'m/s');
+  var rain=f(WX_RAIN,function(l){return w.rain3h>=l.min3h||w.rain12h>=l.min12h;}); if(rain) h+=wxBanner(rain,'3시간 '+Math.round(w.rain3h)+'mm · 12시간 '+Math.round(w.rain12h)+'mm','기상청 호우특보 기준');
+  box.innerHTML=(h?'<div class="wx">'+h+'<div class="wx-now">※ 실시간 관측값 기준 간이 판단이며, 공식 기상특보는 기상청 발표를 따르세요</div></div>':'')
+    +'<div class="wx-now" style="'+(h?'':'margin-top:8px')+'">인천공항 현재 '+Math.round(w.temp)+'℃ · 체감 '+Math.round(w.feels)+'℃ · 바람 '+Math.round(w.wind)+'m/s'+(h?'':' · 기상특보 없음')+'</div>';
+}
+function wxLoad(){
+  if(Date.now()-WX.at<13*60000) return; WX.at=Date.now();
+  var url='https://api.open-meteo.com/v1/forecast?latitude='+WX.lat+'&longitude='+WX.lng+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,is_day,wind_speed_10m,wind_gusts_10m&wind_speed_unit=ms&hourly=precipitation&timezone=Asia%2FSeoul&forecast_days=1&past_days=1';
+  fetch(url).then(function(r){return r.ok?r.json():null;}).then(function(d){
+    var c=d&&d.current; if(!c) return;
+    var r3=c.precipitation||0, r12=c.precipitation||0;
+    try{var hp=d.hourly.precipitation, ht=d.hourly.time, i=ht.indexOf(c.time); if(i<0) i=ht.length-1;
+      r3=hp.slice(Math.max(0,i-2),i+1).reduce(function(a,v){return a+(v||0);},0); r12=hp.slice(Math.max(0,i-11),i+1).reduce(function(a,v){return a+(v||0);},0);}catch(e){}
+    wxRender({feels:c.apparent_temperature,temp:c.temperature_2m,hum:c.relative_humidity_2m,wind:c.wind_speed_10m,gust:c.wind_gusts_10m,rain3h:r3,rain12h:r12});
+  }).catch(function(){});
+}
+setInterval(function(){if(!document.hidden) wxLoad();},15*60000);
+document.addEventListener('click',function(e){var k=e.target.closest('[data-wxkma]'); if(k&&confirm('기상청 날씨누리(특보 종합) 페이지로 이동할까요?\n외부 사이트가 새 창으로 열립니다.')) window.open('https://www.weather.go.kr/w/special-report/overall.do','_blank');});
 
 /* ---------- 차량 대장 · 운행일지 ---------- */
 var VH={kind:'all',sub:'reg',div:'ALL',vehs:[],all:[],logs:[],veh:null,month:null,ed:null,sheet:null};
@@ -1606,7 +1644,7 @@ function loadStat(){
   });
 }
 function load(){
-  stamp();
+  stamp(); wxLoad();
   var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : (state.tab==='stat' ? loadStat() : loadRep()));
   return p.catch(function(e){
     var msg=(e&&e.message)||'알 수 없는 오류';

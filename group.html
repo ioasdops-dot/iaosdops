@@ -842,23 +842,40 @@ function spDetail(){
   h+=spCompare(D,ds,cols,by);
   return h;
 }
-/* 편성 인원 vs 같은 날 인력현황에 입력된 실제 근무 인원 (참고용) */
+/* 편성 vs 실제 출근 — TOPS 특별근무 실적과 같은 방식: 팀별로 계획과 실제를 비교 (일치 녹색 / 다름 파랑) */
+function spActHc(a){if(!a)return 0;if(a.team_no==='ADMIN'||a.team_no==='HQ')return (a.names||[]).length;return (a.leader?1:0)+(a.subs||[]).length+(Number(a.staff)||0);}
+function spTeamLabel(t){return t==='ADMIN'?'행정':t==='HQ'?'총괄':t;}
 function spCompare(D,ds,cols,by){
-  if(D.actual===null||D.actual===undefined) return '<div class="card"><h3>편성 vs 실제 근무 <small>참고용</small></h3><div class="empty">비교 함수(SQL 32)가 아직 적용되지 않았어요.</div></div>';
-  var act={}; D.actual.forEach(function(r){var d=String(r.work_date).slice(0,10);(act[d]=act[d]||{})[r.division_id]=Number(r.actual)||0;});
-  var hasAny=D.actual.length>0;
-  var h='<div class="card" style="overflow-x:auto"><h3>편성 vs 실제 근무 <small>참고용 · 당일 인력현황 입력 기준</small></h3>';
-  if(!hasAny) return h+'<div class="empty">해당 날짜에 사업부 앱 인력현황 입력이 아직 없어요.</div></div>';
-  h+='<table class="sp-tbl"><tr><th>날짜</th><th>편성</th><th>실제 근무</th><th>편성 비중</th></tr>';
+  if(D.actual===null||D.actual===undefined) return '<div class="card"><h3>편성 vs 실제 출근</h3><div class="empty">비교 함수(SQL 32)가 아직 적용되지 않았어요.</div></div>';
+  var plan={},act={},allD={};
+  (D.rows||[]).forEach(function(r){var d=String(r.work_date).slice(0,10);allD[d]=1;((plan[d]=plan[d]||{})[r.division_id]=plan[d][r.division_id]||{})[r.team_no]=(plan[d][r.division_id][r.team_no]||0)+Number(r.headcount||0);});
+  D.actual.forEach(function(r){var d=String(r.work_date).slice(0,10);allD[d]=1;((act[d]=act[d]||{})[r.division_id]=act[d][r.division_id]||{})[r.team_no]=spActHc(r);});
+  var dl=Object.keys(allD).sort(), t=today(), tStr=ymd(t.y,t.m,t.d);
+  if(!dl.length) return '<div class="card"><h3>편성 vs 실제 출근</h3><div class="empty">편성이 있는 날짜가 없어요.</div></div>';
+  if(!SP.cd||dl.indexOf(SP.cd)<0) SP.cd=dl.filter(function(d){return d<=tStr;}).pop()||dl[0];
+  var sumP=function(d){var n=0;Object.keys(plan[d]||{}).forEach(function(v){Object.keys(plan[d][v]).forEach(function(k){n+=plan[d][v][k];});});return n;};
+  var sumA=function(d){var n=0;Object.keys(act[d]||{}).forEach(function(v){Object.keys(act[d][v]).forEach(function(k){n+=act[d][v][k];});});return n;};
+  var GREEN='#15803d',BLUE='#2563eb';
+  var h='<div class="card" style="overflow-x:auto"><h3>편성 vs 실제 출근 <small>TOPS 특별근무 실적 기준</small></h3><table class="sp-tbl"><tr><th>날짜</th><th>편성</th><th>실제</th><th>차이</th></tr>';
   var tp=0,ta=0;
-  ds.forEach(function(d){
-    var p=by[d]._t||0,a=0,has=false; cols.forEach(function(c){if(act[d]&&act[d][c.id]!==undefined){a+=act[d][c.id];has=true;}});
-    tp+=p; if(has)ta+=a;
-    h+='<tr><td>'+d.slice(5)+'</td><td>'+n0(p)+'</td><td>'+(has?n0(a):'<span style="color:#C5C9D1">미입력</span>')+'</td><td class="sm">'+(has&&a>0?Math.round(p/a*100)+'%':'–')+'</td></tr>';
+  dl.forEach(function(d){var p=sumP(d),a=d<=tStr?sumA(d):null;tp+=p;if(a!==null)ta+=a;
+    h+='<tr data-spcd="'+d+'" style="'+(d===SP.cd?'background:#F3F4F6':'')+';cursor:pointer"><td>'+d.slice(5)+(d===SP.cd?' ▸':'')+'</td><td>'+n0(p)+'</td><td>'+(a===null?'<span style="color:#C5C9D1">예정</span>':n0(a))+'</td><td class="sm" style="color:'+(a===null?'#C5C9D1':a===p?GREEN:BLUE)+'">'+(a===null?'–':(a-p>0?'+':'')+(a-p))+'</td></tr>';});
+  h+='<tr class="tot"><td>합계</td><td>'+n0(tp)+'</td><td>'+n0(ta)+'</td><td>'+((ta-tp>0?'+':'')+(ta-tp))+'</td></tr></table>'
+   +'<div class="note" style="text-align:left">날짜를 누르면 아래에 팀별 비교가 나와요. 팀장·조장은 관리자 출근 확인, 사원은 인력현황 입력 기준이에요.</div></div>';
+  // 선택한 날짜의 사업부·팀별
+  var d=SP.cd;
+  h+='<div class="card" style="overflow-x:auto"><h3>'+d.slice(5)+' 팀별 비교 <small>일치 <b style="color:'+GREEN+'">녹색</b> · 다름 <b style="color:'+BLUE+'">파랑</b></small></h3><table class="sp-tbl"><tr><th>사업부</th><th>팀</th><th>편성</th><th>실제</th><th></th></tr>';
+  var any=false;
+  cols.forEach(function(c){
+    var teams={};Object.keys((plan[d]||{})[c.id]||{}).forEach(function(k){teams[k]=1;});Object.keys((act[d]||{})[c.id]||{}).forEach(function(k){teams[k]=1;});
+    var ks=Object.keys(teams).sort(function(a,b){return (parseInt(a)||(a==='ADMIN'?90:91))-(parseInt(b)||(b==='ADMIN'?90:91));});
+    ks.forEach(function(k){any=true;
+      var p=((plan[d]||{})[c.id]||{})[k]||0,a=((act[d]||{})[c.id]||{})[k]||0,future=d>tStr;
+      var st=future?'예정':(!p&&a)?'계획 없음':(p&&!a)?'실적 없음':(p===a?'일치':'다름'), col=st==='일치'?GREEN:st==='다름'?BLUE:'#9AA0AB';
+      h+='<tr><td style="color:'+c.color+';font-weight:700">'+esc(c.short)+'</td><td>'+esc(spTeamLabel(k))+'</td><td>'+n0(p)+'</td><td style="color:'+col+';font-weight:800">'+(future?'–':n0(a))+'</td><td style="color:'+col+';font-size:11px;text-align:left">'+st+'</td></tr>';});
   });
-  h+='<tr class="tot"><td>합계</td><td>'+n0(tp)+'</td><td>'+n0(ta)+'</td><td>'+(ta>0?Math.round(tp/ta*100)+'%':'–')+'</td></tr></table>'
-   +'<div class="note" style="text-align:left">편성은 특별근무로 투입하기로 한 인원, 실제 근무는 같은 날 사업부 앱 인력현황에 입력된 근무 인원 합계예요. 편성 비중은 그날 근무 인원 중 특별 투입이 차지하는 비율입니다.</div></div>';
-  return h;
+  if(!any) h+='<tr><td colspan="5" style="text-align:center;color:#9AA0AB;padding:14px">이 날짜의 편성·실적이 없어요</td></tr>';
+  return h+'</table></div>';
 }
 function spEdit(){
   var E=SP.ed;
@@ -1511,6 +1528,7 @@ function init(){
       else if(q.scmt){SC.mtDiv=q.scmt;renderSc();}
       else if(q.scwk){SC.openW=(SC.openW===q.scwk?null:q.scwk);renderSc();}
       return;}
+    var scd=e.target.closest('[data-spcd]'); if(scd&&SP.detail){SP.cd=scd.dataset.spcd;renderSp();return;}
     var sp=e.target.closest('[data-spnew],[data-spopen],[data-spback],[data-spedit],[data-spsave],[data-spdel]');
     if(sp){var dd=sp.dataset;
       if(dd.spnew){spStartEdit(null);} else if(dd.spopen){spOpen(dd.spopen);} else if(dd.spback){SP.view=(SP.view==='edit'&&SP.detail&&SP.ed&&SP.ed.id)?'detail':'list';renderSp();}

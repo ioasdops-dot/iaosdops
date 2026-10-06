@@ -850,7 +850,7 @@ setInterval(function(){if(!document.hidden) wxLoad();},15*60000);
 document.addEventListener('click',function(e){var k=e.target.closest('[data-wxkma]'); if(k&&confirm('기상청 날씨누리(특보 종합) 페이지로 이동할까요?\n외부 사이트가 새 창으로 열립니다.')) window.open('https://www.weather.go.kr/w/special-report/overall.do','_blank');});
 
 /* ---------- 차량 대장 · 운행일지 ---------- */
-var VH={kind:'all',sub:'reg',div:'ALL',vehs:[],all:[],logs:[],veh:null,month:null,ed:null,sheet:null};
+var VH={kind:'all',sub:'hist',hd:'all',hist:[],div:'ALL',vehs:[],all:[],logs:[],veh:null,month:null,ed:null,sheet:null};
 var VH_PUR=['업무','폐기물처리','고소작업','유리작업','순찰','기타'];
 function vhDivs(){return [AT_GRP].concat(divs);}
 function vhDivName(id){var a=vhDivs().filter(function(d){return d.id===id;})[0];return a?a.short:id;}
@@ -861,24 +861,80 @@ function loadVh(){
   var y=+VH.month.slice(0,4), m=+VH.month.slice(5,7);
   var tasks=[rpc('group_veh_list',{p_div:VH.div}), rpc('group_veh_list',{p_div:'ALL'})];
   if(VH.sub==='log') tasks.push(rpc('group_vlog_list',{p_from:ymd(y,m,1),p_to:ymd(y,m,daysIn(y,m))}));
+  if(VH.sub==='hist'||VH.sub==='stat') tasks.push(rpc('group_veh_hist',{p_from:ymd(y,m,1),p_to:ymd(y,m,daysIn(y,m))}));
   return Promise.all(tasks).then(function(r){
-    VH.vehs=r[0]; VH.all=r[1]; VH.logs=r[2]||[];
+    VH.vehs=r[0]; VH.all=r[1]; VH.logs=(VH.sub==='log'?r[2]:[])||[]; if(VH.sub==='hist'||VH.sub==='stat') VH.hist=r[2]||[];
     if(!VH.veh||!VH.all.some(function(v){return v.id===VH.veh;})) VH.veh=VH.all.length?VH.all[0].id:null;
     renderVh();
   });
 }
 function vhKindBar(list){
+  if(VH.sub==='hist'||VH.sub==='stat') list=(VH.hist||[]).filter(function(r){return VH.hd==='all'||r.division_id===VH.hd;});
   var n=function(k){return list.filter(function(v){return k==='all'||v.kind===k;}).length;};
   return '<div class="dv-pills" style="top:auto;position:static">'+[['all','전체'],['공사','공사 차량'],['자사','자사 차량']].map(function(k){var on=VH.kind===k[0];return '<button type="button" data-vx="kind" data-v="'+k[0]+'" class="'+(on?'on':'')+'" style="'+(on?'background:#6B7280':'')+'">'+k[1]+' '+n(k[0])+'</button>';}).join('')+'</div>';
 }
 function vhByKind(list){return list.filter(function(v){return VH.kind==='all'||v.kind===VH.kind;});}
+/* ---- 사업부 차량 운행 이력·통계 (읽기 전용) ---- */
+function vhHdOf(id){var a=vhDivs().filter(function(d){return d.id===id;})[0];return a||{id:id,short:id,color:'#6B7280',soft:'#EEF0F4'};}
+function vhHistRows(){
+  return (VH.hist||[]).filter(function(r){return (VH.hd==='all'||r.division_id===VH.hd)&&(VH.kind==='all'||r.kind===VH.kind);});
+}
+function vhDist(r){return (r.start_km!=null&&r.end_km!=null&&Number(r.end_km)>=Number(r.start_km))?Number(r.end_km)-Number(r.start_km):0;}
+function vhMonthBar(){return '<div class="dp"><button type="button" class="sm" data-vx="mv" data-v="-1">◀</button><b>'+VH.month.replace('-','년 ')+'월</b><button type="button" class="sm" data-vx="mv" data-v="1">▶</button></div>';}
+function vhHdBar(){
+  var base=(VH.hist||[]).filter(function(r){return VH.kind==='all'||r.kind===VH.kind;});
+  var n=function(id){return base.filter(function(r){return id==='all'||r.division_id===id;}).length;};
+  var list=[{id:'all',short:'전체',color:'#2B2F36'}].concat(vhDivs());
+  return '<div class="dv-pills" style="top:auto;position:static;flex-wrap:wrap">'+list.map(function(d){var on=VH.hd===d.id;return '<button type="button" data-vx="hd" data-v="'+d.id+'" class="'+(on?'on':'')+'" style="'+(on?'background:'+d.color:'')+'">'+esc(d.short)+' '+n(d.id)+'</button>';}).join('')+'</div>';
+}
+function vhHist(){
+  var rows=vhHistRows();
+  var h=vhMonthBar()+vhHdBar()+vhKindBar(VH.vehs0||[{kind:'공사'},{kind:'자사'}].slice(0,0));
+  var tot=0; rows.forEach(function(r){tot+=vhDist(r);});
+  h+='<div class="card"><h3 style="margin:0 0 6px;font-size:15px">운행 이력 <small style="color:var(--mut);font-weight:600">'+rows.length+'건 · 주행 '+vhKm(tot)+'km</small></h3><button type="button" class="sp-btn g" data-vx="hxls" style="width:100%">Excel 다운로드</button></div>';
+  if(!rows.length) return h+'<div class="card empty">이 조건의 운행 기록이 없어요.</div>';
+  return h+'<div class="vh-grid">'+rows.map(function(r){
+    var d=vhHdOf(r.division_id), dist=vhDist(r);
+    return '<div class="card" style="border-left:4px solid '+d.color+'"><div style="display:flex;justify-content:space-between;align-items:center"><b>'+esc(String(r.d).slice(5))+' · '+esc(r.plate||'-')+'</b><span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;background:'+d.soft+'">'+esc(d.short)+' · '+esc(r.kind)+'</span></div>'
+     +'<div style="font-size:12px;color:var(--mut);margin-top:5px;line-height:1.7">'+esc(r.driver||'-')+(r.team?' · '+esc(r.team):'')+' · '+(dist?dist.toLocaleString('ko-KR')+'km':'-')+'<br>'+esc(r.dest||'-')+(r.purpose?' · '+esc(r.purpose):'')+((r.st||r.et)?'<br>'+esc(r.st||'')+'~'+esc(r.et||''):'')+'</div></div>';
+  }).join('')+'</div>';
+}
+function vhStat(){
+  var rows=vhHistRows(), by={}, bv={};
+  rows.forEach(function(r){
+    var k=r.division_id, a=by[k]||(by[k]={n:0,km:0,v:{}}); a.n++; a.km+=vhDist(r); a.v[r.plate]=1;
+    var q=k+'|'+r.plate, b=bv[q]||(bv[q]={div:k,plate:r.plate,kind:r.kind,n:0,km:0}); b.n++; b.km+=vhDist(r);
+  });
+  var tot=0; rows.forEach(function(r){tot+=vhDist(r);});
+  var h=vhMonthBar()+vhHdBar()+vhKindBar([{kind:'공사'},{kind:'자사'}].slice(0,0));
+  h+='<div class="mg-sum" style="grid-template-columns:repeat(3,1fr);margin-bottom:10px"><div style="background:#fff">총 운행<b>'+rows.length+'회</b></div><div style="background:#fff">총 주행<b>'+vhKm(tot)+'</b><small>km</small></div><div style="background:#fff">운행 차량<b>'+Object.keys(bv).length+'대</b></div></div>';
+  if(!rows.length) return h+'<div class="card empty">이 조건의 운행 기록이 없어요.</div>';
+  h+='<div class="card"><h3 style="margin:0 0 8px;font-size:15px">사업부별</h3><table class="sp-tbl"><tr><th>사업부</th><th>운행</th><th>차량</th><th>주행(km)</th></tr>'
+   +vhDivs().filter(function(d){return by[d.id];}).map(function(d){var a=by[d.id];return '<tr><td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+d.color+';margin-right:5px"></span>'+esc(d.short)+'</td><td>'+a.n+'</td><td>'+Object.keys(a.v).length+'</td><td class="sm">'+vhKm(a.km)+'</td></tr>';}).join('')
+   +'<tr class="tot"><td>합계</td><td>'+rows.length+'</td><td>'+Object.keys(bv).length+'</td><td class="sm">'+vhKm(tot)+'</td></tr></table></div>';
+  var vl=Object.keys(bv).map(function(k){return bv[k];}).sort(function(a,b){return b.km-a.km;});
+  h+='<div class="card"><h3 style="margin:0 0 8px;font-size:15px">차량별</h3><table class="sp-tbl"><tr><th>차량</th><th>사업부</th><th>구분</th><th>운행</th><th>주행(km)</th></tr>'
+   +vl.map(function(b){var d=vhHdOf(b.div);return '<tr><td>'+esc(b.plate||'-')+'</td><td>'+esc(d.short)+'</td><td>'+esc(b.kind)+'</td><td>'+b.n+'</td><td class="sm">'+vhKm(b.km)+'</td></tr>';}).join('')+'</table></div>';
+  var dc={}; rows.forEach(function(r){String(r.dest||'').split(/\s*(?:→|->)\s*/).forEach(function(x){x=x.trim(); if(x) dc[x]=(dc[x]||0)+1;});});
+  var dl=Object.keys(dc).sort(function(a,b){return dc[b]-dc[a];}).slice(0,10);
+  if(dl.length) h+='<div class="card"><h3 style="margin:0 0 8px;font-size:15px">목적지 TOP</h3><table class="sp-tbl">'+dl.map(function(x){return '<tr><td>'+esc(x)+'</td><td class="sm">'+dc[x]+'회</td></tr>';}).join('')+'</table></div>';
+  return h;
+}
+function vhHistXls(){
+  if(!window.XLSX) return;
+  var rows=vhHistRows().slice().sort(function(a,b){return String(a.d)<String(b.d)?-1:1;});
+  var aoa=[['사용일자','사업부','구분','차량번호','성명','소속','주행 전 km','주행 후 km','주행거리','출발','도착','목적지','목적']];
+  rows.forEach(function(r){aoa.push([String(r.d),vhHdOf(r.division_id).short,r.kind,r.plate||'',r.driver||'',r.team||'',vhNum(r.start_km),vhNum(r.end_km),vhDist(r)||'',r.st||'',r.et||'',r.dest||'',r.purpose||'']);});
+  var ws=XLSX.utils.aoa_to_sheet(aoa), wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'운행이력');
+  try{XLSX.writeFile(wb,'차량운행이력_'+VH.month+'.xlsx');}catch(e){}
+}
 function vhSubBar(){
   return '<div class="dv-pills" style="top:auto;position:static">'
-   +[['reg','차량 대장'],['log','운행일지(그룹)']].map(function(s){return '<button type="button" data-vx="sub" data-v="'+s[0]+'" class="'+(VH.sub===s[0]?'on':'')+'" style="'+(VH.sub===s[0]?'background:#2B2F36':'')+'">'+s[1]+'</button>';}).join('')+'</div>';
+   +[['hist','운행 이력'],['stat','통계'],['reg','차량 대장'],['log','그룹 일지']].map(function(s){return '<button type="button" data-vx="sub" data-v="'+s[0]+'" class="'+(VH.sub===s[0]?'on':'')+'" style="font-size:12px;'+(VH.sub===s[0]?'background:#2B2F36':'')+'">'+s[1]+'</button>';}).join('')+'</div>';
 }
 function renderVh(){
   var h=vhSubBar(), box=$('p-vh');
-  h+= VH.sub==='reg' ? vhReg() : vhLog();
+  h+= VH.sub==='hist' ? vhHist() : VH.sub==='stat' ? vhStat() : VH.sub==='reg' ? vhReg() : vhLog();
   if(VH.sheet) h+=VH.sheet==='veh'?vhVehSheet():vhLogSheet();
   box.innerHTML=h;
 }
@@ -887,7 +943,8 @@ function vhReg(){
   h+=vhKindBar(VH.vehs);
   var shown=vhByKind(VH.vehs);
   h+='<div class="card"><h3 style="margin:0 0 8px;font-size:15px">'+esc(vhDivName(VH.div))+(VH.kind==='all'?' 차량':' '+VH.kind+' 차량')+' <small style="color:var(--mut);font-weight:600">'+shown.length+'대</small></h3>';
-  if(atCanEdit()) h+='<button type="button" class="sp-btn" data-vx="vnew" style="width:100%">＋ 차량 등록</button>'; else h+='<div class="note" style="margin:0">조회만 가능해요. 등록·수정은 그룹 관리자만 할 수 있어요.</div>';
+  if(VH.div!=='ALL') h+='<div class="note" style="margin:0">사업부 차량의 등록·수정·삭제는 각 사업부 앱의 \'차량 등록·관리\'에서 해요. 여기서는 조회만 가능해요.</div>';
+  else if(atCanEdit()) h+='<button type="button" class="sp-btn" data-vx="vnew" style="width:100%">＋ 그룹 차량 등록</button>'; else h+='<div class="note" style="margin:0">조회만 가능해요. 등록·수정은 그룹 관리자만 할 수 있어요.</div>';
   h+='</div>';
   if(!shown.length) return h+'<div class="card empty">등록된 '+(VH.kind==='all'?'':VH.kind+' ')+'차량이 없어요.</div>';
   return h+'<div class="vh-grid">'+shown.map(function(v){
@@ -895,7 +952,7 @@ function vhReg(){
     return '<div class="card" style="'+(v.active?'':'opacity:.55')+'"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:16px">'+esc(v.plate)+'</b>'
      +'<span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;background:'+(v.kind==='자사'?'#E8F0FD':'#FFF1E2')+'">'+esc(v.kind)+(v.active?'':' · 사용 안 함')+'</span></div>'
      +'<div style="font-size:12px;color:var(--mut);margin-top:6px;line-height:1.7">목적 '+esc(v.purpose||'-')+' · 소속 '+esc(v.team||'-')+'<br>투입 '+esc(v.start_date?String(v.start_date).slice(0,10):'-')+' · 시작 '+vhKm(v.start_km)+'km · 현재 '+vhKm(cur)+'km'+(v.log_count>0?' · 일지 '+v.log_count+'건':'')+(v.memo?'<br>비고 '+esc(v.memo):'')+'</div>'
-     +(atCanEdit()?'<div class="at-btns" style="margin-top:8px"><button type="button" class="sp-btn g" data-vx="vedit" data-id="'+esc(v.id)+'">수정</button><button type="button" class="sp-btn r" data-vx="vdel" data-id="'+esc(v.id)+'">삭제</button></div>':'')+'</div>';
+     +(atCanEdit()&&VH.div==='ALL'?'<div class="at-btns" style="margin-top:8px"><button type="button" class="sp-btn g" data-vx="vedit" data-id="'+esc(v.id)+'">수정</button><button type="button" class="sp-btn r" data-vx="vdel" data-id="'+esc(v.id)+'">삭제</button></div>':'')+'</div>';
   }).join('')+'</div>';
 }
 function vhVehSheet(){
@@ -970,6 +1027,8 @@ function vhAct(el){
   if(a==='sub'){VH.sub=v;load();return;}
   if(a==='div'){VH.div=v;load();return;}
   if(a==='kind'){VH.kind=v;renderVh();return;}
+  if(a==='hd'){VH.hd=v;renderVh();return;}
+  if(a==='hxls'){vhHistXls();return;}
   if(a==='veh'){VH.veh=v;renderVh();return;}
   if(a==='mv'){var y=+VH.month.slice(0,4),m=+VH.month.slice(5,7)+(+v);if(m<1){m=12;y--;}if(m>12){m=1;y++;}VH.month=y+'-'+pad(m);load();return;}
   if(a==='vnew'){VH.ed=null;VH.sheet='veh';renderVh();return;}

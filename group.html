@@ -240,6 +240,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
     <button data-t="sc" role="tab">일정</button>
     <button data-t="lb" role="tab">자료실</button>
     <button data-t="stat" role="tab">통계</button>
+    <button data-t="vh" role="tab">차량</button>
     <button data-t="rep" role="tab">리포트</button>
   </div>
 
@@ -251,6 +252,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
   <section class="pane" id="p-lb"></section>
   <section class="pane" id="p-stat"></section>
   <section class="pane" id="p-at"></section>
+  <section class="pane" id="p-vh"></section>
   <section class="pane" id="p-rep"></section>
 </div>
 
@@ -803,6 +805,137 @@ function dvGo(i){ if(!divs.length) return; DV.idx=(i+divs.length)%divs.length; r
   document.addEventListener('touchstart',function(e){ on=(state.tab==='div'&&!!e.target.closest('#p-div')&&!e.target.closest('select,input')); if(on){sx=e.touches[0].clientX;sy=e.touches[0].clientY;} },{passive:true});
   document.addEventListener('touchend',function(e){ if(!on) return; on=false; var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy; if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5) dvGo(DV.idx+(dx<0?1:-1)); },{passive:true});
 })();
+
+/* ---------- 차량 대장 · 운행일지 ---------- */
+var VH={sub:'reg',div:'ALL',vehs:[],all:[],logs:[],veh:null,month:null,ed:null,sheet:null};
+var VH_PUR=['업무','폐기물처리','고소작업','유리작업','순찰','기타'];
+function vhDivs(){return [AT_GRP].concat(divs);}
+function vhDivName(id){var a=vhDivs().filter(function(d){return d.id===id;})[0];return a?a.short:id;}
+function vhNum(v){return (v===null||v===undefined||v==='')?null:Number(v);}
+function vhKm(v){return v===null||v===undefined||v===''?'-':Number(v).toLocaleString('ko-KR');}
+function loadVh(){
+  if(!VH.month) VH.month=state.month||(function(){var t=today();return t.y+'-'+pad(t.m);})();
+  var y=+VH.month.slice(0,4), m=+VH.month.slice(5,7);
+  var tasks=[rpc('group_veh_list',{p_div:VH.div}), rpc('group_veh_list',{p_div:'ALL'})];
+  if(VH.sub==='log') tasks.push(rpc('group_vlog_list',{p_from:ymd(y,m,1),p_to:ymd(y,m,daysIn(y,m))}));
+  return Promise.all(tasks).then(function(r){
+    VH.vehs=r[0]; VH.all=r[1]; VH.logs=r[2]||[];
+    if(!VH.veh||!VH.all.some(function(v){return v.id===VH.veh;})) VH.veh=VH.all.length?VH.all[0].id:null;
+    renderVh();
+  });
+}
+function vhSubBar(){
+  return '<div class="dv-pills" style="top:auto;position:static">'
+   +[['reg','차량 대장'],['log','운행일지(그룹)']].map(function(s){return '<button type="button" data-vx="sub" data-v="'+s[0]+'" class="'+(VH.sub===s[0]?'on':'')+'" style="'+(VH.sub===s[0]?'background:#2B2F36':'')+'">'+s[1]+'</button>';}).join('')+'</div>';
+}
+function renderVh(){
+  var h=vhSubBar(), box=$('p-vh');
+  h+= VH.sub==='reg' ? vhReg() : vhLog();
+  if(VH.sheet) h+=VH.sheet==='veh'?vhVehSheet():vhLogSheet();
+  box.innerHTML=h;
+}
+function vhReg(){
+  var h='<div class="dv-pills" style="top:auto;position:static">'+vhDivs().map(function(d){var on=VH.div===d.id;return '<button type="button" data-vx="div" data-v="'+d.id+'" class="'+(on?'on':'')+'" style="'+(on?'background:'+d.color:'')+'">'+esc(d.short)+'</button>';}).join('')+'</div>';
+  h+='<div class="card"><h3 style="margin:0 0 8px;font-size:15px">'+esc(vhDivName(VH.div))+' 차량 <small style="color:var(--mut);font-weight:600">'+VH.vehs.length+'대</small></h3>';
+  if(atCanEdit()) h+='<button type="button" class="sp-btn" data-vx="vnew" style="width:100%">＋ 차량 등록</button>'; else h+='<div class="note" style="margin:0">조회만 가능해요. 등록·수정은 그룹 관리자만 할 수 있어요.</div>';
+  h+='</div>';
+  if(!VH.vehs.length) return h+'<div class="card empty">등록된 차량이 없어요.</div>';
+  return h+VH.vehs.map(function(v){
+    var cur=v.last_km!=null?v.last_km:v.start_km;
+    return '<div class="card" style="'+(v.active?'':'opacity:.55')+'"><div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><b style="font-size:16px">'+esc(v.plate)+'</b>'
+     +'<span style="font-size:11px;font-weight:800;padding:3px 9px;border-radius:99px;background:'+(v.kind==='자사'?'#E8F0FD':'#FFF1E2')+'">'+esc(v.kind)+(v.active?'':' · 사용 안 함')+'</span></div>'
+     +'<div style="font-size:12px;color:var(--mut);margin-top:6px;line-height:1.7">목적 '+esc(v.purpose||'-')+' · 소속 '+esc(v.team||'-')+'<br>투입 '+esc(v.start_date?String(v.start_date).slice(0,10):'-')+' · 시작 '+vhKm(v.start_km)+'km · 현재 '+vhKm(cur)+'km'+(v.log_count>0?' · 일지 '+v.log_count+'건':'')+(v.memo?'<br>비고 '+esc(v.memo):'')+'</div>'
+     +(atCanEdit()?'<div class="at-btns" style="margin-top:8px"><button type="button" class="sp-btn g" data-vx="vedit" data-id="'+esc(v.id)+'">수정</button><button type="button" class="sp-btn r" data-vx="vdel" data-id="'+esc(v.id)+'">삭제</button></div>':'')+'</div>';
+  }).join('');
+}
+function vhVehSheet(){
+  var E=VH.ed||{}, dv=E.division_id||VH.div;
+  var f=function(l,c){return '<label style="font-size:11px;font-weight:700;color:var(--mut)">'+l+'</label>'+c;};
+  return '<div class="at-sheet" data-vx="vclose"><div class="at-sh" style="max-height:92vh;overflow:auto"><h3>'+(E.id?'차량 수정':'차량 등록')+' <small>'+esc(vhDivName(dv))+'</small></h3>'
+   +f('구분','<select class="sp-in" id="vhKind"><option'+(E.kind==='자사'?' selected':'')+'>자사</option><option'+(E.kind!=='자사'?' selected':'')+'>공사</option></select>')
+   +f('차량번호','<input class="sp-in" id="vhPlate" placeholder="예: 821로8915" value="'+esc(E.plate||'')+'">')
+   +f('목적','<input class="sp-in" id="vhPur" list="vhPurL" placeholder="업무, 폐기물처리, 고소작업 …" value="'+esc(E.purpose||'')+'"><datalist id="vhPurL">'+VH_PUR.map(function(p){return '<option value="'+p+'">';}).join('')+'</datalist>')
+   +f('소속(사업부 팀)','<input class="sp-in" id="vhTeam" placeholder="예: 고소작업조" value="'+esc(E.team||'')+'">')
+   +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div>'+f('투입일자','<input class="sp-in" type="date" id="vhSd" value="'+esc(E.start_date?String(E.start_date).slice(0,10):'')+'">')+'</div><div>'+f('시작 km','<input class="sp-in" type="number" inputmode="decimal" id="vhKm" value="'+esc(E.start_km==null?'':E.start_km)+'">')+'</div></div>'
+   +f('비고','<input class="sp-in" id="vhMemo" value="'+esc(E.memo||'')+'">')
+   +(E.id?f('사용 여부','<select class="sp-in" id="vhAct"><option value="1"'+(E.active!==false?' selected':'')+'>사용 중</option><option value="0"'+(E.active===false?' selected':'')+'>사용 안 함</option></select>'):'')
+   +'<div id="vhErr" style="color:#C0485F;font-size:12px;min-height:16px"></div>'
+   +'<div class="at-btns"><button type="button" class="sp-btn g" data-vx="vclose">취소</button><button type="button" class="sp-btn" data-vx="vsave">저장</button></div></div></div>';
+}
+function vhVehOf(id){return VH.all.filter(function(v){return v.id===id;})[0];}
+function vhLog(){
+  var h='<div class="dp"><button type="button" class="sm" data-vx="mv" data-v="-1">◀</button><b>'+VH.month.replace('-','년 ')+'월</b><button type="button" class="sm" data-vx="mv" data-v="1">▶</button></div>';
+  if(!VH.all.length) return h+'<div class="card empty">그룹 차량이 없어요.<br>‘차량 대장’에서 그룹 차량을 먼저 등록해 주세요.</div>';
+  h+='<div class="at-btns" style="margin-bottom:8px">'+VH.all.filter(function(v){return v.active;}).map(function(v){var on=VH.veh===v.id;return '<button type="button" class="sp-btn '+(on?'':'g')+'" data-vx="veh" data-v="'+esc(v.id)+'">'+esc(v.plate)+'</button>';}).join('')+'</div>';
+  var v=vhVehOf(VH.veh), rows=VH.logs.filter(function(l){return l.vehicle_id===VH.veh;}).sort(function(a,b){return String(a.work_date)<String(b.work_date)?1:-1;});
+  var tot=0; rows.forEach(function(l){if(l.start_km!=null&&l.end_km!=null) tot+=Number(l.end_km)-Number(l.start_km);});
+  h+='<div class="card"><h3 style="margin:0 0 6px;font-size:15px">'+esc(v?v.plate:'')+' 운행일지 <small style="color:var(--mut);font-weight:600">'+rows.length+'건 · 주행 '+vhKm(tot)+'km</small></h3>';
+  if(atCanEdit()) h+='<div class="at-btns"><button type="button" class="sp-btn" data-vx="lnew">＋ 일지 작성</button><button type="button" class="sp-btn g" data-vx="lxls">Excel</button></div>';
+  h+='</div>';
+  if(!rows.length) return h+'<div class="card empty">이 달 운행 기록이 없어요.</div>';
+  return h+rows.map(function(l){
+    var d=l.start_km!=null&&l.end_km!=null?Number(l.end_km)-Number(l.start_km):null;
+    return '<div class="card"><div style="display:flex;justify-content:space-between"><b>'+esc(String(l.work_date).slice(5,10))+' · '+esc(l.driver)+'</b><span style="font-size:12px;font-weight:800">'+(d!=null?d.toLocaleString('ko-KR')+'km':'-')+'</span></div>'
+     +'<div style="font-size:12px;color:var(--mut);margin-top:5px;line-height:1.7">'+esc(l.team||'-')+' · '+esc(l.purpose||'-')+(l.dest?' · '+esc(l.dest):'')+'<br>'+vhKm(l.start_km)+' → '+vhKm(l.end_km)+'km'+((l.start_time||l.end_time)?' · '+esc(l.start_time||'')+'~'+esc(l.end_time||''):'')+(l.co_rider?'<br>동승 '+esc(l.co_rider):'')+(l.fuel?' · 주유 '+esc(l.fuel):'')+(l.washed?' · 세차 '+esc(l.washed):'')+(l.memo?'<br>비고 '+esc(l.memo):'')+'</div>'
+     +(atCanEdit()?'<div class="at-btns" style="margin-top:8px"><button type="button" class="sp-btn g" data-vx="ledit" data-id="'+esc(l.id)+'">수정</button><button type="button" class="sp-btn r" data-vx="ldel" data-id="'+esc(l.id)+'">삭제</button></div>':'')+'</div>';
+  }).join('');
+}
+function vhLogSheet(){
+  var E=VH.ed||{}, v=vhVehOf(E.vehicle_id||VH.veh)||{};
+  var f=function(l,c){return '<label style="font-size:11px;font-weight:700;color:var(--mut)">'+l+'</label>'+c;};
+  var t=today(), dflt=VH.month===(t.y+'-'+pad(t.m))?ymd(t.y,t.m,t.d):VH.month+'-01';
+  var sk=E.id?E.start_km:(v.last_km!=null?v.last_km:v.start_km);
+  var g2=function(a,b){return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><div>'+a+'</div><div>'+b+'</div></div>';};
+  return '<div class="at-sheet" data-vx="vclose"><div class="at-sh" style="max-height:92vh;overflow:auto"><h3>'+(E.id?'일지 수정':'일지 작성')+' <small>'+esc(v.plate||'')+'</small></h3>'
+   +g2(f('사용일자','<input class="sp-in" type="date" id="vlDate" value="'+esc(E.work_date?String(E.work_date).slice(0,10):dflt)+'">'),f('성명','<input class="sp-in" id="vlDrv" value="'+esc(E.driver||state.myName||'')+'">'))
+   +f('소속','<input class="sp-in" id="vlTeam" value="'+esc(E.team!=null?E.team:(v.team||''))+'">')
+   +g2(f('주행 전 km','<input class="sp-in" type="number" inputmode="decimal" id="vlSk" value="'+esc(sk==null?'':sk)+'">'),f('주행 후 km','<input class="sp-in" type="number" inputmode="decimal" id="vlEk" value="'+esc(E.end_km==null?'':E.end_km)+'">'))
+   +g2(f('출발','<input class="sp-in" type="time" id="vlSt" value="'+esc(E.start_time||'')+'">'),f('도착','<input class="sp-in" type="time" id="vlEt" value="'+esc(E.end_time||'')+'">'))
+   +f('목적지','<input class="sp-in" id="vlDest" value="'+esc(E.dest||'')+'">')
+   +f('목적','<input class="sp-in" id="vlPur" list="vhPurL" value="'+esc(E.purpose!=null?E.purpose:(v.purpose||''))+'"><datalist id="vhPurL">'+VH_PUR.map(function(p){return '<option value="'+p+'">';}).join('')+'</datalist>')
+   +f('동승자','<input class="sp-in" id="vlCo" value="'+esc(E.co_rider||'')+'">')
+   +g2(f('주유','<input class="sp-in" id="vlFuel" placeholder="예: 40L" value="'+esc(E.fuel||'')+'">'),f('세차','<input class="sp-in" id="vlWash" placeholder="예: O" value="'+esc(E.washed||'')+'">'))
+   +f('비고','<input class="sp-in" id="vlMemo" value="'+esc(E.memo||'')+'">')
+   +'<div id="vhErr" style="color:#C0485F;font-size:12px;min-height:16px"></div>'
+   +'<div class="at-btns"><button type="button" class="sp-btn g" data-vx="vclose">취소</button><button type="button" class="sp-btn" data-vx="lsave">저장</button></div></div></div>';
+}
+function vhV(id){var e=$(id);return e?e.value.trim():'';}
+function vhErr(m){var e=$('vhErr');if(e)e.textContent=m;}
+function vhDone(p){return p.then(function(){VH.sheet=null;VH.ed=null;return loadVh();}).catch(function(e){vhErr((e&&e.message)||'저장하지 못했어요');});}
+function vhXls(){
+  if(!window.XLSX) return;
+  var v=vhVehOf(VH.veh), rows=VH.logs.filter(function(l){return l.vehicle_id===VH.veh;}).sort(function(a,b){return String(a.work_date)<String(b.work_date)?-1:1;});
+  var aoa=[['사용일자','성명','소속','주행 전 km','주행 후 km','주행거리','출발','도착','목적지','목적','동승자','주유','세차','비고']];
+  rows.forEach(function(l){aoa.push([String(l.work_date).slice(0,10),l.driver,l.team||'',vhNum(l.start_km),vhNum(l.end_km),(l.start_km!=null&&l.end_km!=null)?Number(l.end_km)-Number(l.start_km):'',l.start_time||'',l.end_time||'',l.dest||'',l.purpose||'',l.co_rider||'',l.fuel||'',l.washed||'',l.memo||'']);});
+  var ws=XLSX.utils.aoa_to_sheet(aoa), wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'운행일지');
+  try{XLSX.writeFile(wb,'운행일지_'+(v?v.plate:'')+'_'+VH.month+'.xlsx');}catch(e){}
+}
+function vhAct(el){
+  var a=el.dataset.vx, id=el.dataset.id, v=el.dataset.v;
+  if(a==='vclose'){ if(el.classList.contains('at-sheet')&&event.target!==el) return; VH.sheet=null;VH.ed=null;renderVh();return; }
+  if(a==='sub'){VH.sub=v;load();return;}
+  if(a==='div'){VH.div=v;load();return;}
+  if(a==='veh'){VH.veh=v;renderVh();return;}
+  if(a==='mv'){var y=+VH.month.slice(0,4),m=+VH.month.slice(5,7)+(+v);if(m<1){m=12;y--;}if(m>12){m=1;y++;}VH.month=y+'-'+pad(m);load();return;}
+  if(a==='vnew'){VH.ed=null;VH.sheet='veh';renderVh();return;}
+  if(a==='vedit'){VH.ed=VH.vehs.filter(function(x){return x.id===id;})[0];VH.sheet='veh';renderVh();return;}
+  if(a==='vsave'){
+    if(!vhV('vhPlate')){vhErr('차량번호를 입력해주세요');return;}
+    if(VH.ed&&VH.ed.id&&!confirm('이 차량 정보를 수정할까요?')) return;
+    var sk=vhV('vhKm');
+    vhDone(rpc('group_veh_save',{p_id:VH.ed&&VH.ed.id||null,p_div:VH.ed&&VH.ed.division_id||VH.div,p_kind:vhV('vhKind'),p_plate:vhV('vhPlate'),p_purpose:vhV('vhPur'),p_team:vhV('vhTeam'),p_start_date:vhV('vhSd')||null,p_start_km:sk===''?null:Number(sk),p_memo:vhV('vhMemo'),p_active:$('vhAct')?$('vhAct').value==='1':true}));return;}
+  if(a==='vdel'){var x=VH.vehs.filter(function(q){return q.id===id;})[0]; if(!x||!confirm(x.plate+' 차량을 삭제할까요?\n(운행일지가 있으면 삭제되지 않고, ‘사용 안 함’으로 바꿔야 해요)')) return;
+    rpc('group_veh_delete',{p_id:id}).then(loadVh).catch(function(e){alert((e&&e.message)||'삭제하지 못했어요');});return;}
+  if(a==='lnew'){VH.ed=null;VH.sheet='log';renderVh();return;}
+  if(a==='ledit'){VH.ed=VH.logs.filter(function(x){return x.id===id;})[0];VH.sheet='log';renderVh();return;}
+  if(a==='lsave'){
+    if(!vhV('vlDate')){vhErr('사용일자를 입력해주세요');return;} if(!vhV('vlDrv')){vhErr('성명을 입력해주세요');return;}
+    var s=vhV('vlSk'),e2=vhV('vlEk'); if(s!==''&&e2!==''&&Number(e2)<Number(s)){vhErr('주행 후 km가 주행 전 km보다 작아요');return;}
+    if(VH.ed&&VH.ed.id&&!confirm('이 운행일지를 수정할까요?')) return;
+    vhDone(rpc('group_vlog_save',{p_id:VH.ed&&VH.ed.id||null,p_vehicle:VH.ed&&VH.ed.vehicle_id||VH.veh,p_date:vhV('vlDate'),p_team:vhV('vlTeam'),p_driver:vhV('vlDrv'),p_start_km:s===''?null:Number(s),p_end_km:e2===''?null:Number(e2),p_start_time:vhV('vlSt'),p_end_time:vhV('vlEt'),p_dest:vhV('vlDest'),p_purpose:vhV('vlPur'),p_co_rider:vhV('vlCo'),p_fuel:vhV('vlFuel'),p_washed:vhV('vlWash'),p_memo:vhV('vlMemo')}));return;}
+  if(a==='ldel'){if(!confirm('이 운행일지를 삭제할까요?')) return; rpc('group_vlog_delete',{p_id:id}).then(loadVh).catch(function(e){alert((e&&e.message)||'삭제하지 못했어요');});return;}
+  if(a==='lxls'){vhXls();return;}
+}
 
 /* ---------- 특별근무 합산 (성수기·명절·비상) ---------- */
 var SP={view:'list',list:[],avail:[],detail:null,ed:null};
@@ -1457,7 +1590,7 @@ function loadStat(){
 }
 function load(){
   stamp();
-  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : (state.tab==='stat' ? loadStat() : loadRep()));
+  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : (state.tab==='stat' ? loadStat() : loadRep()));
   return p.catch(function(e){
     var msg=(e&&e.message)||'알 수 없는 오류';
     $('p-'+state.tab).innerHTML='<div class="card empty">데이터를 불러오지 못했어요.<br>'+esc(msg)+'<br>잠시 후 새로고침을 눌러 주세요.</div>';
@@ -1466,7 +1599,7 @@ function load(){
 function showTab(t){
   state.tab=t;
   document.querySelectorAll('.tabs button').forEach(function(b){var on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
-  ['now','div','at','sp','sc','lb','stat','rep'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
+  ['now','div','at','sp','sc','lb','vh','stat','rep'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
   load();
 }
 
@@ -1528,6 +1661,7 @@ function init(){
       else if(q.scmt){SC.mtDiv=q.scmt;renderSc();}
       else if(q.scwk){SC.openW=(SC.openW===q.scwk?null:q.scwk);renderSc();}
       return;}
+    var vx=e.target.closest('#p-vh [data-vx]'); if(vx){vhAct(vx);return;}
     var scd=e.target.closest('[data-spcd]'); if(scd&&SP.detail){SP.cd=scd.dataset.spcd;renderSp();return;}
     var sp=e.target.closest('[data-spnew],[data-spopen],[data-spback],[data-spedit],[data-spsave],[data-spdel]');
     if(sp){var dd=sp.dataset;

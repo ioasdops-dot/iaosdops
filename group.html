@@ -250,6 +250,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
     <button data-t="lb" role="tab">자료실</button>
     <button data-t="stat" role="tab">통계</button>
     <button data-t="vh" role="tab">차량</button>
+    <button data-t="fc" role="tab">청결예보</button>
     <button data-t="rep" role="tab">리포트</button>
   </div>
 
@@ -263,6 +264,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
   <section class="pane" id="p-stat"></section>
   <section class="pane" id="p-at"></section>
   <section class="pane" id="p-vh"></section>
+  <section class="pane" id="p-fc"></section>
   <section class="pane" id="p-rep"></section>
 </div>
 
@@ -1702,9 +1704,142 @@ function loadStat(){
     renderStat({stats:r[0],detail:r[1],kpi:r[2].map(function(x){x.month=+x.month;return x;}),kpiT:r[3].map(function(x){x.idx=+x.idx;return x;}),intake:r[4]});
   });
 }
+/* ---------- 청결예보 (그룹: 전 사업부 합산, 제1·제2여객터미널·부대건물 구분) ---------- */
+var GF_SECS=[{div:'T1',name:'제1여객터미널',ic:'🛫'},{div:'T2',name:'제2여객터미널',ic:'🛬'},{div:'BD',name:'부대건물',ic:'🏢'}];
+var GF_ZONES=[{k:'L/S|동편',zi:0},{k:'L/S|서편',zi:1},{k:'A/S|동편',zi:2},{k:'A/S|서편',zi:3}];
+var GF_FLOORS=[{f:'4F',cols:[5]},{f:'3F',cols:[4]},{f:'2F',cols:[3]},{f:'1F',cols:[2]},{f:'B1F',cols:[1,6]},{f:'B2F',cols:[0]}];
+var GF_BLOCKS=[{a:6,b:10,shift:'오전'},{a:10,b:14,shift:'오전'},{a:14,b:18,shift:'오후'},{a:18,b:22,shift:'오후'}];
+var GF_LV=[{n:'비바람',ic:'⛈️',bg:'#6F82B8',fg:'#fff',bar:'#6F82B8'},{n:'완전흐림',ic:'☁️',bg:'#C7D3E3',fg:'#2F4560',bar:'#9DB0C9'},{n:'흐림',ic:'🌥️',bg:'#E8EFF6',fg:'#51708C',bar:'#C5D4E3'},{n:'맑음',ic:'☀️',bg:'#FFF3C9',fg:'#8A6A12',bar:'#F2D56B'}];
+var GF_WD=['일','월','화','수','목','금','토'];
+var GF={ready:false,wd:null,secs:[],more:{},raw:null,popDone:false};
+function gfKst(){var d=new Date(Date.now()+9*3600000);return {h:d.getUTCHours(),ds:d.getUTCFullYear()+'-'+pad(d.getUTCMonth()+1)+'-'+pad(d.getUTCDate())};}
+function gfWd(ds){return new Date(ds+'T00:00:00Z').getUTCDay();}
+function gfLevel(sec,v){var c=sec.cuts;if(!(v>0))return 3;if(v>=c[0])return 0;if(v>=c[1])return 1;if(v>=c[2])return 2;return 3;}
+function gfBuild(div,raw){
+  var strict=(div==='T1'), span=(raw.span||[]).filter(function(s){return s.div===div;})[0];
+  var sec={div:div,rows:[],lam:{},cuts:[Infinity,Infinity,Infinity],n:0,skipped:0,from:span?span.from_d:null,staffSum:{},staffDays:{}};
+  if(!span) return sec;
+  var todayK=gfKst().ds, nDay=[0,0,0,0,0,0,0], nAll=0;
+  var d=new Date(span.from_d+'T00:00:00Z'), end=new Date(todayK+'T00:00:00Z');
+  while(d<=end){nDay[d.getUTCDay()]++;nAll++;d=new Date(d.getTime()+86400000);}
+  var cWd={},cAll={},rows={};
+  (raw.voc||[]).forEach(function(x){
+    if(x.div!==div) return;
+    var ok=strict?((x.z==='L/S'||x.z==='A/S')&&(x.s==='동편'||x.s==='서편'||x.s==='중앙')&&GF_FLOORS.some(function(f){return f.f===x.f;})):(x.z&&x.s&&x.f);
+    if(!ok){sec.skipped+=x.c;return;}
+    var bi=-1;GF_BLOCKS.forEach(function(b,i){if(x.h>=b.a&&x.h<b.b)bi=i;});
+    if(bi<0) return;
+    sec.n+=x.c;
+    var rk=x.z+'|'+x.s+'|'+x.f; rows[rk]=1;
+    var kA=rk+'#'+bi,kW=rk+'#'+bi+'#'+x.wd;
+    cAll[kA]=(cAll[kA]||0)+x.c;cWd[kW]=(cWd[kW]||0)+x.c;
+  });
+  var all=[];
+  Object.keys(rows).forEach(function(rk){sec.lam[rk]=[];for(var w=0;w<7;w++){sec.lam[rk][w]=[];for(var bi=0;bi<4;bi++){
+    var a=nAll?((cAll[rk+'#'+bi]||0)/nAll):0,b=nDay[w]?((cWd[rk+'#'+bi+'#'+w]||0)/nDay[w]):0,v=0.6*b+0.4*a;sec.lam[rk][w][bi]=v;if(v>0)all.push(v);}}});
+  all.sort(function(p,q){return q-p;});
+  var n=all.length,pick=function(r){return n?all[Math.min(n-1,Math.floor(n*r))]:Infinity;};
+  sec.cuts=[pick(0.06),pick(0.18),pick(0.40)]; sec.rows=Object.keys(rows);
+  if(div==='T1'){ // 근무조 인력은 T1 인력현황 표 구조만 해석 가능
+    var dset={};
+    (raw.mp||[]).forEach(function(r){
+      if(r.div!==div) return; var v=r.v; if(!v) return;
+      var w=gfWd(r.d); dset[w+'|'+r.shift+'|'+r.d]=1;
+      GF_ZONES.forEach(function(z){GF_FLOORS.forEach(function(f){var t=0;f.cols.forEach(function(c){t+=Number(v[z.zi]&&v[z.zi][c])||0;});
+        var k=z.k+'|'+f.f+'|'+w+'|'+r.shift;sec.staffSum[k]=(sec.staffSum[k]||0)+t;});});
+    });
+    Object.keys(dset).forEach(function(k){var p=k.split('|'),key=p[0]+'|'+p[1];sec.staffDays[key]=(sec.staffDays[key]||0)+1;});
+  }
+  return sec;
+}
+function gfStaff(sec,rk,w,shift){var p=rk.split('|');if(sec.div!=='T1'||p[1]==='중앙')return null;var d=sec.staffDays[w+'|'+shift]||0;return d?((sec.staffSum[rk+'|'+w+'|'+shift]||0)/d):null;}
+function gfInfo(sec,w){
+  var info=sec.rows.map(function(rk){var l=sec.lam[rk][w],lv=l.map(function(v){return gfLevel(sec,v);});return {rk:rk,l:l,lv:lv,sum:l.reduce(function(a,b){return a+b;},0),best:Math.min.apply(null,lv)};});
+  var dem={'오전':0,'오후':0},stf={'오전':0,'오후':0};
+  info.forEach(function(r){GF_BLOCKS.forEach(function(b,bi){dem[b.shift]+=r.l[bi];});['오전','오후'].forEach(function(sh){var s=gfStaff(sec,r.rk,w,sh);if(s)stf[sh]+=s;});});
+  info.forEach(function(r){r.short=GF_BLOCKS.map(function(b,bi){if(r.lv[bi]>1)return false;var s=gfStaff(sec,r.rk,w,b.shift);if(s===null||!stf[b.shift]||!dem[b.shift])return false;return (r.l[bi]/dem[b.shift])>=1.5*(s/stf[b.shift]);});});
+  return info;
+}
+function gfSummary(sec,info,w){ // 시간대 4칸 + 요약 문구
+  var nC=0,nJ=0,flc={};info.forEach(function(r){r.lv.forEach(function(lv){if(lv===0)nC++;else if(lv===1)nJ++;if(lv<=1){var fl=r.rk.split('|')[2];flc[fl]=(flc[fl]||0)+1;}});});
+  var topFl=Object.keys(flc).sort(function(a,b){return flc[b]-flc[a];})[0];
+  var bs=GF_BLOCKS.map(function(_,bi){var sc=0;info.forEach(function(r){if(r.lv[bi]===0)sc+=2;else if(r.lv[bi]===1)sc+=1;});return sc;});
+  var bmax=Math.max.apply(null,bs),now=gfKst(),isTd=(gfWd(now.ds)===w);
+  var strip=GF_BLOCKS.map(function(bk,bi){var r=bmax?bs[bi]/bmax:0,lv=bs[bi]===0?3:(r<0.4?2:(r<0.75?1:0)),L=GF_LV[lv],cur=isTd&&now.h>=bk.a&&now.h<bk.b;
+    return '<div style="flex:1;text-align:center;padding:7px 0;border-radius:12px;background:'+(cur?'#fff':'rgba(255,255,255,.18)')+';color:'+(cur?'#26405A':'#fff')+'"><div style="font-size:10px;font-weight:700;opacity:.85">'+(cur?'지금':bk.a+'~'+bk.b+'시')+'</div><div style="font-size:19px;line-height:1.3">'+L.ic+'</div><div style="font-size:10px;font-weight:700">'+L.n+'</div></div>';}).join('');
+  var msg=(nC+nJ===0)?'온종일 맑음, 한산한 날':((topFl&&(nC+nJ)>=3)?(topFl+' 쪽에 민원이 몰릴 수 있어요'):'일부 시간대만 살펴보세요');
+  return {strip:strip,msg:msg,nC:nC,nJ:nJ};
+}
+function gfCells(info){var c=[];info.forEach(function(r){r.lv.forEach(function(lv,bi){if(lv<=1)c.push({r:r,bi:bi,lv:lv,v:r.l[bi]});});});c.sort(function(a,b){return b.v-a.v;});return c;}
+function gfHero(meta,sec,info,w){
+  var s=gfSummary(sec,info,w);
+  return '<div style="border-radius:18px;padding:14px 14px 12px;color:#fff;background:linear-gradient(135deg,#3FB6A0 0%,#3A8FC4 100%);margin-bottom:10px">'
+   +'<div style="font-size:12px;font-weight:700;opacity:.92">'+meta.ic+' '+esc(meta.name)+' · '+GF_WD[w]+'요일</div>'
+   +'<div style="font-size:16px;font-weight:800;margin:4px 0 10px;line-height:1.35">'+(sec.n?esc(s.msg):'민원 기록이 아직 없어요')+'</div>'
+   +(sec.n?'<div style="display:flex;gap:6px">'+s.strip+'</div>':'')+'</div>';
+}
+function gfTop3(sec,info,w){
+  var cells=gfCells(info); if(!cells.length) return sec.n?'<div style="padding:10px 12px;background:#EEF6F1;border-radius:12px;font-size:12.5px;font-weight:700;color:#4C8566;margin-bottom:10px">☀️ 뚜렷한 주의 구역이 없습니다</div>':'';
+  var h='<div style="font-size:12.5px;font-weight:800;margin:2px 0 6px">📍 먼저 살필 곳</div><div style="display:flex;flex-direction:column;gap:7px;margin-bottom:10px">';
+  cells.slice(0,3).forEach(function(c){var p=c.r.rk.split('|'),b=GF_BLOCKS[c.bi],L=GF_LV[c.lv],st=gfStaff(sec,c.r.rk,w,b.shift);
+    h+='<div style="display:flex;background:#fff;border-radius:12px;box-shadow:0 1px 5px rgba(15,40,60,.08);overflow:hidden"><div style="width:5px;background:'+L.bar+'"></div><div style="flex:1;padding:9px 11px">'
+     +'<div style="display:flex;align-items:center;gap:7px"><span style="padding:2px 8px;border-radius:9px;background:'+L.bg+';color:'+L.fg+';font-size:11px;font-weight:800">'+L.ic+' '+L.n+'</span><b style="font-size:13px">'+esc(p[0]+' '+p[1]+' '+p[2])+'</b><span style="margin-left:auto;font-size:12px;font-weight:700;color:#666">'+b.a+'~'+b.b+'시</span></div>'
+     +'<div style="font-size:11.5px;color:#666;margin-top:4px">민원 발생 가능성 약 '+Math.round((1-Math.exp(-c.v))*100)+'%'+(st===null?'':' · '+b.shift+' 평소 인력 '+(st%1?st.toFixed(1):st)+'명')+(c.r.short[c.bi]?' · <span style="color:#B4531A;font-weight:700">👥 보강 고려</span>':'')+'</div></div></div>';});
+  return h+'</div>';
+}
+function gfTable(meta,sec,info,w){
+  var showAll=info.filter(function(r){return r.best<=2;}).sort(function(a,b){return b.sum-a.sum;});
+  var LIM=6,more=!!GF.more[sec.div],show=more?showAll:showAll.slice(0,LIM),now=gfKst(),curB=-1;
+  if(gfWd(now.ds)===w)GF_BLOCKS.forEach(function(b,i){if(now.h>=b.a&&now.h<b.b)curB=i;});
+  var t='<div style="overflow-x:auto"><table style="width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed;font-size:12px"><colgroup><col style="width:32%"><col><col><col><col></colgroup><thead><tr><th style="text-align:left;color:#888;font-size:11px;padding:2px 4px">구역</th>';
+  GF_BLOCKS.forEach(function(b,i){t+='<th style="font-size:11px;color:'+(i===curB?'#26718F':'#888')+';padding:2px 0;font-weight:'+(i===curB?'800':'600')+'">'+b.a+'~'+b.b+'시</th>';});
+  t+='</tr></thead><tbody>';
+  show.forEach(function(r){var p=r.rk.split('|');
+    t+='<tr><td style="padding:4px"><span style="padding:1px 6px;border-radius:8px;background:#E3F1F7;color:#26718F;font-size:11px;font-weight:800">'+esc(p[2])+'</span> <b style="font-size:12px">'+esc(p[0]+' '+p[1])+'</b></td>';
+    r.lv.forEach(function(lv,bi){var L=GF_LV[lv];t+='<td style="text-align:center;padding:5px 0;border-radius:10px;background:'+L.bg+';color:'+L.fg+';font-weight:'+(lv<=1?'800':'600')+';font-size:10px"><div style="font-size:15px;line-height:1.25">'+L.ic+'</div>'+L.n+(r.short[bi]?' 👥':'')+'</td>';});
+    t+='</tr>';});
+  if(!show.length)t+='<tr><td colspan="5" style="text-align:center;padding:14px;color:#999">표시할 구역이 없습니다</td></tr>';
+  t+='</tbody></table></div>';
+  if(showAll.length>LIM)t+='<button class="sp-btn g" data-gfmore="'+sec.div+'" style="width:100%;margin-top:6px">'+(more?'접기 ▲':'구역 '+(showAll.length-LIM)+'개 더 보기 ▼')+'</button>';
+  var calm=info.length-showAll.length; if(calm>0)t+='<div style="margin-top:6px;font-size:11px;color:#999">그 밖의 '+calm+'개 구역은 모든 시간대가 맑음입니다</div>';
+  return t;
+}
+function gfRender(){
+  var pane=$('p-fc'); if(!pane) return; var w=GF.wd, now=gfKst(), order=[1,2,3,4,5,6,0], h='';
+  h+='<div class="card" style="padding:12px"><div style="font-size:15px;font-weight:800">🌤️ 청결예보</div><div style="font-size:11.5px;color:#888;margin:2px 0 10px">전 사업부 과거 민원 통계 · 제1·제2여객터미널·부대건물별 · 인력은 최근 5주 같은 요일 평균(제1여객터미널)</div><div style="display:flex;gap:5px">';
+  order.forEach(function(d){var on=(w===d),td=(gfWd(now.ds)===d);h+='<button class="sp-btn '+(on?'':'g')+'" data-gfwd="'+d+'" style="flex:1;padding:9px 0;'+(td?'outline:2px solid #3A8FC4;':'')+'">'+GF_WD[d]+(td?'<div style="font-size:9px">오늘</div>':'')+'</button>';});
+  h+='</div></div>';
+  GF.secs.forEach(function(sec){var meta=GF_SECS.filter(function(m){return m.div===sec.div;})[0], info=gfInfo(sec,w);
+    h+='<div class="card" style="padding:12px">'+gfHero(meta,sec,info,w)+(sec.n?gfTop3(sec,info,w)+'<div style="font-size:12.5px;font-weight:800;margin:4px 0 4px">구역별 예보</div>'+gfTable(meta,sec,info,w)+'<div style="margin-top:8px;font-size:10.5px;color:#aaa">민원 '+sec.n+'건('+((sec.from||'').slice(5).replace('-','/'))+'~) 기준'+(sec.skipped?' · 위치 미기재/기타 '+sec.skipped+'건 제외':'')+(sec.div!=='T1'?' · 인력 비교 없음':'')+'</div>':'<div style="font-size:12.5px;color:#999;padding:4px 2px">이 사업부는 아직 예보를 만들 민원 기록이 없어요.</div>')+'</div>';});
+  pane.innerHTML=h;
+}
+function loadFc(){
+  var p=GF.ready?Promise.resolve(GF.raw):rpc('group_forecast_data').then(function(r){return r;});
+  return p.then(function(raw){
+    if(!GF.ready){GF.raw=raw;GF.secs=GF_SECS.filter(function(m){return !divs.length||divs.some(function(d){return d.id===m.div;});}).map(function(m){return gfBuild(m.div,raw);});GF.ready=true;}
+    if(GF.wd===null)GF.wd=gfWd(gfKst().ds);
+    gfRender();
+  });
+}
+function gfPopup(){
+  if(GF.popDone) return; GF.popDone=true;
+  loadFc().then(function(){
+    var w=gfWd(gfKst().ds),h='';
+    GF.secs.forEach(function(sec){var meta=GF_SECS.filter(function(m){return m.div===sec.div;})[0],info=gfInfo(sec,w);h+=gfHero(meta,sec,info,w)+(sec.n?gfTop3(sec,info,w):'');});
+    var m=document.createElement('div');m.id='gfPop';m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:14px';
+    m.innerHTML='<div style="background:#F5F6F8;border-radius:20px;max-width:440px;width:100%;max-height:86vh;display:flex;flex-direction:column;overflow:hidden"><div style="padding:14px 16px;background:linear-gradient(135deg,#3FB6A0,#3A8FC4);color:#fff;font-weight:800;font-size:15px">🌤️ 오늘의 청결예보</div><div style="padding:12px 14px;overflow-y:auto">'+h+'</div><div style="display:flex;gap:8px;padding:6px 14px 14px"><button class="sp-btn g" data-gfpop="close" style="flex:1">닫기</button><button class="sp-btn" data-gfpop="open" style="flex:1">자세히 보기</button></div></div>';
+    document.body.appendChild(m);
+  }).catch(function(){});
+}
+document.addEventListener('click',function(e){
+  var a=e.target.closest('[data-gfwd]');if(a){GF.wd=+a.dataset.gfwd;gfRender();return;}
+  a=e.target.closest('[data-gfmore]');if(a){GF.more[a.dataset.gfmore]=!GF.more[a.dataset.gfmore];gfRender();return;}
+  a=e.target.closest('[data-gfpop]');if(a){var m=$('gfPop');if(m)m.remove();if(a.dataset.gfpop==='open')showTab('fc');}
+});
+
 function load(){
   stamp(); wxLoad();
-  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : (state.tab==='stat' ? loadStat() : loadRep()));
+  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : state.tab==='fc' ? loadFc() : (state.tab==='stat' ? loadStat() : loadRep()));
   return p.catch(function(e){
     var msg=(e&&e.message)||'알 수 없는 오류';
     $('p-'+state.tab).innerHTML='<div class="card empty">데이터를 불러오지 못했어요.<br>'+esc(msg)+'<br>잠시 후 새로고침을 눌러 주세요.</div>';
@@ -1713,7 +1848,7 @@ function load(){
 function showTab(t){
   state.tab=t;
   document.querySelectorAll('.tabs button').forEach(function(b){var on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
-  ['now','div','at','sp','sc','lb','vh','stat','rep'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
+  ['now','div','at','sp','sc','lb','vh','fc','stat','rep'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
   load();
 }
 
@@ -1735,7 +1870,7 @@ function enter(){
     state.role=row.role; state.myDiv=row.division_id; state.myName=row.name;
     $('login').classList.add('hide');$('app').classList.remove('hide');
     state.month=lastMonths(1)[0];
-    return loadDivisions().then(function(){renderGoBar();return load();});
+    return loadDivisions().then(function(){renderGoBar();var r=load();setTimeout(gfPopup,4000);return r;});
   }).catch(function(e){showLogin((e&&e.message)||'로그인 중 문제가 생겼어요.');});
 }
 function readShared(){try{var a=JSON.parse(localStorage.getItem('t1_auth')||'null');return a&&a.access_token?a:null;}catch(e){return null;}}

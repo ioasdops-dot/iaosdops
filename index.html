@@ -120,16 +120,33 @@ html{overflow-x:hidden}
 
 /* ═══ PC 넓은 화면(1024px+) 전용 — 폰/태블릿 세로는 영향 없음 ═══ */
 @media (min-width:1024px){
-  .scr{max-width:1100px}
+  .scr{max-width:1100px;padding-bottom:40px}
   #sChat.scr,#sGroupChat.scr{max-width:720px}
-  .mh-tabbar,#hoAlertBanner{max-width:1100px!important;margin:0 auto!important}
-  /* 메인 운영현황: 카드 4열 */
-  #mhPanelDash{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;padding:0 13px 114px;align-content:start}
+  #hoAlertBanner{max-width:1100px!important;margin:0 auto!important}
+  /* 하단 탭바 → 왼쪽 세로 메뉴(사이드바). 내용을 가리지 않고, 마우스로 누르기 편함 */
+  body:has(#globalTabbar[style*="flex"]){padding-left:92px}
+  body:has(#globalTabbar[style*="flex"]) #hoAlertBanner{left:92px!important}
+  #globalTabbar.mh-tabbar{left:0!important;right:auto!important;top:0;bottom:0;width:92px;max-width:92px!important;height:auto;margin:0!important;flex-direction:column;justify-content:flex-start;padding:14px 0;border-top:none;border-right:1px solid var(--g2);overflow-y:auto;box-shadow:2px 0 14px rgba(20,30,60,.05)}
+  #globalTabbar .mh-tabbar-row{flex:0 0 auto;flex-direction:column}
+  #globalTabbar .mh-tabbar-row+.mh-tabbar-row{border-top:none}
+  #globalTabbar .mh-tab-item{flex:0 0 auto;height:76px;gap:5px;margin:2px 9px;border-radius:12px;transition:background .15s}
+  #globalTabbar .mh-tab-item:hover{background:rgba(0,150,140,.09)}
+  #globalTabbar .mh-tab-ic{width:26px;height:26px}
+  #globalTabbar .mh-tab-ic svg{width:24px;height:24px}
+  #globalTabbar .mh-tab-lb{font-size:11.5px}
+  /* 메인 운영현황: 카드 4열 — dense로 빈칸을 뒤쪽 카드가 채움 */
+  #mhPanelDash{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-auto-flow:row dense;gap:12px;padding:0 13px 30px;align-content:start}
   #mhPanelDash>*{grid-column:1/-1;margin-left:0!important;margin-right:0!important}
   #mhPanelDash>.stat-row:not(#prfHomeRow){display:contents}
   #mhPanelDash>.stat-row:not(#prfHomeRow)>*{grid-column:span 1;margin:0!important;min-width:0}
   #mhPanelDash>.stat-row[style*="grid-template-columns:minmax(0,1fr)"]:not(#prfHomeRow)>*{grid-column:span 2}
   #mhPanelDash>.stat-row>*{margin-top:0!important}
+}
+@media (min-width:1360px){
+  #sMain.scr{max-width:1240px}
+}
+@media (min-width:1700px){
+  #sMain.scr{max-width:1440px}
 }
 /* ─ 화면 ─ */
 .scr{display:none;padding-bottom:112px;overflow-x:hidden}
@@ -1082,6 +1099,12 @@ html{overflow-x:hidden}
         <div class="menu-desc">경영진 실시간 운영 현황판 (팀장 이상)</div>
         <span class="menu-arrow">보기 →</span>
       </button>
+      <button class="menu-btn" id="forecastMenuBtn" onclick="go('forecast')" style="display:none">
+        <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2"/><path d="M5.6 5.6l1.4 1.4"/><path d="M3 12h2"/><path d="M18.4 5.6l-1.4 1.4"/><path d="M8 15a4 4 0 1 1 7.5-2h.5a3 3 0 0 1 0 6h-8a3 3 0 0 1 0-6"/></svg></span>
+        <div class="menu-title">청결예보</div>
+        <div class="menu-desc">같은 요일 과거 민원으로 보는 구역·시간대별 청소수요 예보</div>
+        <span class="menu-arrow">보기 →</span>
+      </button>
       <button class="menu-btn" onclick="goStatsDash()">
         <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v6a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -6" /><path d="M15 9a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v10a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -10" /><path d="M9 5a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v14a1 1 0 0 1 -1 1h-4a1 1 0 0 1 -1 -1l0 -14" /><path d="M4 20h14" /></svg></span>
         <div class="menu-title">통계 대시보드</div>
@@ -1342,13 +1365,13 @@ html{overflow-x:hidden}
     <div class="menu-grid">
       <button class="menu-btn" onclick="go('workschedule')">
         <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7a2 2 0 0 1 2 -2h12a2 2 0 0 1 2 2v12a2 2 0 0 1 -2 2h-12a2 2 0 0 1 -2 -2v-12" /><path d="M16 3v4" /><path d="M8 3v4" /><path d="M4 11h16" /><path d="M11 15h1" /><path d="M12 15v3" /></svg></span>
-        <div class="menu-title">휴무계획<span id="notifBadge_workforce"></span></div>
+        <div class="menu-title">휴무계획</div>
         <div class="menu-desc">직원별 고정휴무요일 관리 · 더존ERP 업로드용 변환/다운로드</div>
         <span class="menu-arrow">관리하기 →</span>
       </button>
       <button class="menu-btn" onclick="go('specialwork')">
         <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11a3 3 0 1 0 6 0a3 3 0 0 0 -6 0" /><path d="M17.657 16.657l-4.243 4.243a2 2 0 0 1 -2.827 0l-4.244 -4.243a8 8 0 1 1 11.314 0" /></svg></span>
-        <div class="menu-title">특별근무</div>
+        <div class="menu-title">특별근무<span id="notifBadge_workforce"></span></div>
         <div class="menu-desc">성수기·명절 기간 팀/조별 근무 편성표 관리</div>
         <span class="menu-arrow">관리하기 →</span>
       </button>
@@ -4421,6 +4444,23 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
 </div>
 
 <!-- ══ 인력관리 > 특별근무 ══ -->
+<!-- ══ 청결예보 (민원 통계 예보 + 근무조 인력 비교) ══ -->
+<div id="sForecast" class="scr">
+  <div class="pg-hd">
+    <div><h1>🌤️ 청결예보</h1><small id="fcSub">같은 요일 과거 민원으로 보는 구역별 청소수요</small></div>
+    <button onclick="go('main')" style="padding:6px 12px;background:var(--g2);color:var(--g5);border:none;border-radius:20px;font-size:13px;font-weight:700;cursor:pointer">← 메인</button>
+  </div>
+  <div style="padding:13px">
+    <div id="fcDayPills" style="display:flex;gap:6px;margin-bottom:12px"></div>
+    <div id="fcTop"></div>
+    <div id="fcBody"><div style="text-align:center;padding:30px;color:var(--g3);font-size:14px">불러오는 중...</div></div>
+    <div id="fcLegend" style="display:none"></div>
+    <div style="margin-top:12px;padding:11px 13px;background:var(--g1);border-radius:10px;font-size:12px;line-height:1.6;color:var(--g5)">
+      ℹ️ <b>참고용 통계 예보</b>입니다. 같은 요일(60%)과 전체 요일(40%)의 과거 민원 건수를 섞어 계산하며, 데이터가 쌓일수록 정확해집니다. 항공편·날씨는 아직 반영하지 않습니다. 06~22시만 표시합니다.
+    </div>
+  </div>
+</div>
+
 <div id="sSpecialWork" class="scr">
   <div class="pg-hd">
     <div><h1>📌 특별근무</h1><small>성수기·명절 기간 편성 관리</small></div>
@@ -4459,13 +4499,16 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
     <input id="wfSpTitle" placeholder="예: 2026 추석 연휴 특별근무" style="width:100%;padding:10px;border:1.5px solid var(--g2);border-radius:8px;font-size:14px;margin:6px 0 12px;box-sizing:border-box">
     <label style="font-size:12.5px;font-weight:700;color:var(--g6)">구분</label>
     <select id="wfSpType" style="width:100%;padding:10px;border:1.5px solid var(--g2);border-radius:8px;font-size:14px;margin:6px 0 12px">
-      <option value="성수기">성수기</option><option value="명절">명절</option><option value="기타">기타</option>
+      <option value="성수기">성수기</option><option value="명절">명절</option><option value="비정상상황">비정상상황</option><option value="기타">기타</option>
     </select>
     <label style="font-size:12.5px;font-weight:700;color:var(--g6)">기간</label>
     <div style="display:flex;gap:6px;margin:6px 0 14px">
       <input type="date" id="wfSpStart" style="flex:1;padding:10px;border:1.5px solid var(--g2);border-radius:8px;font-size:13px">
       <input type="date" id="wfSpEnd" style="flex:1;padding:10px;border:1.5px solid var(--g2);border-radius:8px;font-size:13px">
     </div>
+    <label style="font-size:12.5px;font-weight:700;color:var(--g6)">공개 대상</label>
+    <div id="wfSpTargetGrp" style="display:flex;flex-wrap:wrap;gap:7px;margin:6px 0 4px"></div>
+    <div style="font-size:11.5px;color:var(--g4);margin-bottom:14px;line-height:1.5">선택한 직급 <b>이상</b>만 볼 수 있습니다 (master·admin은 항상 열람). 여러 개를 고르면 가장 낮은 직급 기준입니다.</div>
     <div style="display:flex;gap:8px">
       <button onclick="hideM('wfSpCreateModal')" style="flex:1;padding:11px;background:var(--g2);color:var(--g6);border:none;border-radius:8px;font-weight:700;cursor:pointer">취소</button>
       <button id="wfSpSaveBtn" onclick="wfSpCreateEvent()" style="flex:1;padding:11px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">등록</button>
@@ -7217,6 +7260,14 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
   </div>
 </div>
 
+<!-- 지난 날짜 인력 수정 / 수정 이력 모달 (master·admin 전용) -->
+<div id="mpPastModal" class="modal-bg">
+  <div class="modal">
+    <div class="m-hd" style="background:linear-gradient(135deg,var(--navy),var(--teal2))"><h3 id="mpPastTitle">✏️ 지난 날짜 인력 수정</h3><button class="m-x" onclick="mpPastClose()">×</button></div>
+    <div id="mpPastBody" style="padding:14px 15px 18px;max-height:78vh;overflow-y:auto"></div>
+  </div>
+</div>
+
 <!-- 데이터 완전 초기화 모달 (최고관리자 전용) -->
 <div id="dataResetModal" class="modal-bg">
   <div class="modal">
@@ -7351,13 +7402,15 @@ async function loadMenuNotifBadges(){
     var since=_notifReadMarks[mod.key]||'1970-01-01T00:00:00Z';
     try{
       // count 헤더 방식은 일부 환경에서 안 읽혀서, 실제 행을 최대 10건 가져와 개수를 센다
-      var res=await sb.from(mod.table).select(mod.col).gte(mod.col, since).limit(10);
+      var res=await sb.from(mod.table).select(mod.table==='wf_special_events'?(mod.col+',target_roles'):mod.col).gte(mod.col, since).limit(10);
       if(res.error){
         console.error('배지 조회 실패:', mod.key, res.error);
         if(!_firstErrShown){ _firstErrShown=true; toast('배지 진단['+mod.key+']: '+_safeErrMsg(res.error)); }
         badge.innerHTML=''; return;
       }
-      var n=(res.data||[]).length;
+      var _bd=res.data||[];
+      if(mod.table==='wf_special_events') _bd=_bd.filter(function(r){ return noticeVisibleFor(r.target_roles, me?me.role:null); });
+      var n=_bd.length;
       badge.innerHTML=n>0?(' <span style="display:inline-block;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:#DC2626;color:white;font-size:10px;font-weight:800;line-height:16px;text-align:center;vertical-align:middle">'+(n>9?'9+':n)+'</span>'):'';
       if(typeof updateFolderNotifDots==='function') updateFolderNotifDots();
     }catch(e){
@@ -7484,7 +7537,7 @@ window.addEventListener('popstate', function(e){
 });
 
 // ─ 화면 전환 (단순! display:block/none만 사용) ─
-const SCREENS=['sLogin','sReg','sMain','sMp','sHo','sChat','sIso9001','sNews','sSafety','sManual','sRisk','sTraining','sAccident','sGroupChat','sAdmin','sVeh','sKpi','sFacility','sVoc','sLost','sEquipment','sWaste','sNotice','sStatsDash','sMReport','sExecDash','sDownloadCenter','sWorkVeh','sJointWork','sToiletMgmt','sShowerMgmt','sSmokingMgmt','sRestMgmt','sStorageMgmt','sBabyMgmt','sOfficeMgmt','sActiveUsers','sPerf','sDeleteLogs','sAdc','sEduEvent','sEduAttend','sWorkforce','sWorkSchedule','sSpecialWork','sWorkLog','sCampaign','sCampaignDetail','sEmpRoster','sNcf','sMtg','sMtgWeekDetail','sMtgMonthDetail','sMtgWeekWrite','sMtgMonthWrite','sMtgWeekReport','sMtgMonthReport','sMtgMonthItemEdit','sMtgWeekItemEdit','sHazard'];
+const SCREENS=['sLogin','sReg','sMain','sMp','sHo','sChat','sIso9001','sNews','sSafety','sManual','sRisk','sTraining','sAccident','sGroupChat','sAdmin','sVeh','sKpi','sFacility','sVoc','sLost','sEquipment','sWaste','sNotice','sStatsDash','sMReport','sExecDash','sDownloadCenter','sWorkVeh','sJointWork','sToiletMgmt','sShowerMgmt','sSmokingMgmt','sRestMgmt','sStorageMgmt','sBabyMgmt','sOfficeMgmt','sActiveUsers','sPerf','sDeleteLogs','sAdc','sEduEvent','sEduAttend','sWorkforce','sWorkSchedule','sSpecialWork','sForecast','sWorkLog','sCampaign','sCampaignDetail','sEmpRoster','sNcf','sMtg','sMtgWeekDetail','sMtgMonthDetail','sMtgWeekWrite','sMtgMonthWrite','sMtgWeekReport','sMtgMonthReport','sMtgMonthItemEdit','sMtgWeekItemEdit','sHazard'];
 function goStatsDash(){
   go('statsdash');
   loadMonthlyStats();
@@ -9563,6 +9616,7 @@ function go(name){
   if(name==='toilet'&&!me){ toast('⚠️ 로그인이 필요합니다'); return; }
   if(name==='perf'&&(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||isExecRole(me.role)))){ toast('⚠️ 조장 이상만 접근할 수 있습니다'); return; }
   if((name==='workforce'||name==='workschedule'||name==='specialwork')&&(!me||!(me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||isExecRole(me.role)))){ toast('⚠️ 조장 이상만 접근할 수 있습니다'); return; }
+  if(name==='forecast'&&!fcCanUse()){ toast('⚠️ 조장 이상만 접근할 수 있습니다'); return; }
   if(name==='worklog'&&!wlCanRead()){ toast('⚠️ 조장 이상만 접근할 수 있습니다'); return; }
   if(['이상욱','강석원'].indexOf(me&&me.name)!==-1 && ['workforce','workschedule','specialwork','admin','activeUsers','deleteLogs','admconfirm','downloadcenter'].indexOf(name)!==-1){ toast('⚠️ 접근 권한이 없습니다'); return; }
   if(['shower','smoking','rest','storage','baby','office'].indexOf(name)!==-1&&!me){ toast('⚠️ 로그인이 필요합니다'); return; }
@@ -9574,7 +9628,7 @@ function go(name){
   _curScreenName=name;
   if(typeof FACILITY_MENU_KEYS!=='undefined'&&FACILITY_MENU_KEYS.indexOf(name)!==-1) bumpFacilityMenuView(name);
   updateIosBackBtn();
-  const map={hazard:'sHazard',login:'sLogin',reg:'sReg',main:'sMain',mp:'sMp',ho:'sHo',chat:'sChat',iso9001:'sIso9001',news:'sNews',safety:'sSafety',manual:'sManual',risk:'sRisk',training:'sTraining',accident:'sAccident',groupchat:'sGroupChat',admin:'sAdmin',veh:'sVeh',kpi:'sKpi',facility:'sFacility',voc:'sVoc',lost:'sLost',equipment:'sEquipment',waste:'sWaste',notice:'sNotice',statsdash:'sStatsDash',mreport:'sMReport',execdash:'sExecDash',downloadcenter:'sDownloadCenter',workveh:'sWorkVeh',jointwork:'sJointWork',toilet:'sToiletMgmt',shower:'sShowerMgmt',smoking:'sSmokingMgmt',rest:'sRestMgmt',storage:'sStorageMgmt',baby:'sBabyMgmt',office:'sOfficeMgmt',activeUsers:'sActiveUsers',perf:'sPerf',deleteLogs:'sDeleteLogs',admconfirm:'sAdc',eduevent:'sEduEvent',eduattend:'sEduAttend',workforce:'sWorkforce',workschedule:'sWorkSchedule',specialwork:'sSpecialWork',worklog:'sWorkLog',campaign:'sCampaign',campaigndetail:'sCampaignDetail',emproster:'sEmpRoster',noticeconfirm:'sNcf',mtgmaterial:'sMtg',mtgweekdetail:'sMtgWeekDetail',mtgmonthdetail:'sMtgMonthDetail',mtgweekwrite:'sMtgWeekWrite',mtgmonthwrite:'sMtgMonthWrite',mtgweekreport:'sMtgWeekReport',mtgmonthreport:'sMtgMonthReport',mtgmonthitemedit:'sMtgMonthItemEdit',mtgweekitemedit:'sMtgWeekItemEdit'};
+  const map={hazard:'sHazard',login:'sLogin',reg:'sReg',main:'sMain',mp:'sMp',ho:'sHo',chat:'sChat',iso9001:'sIso9001',news:'sNews',safety:'sSafety',manual:'sManual',risk:'sRisk',training:'sTraining',accident:'sAccident',groupchat:'sGroupChat',admin:'sAdmin',veh:'sVeh',kpi:'sKpi',facility:'sFacility',voc:'sVoc',lost:'sLost',equipment:'sEquipment',waste:'sWaste',notice:'sNotice',statsdash:'sStatsDash',mreport:'sMReport',execdash:'sExecDash',downloadcenter:'sDownloadCenter',workveh:'sWorkVeh',jointwork:'sJointWork',toilet:'sToiletMgmt',shower:'sShowerMgmt',smoking:'sSmokingMgmt',rest:'sRestMgmt',storage:'sStorageMgmt',baby:'sBabyMgmt',office:'sOfficeMgmt',activeUsers:'sActiveUsers',perf:'sPerf',deleteLogs:'sDeleteLogs',admconfirm:'sAdc',eduevent:'sEduEvent',eduattend:'sEduAttend',workforce:'sWorkforce',workschedule:'sWorkSchedule',specialwork:'sSpecialWork',forecast:'sForecast',worklog:'sWorkLog',campaign:'sCampaign',campaigndetail:'sCampaignDetail',emproster:'sEmpRoster',noticeconfirm:'sNcf',mtgmaterial:'sMtg',mtgweekdetail:'sMtgWeekDetail',mtgmonthdetail:'sMtgMonthDetail',mtgweekwrite:'sMtgWeekWrite',mtgmonthwrite:'sMtgMonthWrite',mtgweekreport:'sMtgWeekReport',mtgmonthreport:'sMtgMonthReport',mtgmonthitemedit:'sMtgMonthItemEdit',mtgweekitemedit:'sMtgWeekItemEdit'};
   const id=map[name]||name;
   SCREENS.forEach(s=>{
     const el=document.getElementById(s);
@@ -9588,7 +9642,10 @@ function go(name){
   // PC 화면에서 하단탭바 폭을 현재 활성 화면의 프레임 폭에 맞춰 동기화
   var tbWidthMap={sStatsDash:'1200px', sExecDash:'100%'};
   var gtb=document.getElementById('globalTabbar');
-  if(gtb) gtb.style.setProperty('max-width', tbWidthMap[id]||'720px', 'important');
+  if(gtb){
+    if(window.matchMedia&&window.matchMedia('(min-width:1024px)').matches) gtb.style.removeProperty('max-width'); // PC: 왼쪽 사이드바(CSS가 폭 결정)
+    else gtb.style.setProperty('max-width', tbWidthMap[id]||'720px', 'important');
+  }
   window.scrollTo(0,0);
   if(name==='worklog') wlEnter();
   if(name==='hazard') hzEnter();
@@ -9617,6 +9674,7 @@ function go(name){
   if(name==='mtgmaterial'){ mtgTab(_mtgLastTab); }
   if(name==='workschedule'){ loadWfEmployees(); try{ wfPlanInit(); }catch(e){} }
   if(name==='specialwork'){ wfSpLoadEvents(); }
+  if(name==='forecast'){ fcEnter(); }
   if(name==='campaign'){ cpLoadList(); }
   if(name==='veh'){
     vregLoad().then(function(){ return loadVehicleFromDB(); }).then(function(){ autoFillBefore(); renderVhRecentChips(); });
@@ -9737,7 +9795,7 @@ function go(name){
   if(name==='main'){
     if(typeof loadMenuNotifBadges==='function') loadMenuNotifBadges();
   }
-  if(typeof markModuleRead==='function') markModuleRead(name);
+  if(typeof markModuleRead==='function') markModuleRead(name==='specialwork'?'workforce':name);
   if(name==='execdash'){
     if(typeof loadExecDashboard==='function') loadExecDashboard();
     if(typeof startExecDashPoll==='function') startExecDashPoll();
@@ -9783,6 +9841,8 @@ function applyRoleUI(){
   var edb=document.getElementById('execDashMenuBtn');
   var isExecView=me.role==='admin'||me.role==='manager'||me.role==='leader'||isExecRole(me.role);
   if(edb) edb.style.display=isExecView?'flex':'none';
+  var fcb=document.getElementById('forecastMenuBtn');
+  if(fcb) fcb.style.display=fcCanUse()?'':'none';
   var wlb=document.getElementById('wlMenuBtn');
   if(wlb) wlb.style.display=wlCanRead()?'':'none';
   var tmb=document.getElementById('trainingMenuBtn');
@@ -9886,6 +9946,7 @@ var FAV_MAX=6;
 var ALL_MENU_ITEMS=[
   {key:'execdash', icon:'👑', title:'현황판', action:"go('execdash')"},
   {key:'statsdash', icon:'📊', title:'통계 대시보드', action:"goStatsDash()"},
+  {key:'forecast', icon:'🌤️', title:'청결예보', action:"go('forecast')"},
   {key:'mp', icon:'👥', title:'인력현황', action:"go('mp')"},
   {key:'workschedule', icon:'📅', title:'휴무계획', action:"go('workschedule')"},
   {key:'specialwork', icon:'📌', title:'특별근무', action:"go('specialwork')"},
@@ -10224,6 +10285,7 @@ function finishLogin(){
   loadMgrAttendance(); // 홈 화면 "관리자 출근 현황" 카드 — 기존엔 인력관리 탭4를 직접 열어야만 로드되던 문제 수정
   loadMpSupportToday(); // 다른 조 지원 입력분을 층별 전체 인력현황에 반영
   try{ frInit(); }catch(e){} // 층별 인력현황 리포트(08:20/14:00) 타이머
+  try{ fcPopupInit(); }catch(e){} // 청결예보 팝업
 }
 
 // ══════════ 층별 인력현황 리포트 (2026-10-01) — 매일 08:20 / 14:00 전체화면 팝업 (팀장 이상) ══════════
@@ -12545,6 +12607,7 @@ function renderNoticeModalContent(n){
   if(t) t.innerHTML=sfRender(n.title||'공지사항');
   if(b) b.innerHTML=noticeBodyHtml(n.content);
   if(d) d.textContent=n.created_at?toKSTDate(n.created_at)+' 등록':'';
+  if(b){ b.setAttribute('data-nid', n.id!=null?String(n.id):''); ncfFillNoticePopup(n, true); }
 }
 function closeN(skip){
   try{ if(skip) localStorage.setItem('nsk_'+new Date().toDateString(),'1'); }catch(e){}
@@ -12584,6 +12647,18 @@ async function loadCompanyNewsPopup(){
 function nwFormatBody(text){
   var lines=String(text||'').replace(/\r/g,'').split('\n');
   var out=[], prevBlank=true, prevKind='';
+  // 여러 줄에 걸친 [red]…[/red] 등을 줄 단위로 처리하면 태그가 깨지므로, 줄마다 열린 태그를 닫고 다음 줄에서 다시 열어 준다
+  var _openTags=[];
+  lines=lines.map(function(raw){
+    var pre=_openTags.map(function(c){return '['+c+']';}).join('');
+    String(raw).replace(/\[(\/?)(b|red|blue|orange|green)\]/g,function(m,sl,c){
+      if(sl){ var i=_openTags.lastIndexOf(c); if(i>=0) _openTags.splice(i,1); } else { _openTags.push(c); }
+      return m;
+    });
+    var post=_openTags.slice().reverse().map(function(c){return '[/'+c+']';}).join('');
+    var tt=String(raw).trim();
+    return tt?(pre+tt+post):'';
+  });
   lines.forEach(function(raw){
     var t=raw.trim();
     if(!t){ if(!prevBlank) out.push('<div style="height:6px"></div>'); prevBlank=true; return; }
@@ -12599,7 +12674,7 @@ function nwFormatBody(text){
       kind='n'; st='margin:2px 0 2px;padding-left:1.3em;text-indent:-1.3em;font-size:13px;color:var(--g4)';
     }else if(/^[-–•·ㆍ]\s*/.test(plain)){
       kind='s'; st='margin:2px 0;padding-left:1.7em;text-indent:-0.9em';
-      html=html.replace(/^([-–•·ㆍ])\s*/,'•&nbsp;');
+      html=html.replace(/^((?:<[^>]+>)*)\s*([-–•·ㆍ])\s*/,'$1•&nbsp;');
     }else if(/^\(/.test(plain) && (prevKind==='l1'||prevKind==='s'||prevKind==='n')){
       kind='c'; st='margin:0 0 2px;padding-left:1.6em;color:var(--g4);font-size:13.5px';
     }
@@ -22265,6 +22340,19 @@ async function loadNoticesFromDB(){
     if(!visible.length){ renderNoticeList([]); _afterNoticeClosed(); return; }
     // 팝업: 내게 보이는 것 중 "로그인 시 팝업 표시"로 설정된 것만, 최신 3건까지 순차 표시
     var popupCandidates=visible.filter(function(n){ return n.show_popup!==false; });
+    // 공지 확인서가 연결돼 있고 전원 확인 완료 안내를 이미 본 공지는 더 이상 로그인 팝업으로 띄우지 않음
+    try{
+      var _keep=[];
+      var _dr=await sb.from('notice_confirm_docs').select('linked_notice_id').in('linked_notice_id',popupCandidates.map(function(x){return x.id;}));
+      var _has={}; ((_dr&&_dr.data)||[]).forEach(function(r){ _has[r.linked_notice_id]=true; });
+      for(var _i=0;_i<popupCandidates.length;_i++){
+        if(!_has[popupCandidates[_i].id]){ _keep.push(popupCandidates[_i]); continue; }
+        var _info=await ncfNoticeInfo(popupCandidates[_i].id);
+        if(_info&&_info.allDone&&ncfDoneSeen(_info.d.id)) continue;
+        _keep.push(popupCandidates[_i]);
+      }
+      popupCandidates=_keep;
+    }catch(_e){}
     var sk=null; try{ sk=localStorage.getItem('nsk_'+new Date().toDateString()); }catch(e){}
     if(sk||!popupCandidates.length){
       _afterNoticeClosed();
@@ -22360,6 +22448,12 @@ function ncfBadgeHtml(d, signed, users, allSigs){
   if(users){
     var c=ncfCalcUnsigned(d, users, (allSigs||[]).filter(function(x){return x.doc_id===d.id;}));
     label='👥 미확인 '+c.unsigned.length+'명';
+    if(c.target.length>0 && c.unsigned.length===0){
+      if(ncfDoneSeen(d.id)){
+        return h+'<span style="display:inline-block;margin-top:8px;padding:6px 12px;background:var(--teal-bg);color:var(--teal2);border:1px solid var(--teal);border-radius:20px;font-size:12px;font-weight:700">✅ 전원 확인 완료</span>';
+      }
+      label='🎉 전원 확인 완료';
+    }
   }
   h+='<button onclick="event.stopPropagation();ncfShowUnsignedPopup('+d.id+')" style="margin-top:8px;padding:6px 12px;background:var(--g1);color:var(--g6);border:1px solid var(--g2);border-radius:20px;font-size:12px;font-weight:700;cursor:pointer">'+label+'</button>';
   return h;
@@ -22412,6 +22506,7 @@ function openNoticeDetail(idx){
   if(b) b.innerHTML=noticeBodyHtml(n.content);
   if(d) d.textContent=n.created_at?toKSTDate(n.created_at)+' 등록':'';
   (function(){var _ns=document.getElementById('noSkip'); if(_ns) _ns.checked=false;})();
+  if(b){ b.setAttribute('data-nid', n.id!=null?String(n.id):''); ncfFillNoticePopup(n, false); }
   showM('noticeM');
 }
 
@@ -24568,13 +24663,13 @@ function eqOpenEditModal(idx){
     +['A조','B조','C조'].map(function(j){ return '<div class="eq-jo-chip" data-v="'+j+'" onclick="eqJoToggle(this)" style="padding:8px 18px;border-radius:20px;border:1.5px solid var(--g2);background:var(--g1);font-size:14px;font-weight:700;color:var(--g5);cursor:pointer">'+j+'</div>'; }).join('')
     +'</div><div id="eqJoHint" style="font-size:11px;color:var(--g4);margin-top:5px">불러오는 중...</div></div>';
   body.innerHTML=h;
-  _eqEditMasterId=null; _eqJoOrig='';
+  _eqEditMasterId=null; _eqJoOrig=''; _eqJoNoMaster=false;
   showM('eqEditModal');
   eqJoLoad(row);
 }
-var _eqEditMasterId=null, _eqJoOrig='';
+var _eqEditMasterId=null, _eqJoOrig='', _eqJoNoMaster=false;
 function eqJoToggle(el){
-  if(_eqEditMasterId===null){ toast('⚠️ 점검용 명단에 없는 장비라 담당 조를 저장할 수 없습니다'); return; }
+  if(_eqEditMasterId===null&&!_eqJoNoMaster){ return; }
   var on=el.dataset.on==='1'; el.dataset.on=on?'0':'1';
   el.style.background=on?'var(--g1)':'var(--teal)'; el.style.color=on?'var(--g5)':'#fff'; el.style.borderColor=on?'var(--g2)':'var(--teal)';
 }
@@ -24599,7 +24694,7 @@ async function eqJoLoad(row){
     if(no){ var r1=await sb.from('equipment_master').select('id,jo').eq('mgmt_no',no); if(r1.data&&r1.data.length===1) m=r1.data[0]; }
     if(!m&&snIdx>=0){ var sn=String(row[snIdx]==null?'':row[snIdx]).trim(); if(sn){ var r2=await sb.from('equipment_master').select('id,jo').eq('serial_no',sn); if(r2.data&&r2.data.length===1) m=r2.data[0]; } }
     if(!document.getElementById('eqJoBox')) return; // 그 사이 창을 닫은 경우
-    if(!m){ if(hint) hint.textContent='점검용 명단에 없는 장비라 담당 조를 저장할 수 없습니다'; return; }
+    if(!m){ _eqJoNoMaster=true; if(hint) hint.textContent='점검용 명단에 아직 없는 장비입니다 — 조를 선택하고 저장하면 점검용 명단에 자동 등록됩니다'; return; }
     _eqEditMasterId=m.id; _eqJoOrig=m.jo||''; eqJoSet(_eqJoOrig);
     if(hint) hint.textContent=_eqJoOrig?'':'미선택 — 점검에서는 로그인한 계정의 조로 자동 입력됩니다';
   }catch(e){ if(hint) hint.textContent='담당 조를 불러오지 못했습니다'; }
@@ -24622,7 +24717,7 @@ function eqOpenAddModal(){
   body.innerHTML=h;
   showM('eqEditModal');
 }
-function closeEqEditModal(){ hideM('eqEditModal'); _eqEditIdx=null; _eqAddMode=false; _eqEditMasterId=null; _eqJoOrig=''; }
+function closeEqEditModal(){ hideM('eqEditModal'); _eqEditIdx=null; _eqAddMode=false; _eqEditMasterId=null; _eqJoOrig=''; _eqJoNoMaster=false; }
 async function eqSaveEdit(){
   if(!canDeleteWorkItem()){ toast('⚠️ 조장 이상만 저장할 수 있습니다'); return; }
   if(!_eqAddMode && _eqEditIdx===null){ toast('⚠️ 오류: 대상을 찾을 수 없습니다'); return; }
@@ -24685,6 +24780,21 @@ async function eqSaveEdit(){
           if(uj.error) throw uj.error;
           _eqSyncMsg+=' (담당 조: '+(joNew||'없음')+')';
         }catch(je){ _eqSyncMsg+=' (⚠️ 담당 조 저장 실패: '+_safeErrMsg(je)+')'; }
+      }
+    }
+    // 점검용 명단에 없는 장비에 조를 지정한 경우: 명단에 자동 등록
+    if(!_eqAddMode&&_eqEditMasterId===null&&_eqJoNoMaster){
+      var joNew2=eqJoGet();
+      if(joNew2){
+        try{
+          var gv=function(re){ var i=_eqHdr.findIndex(function(h){ return re.test(String(h)); }); return i>=0?String(newRow[i]==null?'':newRow[i]).trim():null; };
+          var mgNo=gv(/관리번호/), nm=gv(/장비명/);
+          if(!mgNo||!nm) throw new Error('관리번호·장비명이 비어 있습니다');
+          var ci=[]; try{ var cr=await sb.from('equipment_master').select('check_items').eq('name',nm).limit(1); if(cr.data&&cr.data[0]&&cr.data[0].check_items) ci=cr.data[0].check_items; }catch(_e){}
+          var ins=await sb.from('equipment_master').insert({mgmt_no:mgNo,name:nm,model:gv(/모델/),serial_no:gv(/serial/i),maker:gv(/제작사/),in_date:gv(/입고/),end_date:gv(/종료/),dept:gv(/^팀$/),location:gv(/위치/),importer:gv(/수입사/),check_items:ci,active:true,jo:joNew2});
+          if(ins.error) throw ins.error;
+          _eqSyncMsg+=' (점검용 명단에 등록 · 담당 조: '+joNew2+')';
+        }catch(ie){ _eqSyncMsg+=' (⚠️ 점검용 명단 등록 실패: '+_safeErrMsg(ie)+')'; }
       }
     }
     toast((_eqAddMode?'✅ 추가되었습니다':'✅ 수정되었습니다')+_eqSyncMsg);
@@ -27681,6 +27791,67 @@ function ncfCalcUnsigned(d, users, sigs){
   var target=users.filter(function(u){ return noticeVisibleFor(d.target_roles, u.role); });
   return {target:target, unsigned:target.filter(function(u){ return !signedIds[u.id]; })};
 }
+// ── 로그인 공지 팝업에 "공지 확인서" 현황(미확인자) 표시 ──
+async function ncfNoticeInfo(noticeId){
+  try{
+    var dr=await sb.from('notice_confirm_docs').select('id,title,due_date,target_roles,linked_notice_id').eq('linked_notice_id',noticeId);
+    var d=dr&&dr.data&&dr.data[0]; if(!d) return null;
+    if(!ncfEligible(d.target_roles)&&!ncfCanManage()) return null;
+    var sr=await sb.from('notice_confirm_signatures').select('doc_id,signed_by,name,created_at,confirmed_date,seq').eq('doc_id',d.id);
+    var users=await ncfLoadUsers(); if(!users) return null;
+    var sigs=sr.data||[];
+    var c=ncfCalcUnsigned(d, users, sigs);
+    return {d:d, sigs:sigs, users:users, c:c, allDone:(c.target.length>0&&c.unsigned.length===0)};
+  }catch(e){ return null; }
+}
+function ncfToggleFold(){
+  var b=document.getElementById('ncfFoldBody'), ar=document.getElementById('ncfFoldArrow'); if(!b) return;
+  var o=b.style.display==='none'; b.style.display=o?'block':'none'; if(ar) ar.textContent=o?'▲':'▼';
+}
+function ncfNoticeBoxHtml(info){
+  var c=info.c, done=c.target.length-c.unsigned.length;
+  var open=!!info.allDone;
+  var h='<div id="ncfFoldBox" style="margin-top:14px;background:#FFFBEE;border:1px solid #F0DFA0;border-radius:var(--r2);overflow:hidden">'
+    +'<div onclick="ncfToggleFold()" style="display:flex;align-items:center;gap:8px;padding:10px 12px;cursor:pointer;-webkit-tap-highlight-color:transparent">'
+    +'<span style="flex:1;font-size:13px;font-weight:800;color:#8A6D00">🔔 '+done+'/'+c.target.length+'명 확인'+(c.unsigned.length?' · <span style="color:#C0392B">🔴 미확인 '+c.unsigned.length+'명</span>':'')+(info.d.due_date?' <span style="font-weight:600;color:var(--g4);font-size:11.5px">(기한 '+lrptEsc(info.d.due_date)+')</span>':'')+'</span>'
+    +'<span id="ncfFoldArrow" style="font-size:12px;color:#8A6D00">'+(open?'▲':'▼')+'</span></div>'
+    +'<div id="ncfFoldBody" style="display:'+(open?'block':'none')+';padding:0 12px 12px">';
+  if(info.allDone){
+    h+='<div style="text-align:center;padding:8px;color:var(--teal2);font-weight:800;font-size:14px">🎉 전원 확인이 완료되었습니다<div style="font-size:11.5px;font-weight:600;color:var(--g4);margin-top:3px">이 안내는 한 번만 표시됩니다</div></div>';
+  }else{
+    var byTeam={}; c.unsigned.forEach(function(u){ var t=u.team||'소속없음'; (byTeam[t]=byTeam[t]||[]).push(u.name); });
+    h+='<div style="font-size:13px;font-weight:900;color:#C0392B;margin-bottom:5px">🔴 아직 확인 안 함 ('+c.unsigned.length+'명)</div>'
+      +'<div style="background:#FDECEA;border:1.5px solid #E57373;border-radius:8px;padding:4px 10px">'
+      +Object.keys(byTeam).sort(function(x,y){return x.localeCompare(y,'ko',{numeric:true});}).map(function(t){
+        return '<div style="padding:4px 0;font-size:13px;line-height:1.6;border-bottom:1px solid rgba(192,57,43,.15)"><span style="display:inline-block;min-width:60px;font-weight:800;color:#C0392B">'+lrptEsc(t)+'</span><span style="font-weight:700;color:#8E2A20">'+byTeam[t].map(lrptEsc).join(', ')+'</span></div>';
+      }).join('')+'</div>';
+  }
+  if(ncfCanManage()){
+    var sigs=info.sigs.slice().sort(function(x,y){ return (x.seq||0)-(y.seq||0); });
+    var uMap={}; info.users.forEach(function(u){ uMap[u.id]=u; });
+    h+='<div style="font-size:13px;font-weight:900;color:#1E8449;margin:12px 0 5px">🟢 확인 완료 ('+sigs.length+'명)</div>';
+    h+=sigs.length?('<div style="background:#E8F6EC;border:1.5px solid #66BB6A;border-radius:8px;padding:4px 10px">'+sigs.map(function(x){
+      var u=uMap[x.signed_by]; var t=x.created_at?String(x.created_at).replace('T',' ').slice(5,16):(x.confirmed_date||'');
+      return '<div style="display:flex;gap:8px;padding:4px 0;font-size:13px;border-bottom:1px solid rgba(30,132,73,.15)"><span style="min-width:60px;font-weight:800;color:#1E8449">'+lrptEsc((u&&u.team)||'-')+'</span><span style="flex:1;color:var(--g6)">'+lrptEsc(x.name||(u&&u.name)||'')+'</span><span style="font-size:11.5px;color:var(--g4)">'+lrptEsc(t)+'</span></div>';
+    }).join('')+'</div>'):'<div style="font-size:12.5px;color:var(--g4)">아직 확인한 사람이 없습니다</div>';
+  }
+  return h+'</div></div>';
+}
+// 팝업이 열린 뒤 비동기로 확인서 현황 박스를 붙인다 (auto=true: 로그인 자동 팝업 → 전원 완료 안내는 1회만)
+async function ncfFillNoticePopup(n, auto){
+  try{
+    var b=document.getElementById('noticeB'); if(!b||!n||!n.id||!me) return;
+    var info=await ncfNoticeInfo(n.id); if(!info) return;
+    if(String(b.getAttribute('data-nid'))!==String(n.id)) return; // 그 사이 다른 공지로 바뀐 경우
+    var old=document.getElementById('noticeCfmBox'); if(old) old.remove();
+    var box=document.createElement('div'); box.id='noticeCfmBox'; box.innerHTML=ncfNoticeBoxHtml(info);
+    b.appendChild(box);
+    if(auto&&info.allDone) ncfMarkDoneSeen(info.d.id);
+  }catch(e){}
+}
+// 전원 확인 완료 안내는 기기당 문서별 1회만 팝업으로 보여준다
+function ncfDoneSeen(docId){ try{ return localStorage.getItem('ncfDoneSeen_'+docId)==='1'; }catch(e){ return false; } }
+function ncfMarkDoneSeen(docId){ try{ localStorage.setItem('ncfDoneSeen_'+docId,'1'); }catch(e){} }
 // 미확인자 명단 팝업 (대상자·관리자 누구나)
 async function ncfShowUnsignedPopup(docId){
   var body=document.getElementById('ncfUnsignedModalBody'); if(!body) return;
@@ -27690,11 +27861,16 @@ async function ncfShowUnsignedPopup(docId){
     var dr=await sb.from('notice_confirm_docs').select('id,title,due_date,target_roles').eq('id',docId);
     var d=dr&&dr.data&&dr.data[0];
     if(!d){ body.innerHTML='<div style="text-align:center;padding:24px;color:var(--danger)">문서를 찾을 수 없습니다</div>'; return; }
-    var sr=await sb.from('notice_confirm_signatures').select('doc_id,signed_by').eq('doc_id',docId);
+    var sr=await sb.from('notice_confirm_signatures').select('doc_id,signed_by,name,created_at,confirmed_date,seq').eq('doc_id',docId);
     var users=await ncfLoadUsers();
     if(!users){ body.innerHTML='<div style="text-align:center;padding:24px;color:var(--danger)">명단을 불러오지 못했습니다</div>'; return; }
     var c=ncfCalcUnsigned(d, users, sr.data||[]);
     var done=c.target.length-c.unsigned.length;
+    var allDone=(c.target.length>0 && c.unsigned.length===0);
+    if(allDone){
+      if(ncfDoneSeen(docId)){ hideM('ncfUnsignedModal'); toast('✅ 전원 확인 완료된 확인서입니다'); return; }
+      ncfMarkDoneSeen(docId);
+    }
     var h='<div style="font-size:14px;font-weight:800;color:var(--g7);margin-bottom:4px">'+sfRender(d.title)+'</div>'
       +(d.due_date?'<div style="font-size:12px;color:var(--g4);margin-bottom:8px">확인기한 '+lrptEsc(d.due_date)+'</div>':'')
       +'<div style="display:flex;gap:8px;margin-bottom:12px">'
@@ -27702,14 +27878,29 @@ async function ncfShowUnsignedPopup(docId){
       +'<div style="flex:1;text-align:center;padding:10px;background:#FFF7E0;border-radius:var(--r2)"><div style="font-size:11px;color:#B8860B;font-weight:700">미확인</div><div style="font-size:20px;font-weight:900;color:#B8860B">'+c.unsigned.length+'명</div></div>'
       +'<div style="flex:1;text-align:center;padding:10px;background:var(--g1);border-radius:var(--r2)"><div style="font-size:11px;color:var(--g4);font-weight:700">대상</div><div style="font-size:20px;font-weight:900;color:var(--g6)">'+c.target.length+'명</div></div></div>';
     if(!c.unsigned.length){
-      h+='<div style="text-align:center;padding:18px;color:var(--teal2);font-weight:700">🎉 대상자 모두 확인했습니다</div>';
+      h+='<div style="text-align:center;padding:18px;color:var(--teal2);font-weight:800;font-size:15px">🎉 전원 확인이 완료되었습니다<div style="font-size:12px;font-weight:600;color:var(--g4);margin-top:4px">이 안내는 한 번만 표시됩니다</div></div>';
     }else{
       var byTeam={}; c.unsigned.forEach(function(u){ var t=u.team||'소속없음'; (byTeam[t]=byTeam[t]||[]).push(u.name); });
-      h+='<div style="font-size:12px;font-weight:700;color:var(--g5);margin-bottom:6px">아직 확인하지 않은 사람</div>'
-        +'<div style="background:var(--g1);border-radius:var(--r2);padding:8px 12px">'
+      h+='<div style="font-size:13.5px;font-weight:900;color:#C0392B;margin-bottom:6px">🔴 아직 확인 안 함 ('+c.unsigned.length+'명)</div>'
+        +'<div style="background:#FDECEA;border:1.5px solid #E57373;border-radius:var(--r2);padding:8px 12px">'
         +Object.keys(byTeam).sort(function(x,y){return x.localeCompare(y,'ko',{numeric:true});}).map(function(t){
-          return '<div style="padding:5px 0;font-size:13px;line-height:1.7;border-bottom:1px solid var(--g2)"><span style="display:inline-block;min-width:64px;font-weight:700;color:var(--g6)">'+lrptEsc(t)+'</span><span style="color:var(--g5)">'+byTeam[t].map(lrptEsc).join(', ')+'</span></div>';
+          return '<div style="padding:5px 0;font-size:13px;line-height:1.7;border-bottom:1px solid rgba(192,57,43,.15)"><span style="display:inline-block;min-width:64px;font-weight:800;color:#C0392B">'+lrptEsc(t)+'</span><span style="font-weight:700;color:#8E2A20">'+byTeam[t].map(lrptEsc).join(', ')+'</span></div>';
         }).join('')+'</div>';
+    }
+    // master·admin만: 확인 완료자(이름·팀·확인일시)도 함께 표시
+    if(ncfCanManage()){
+      var sigs=(sr.data||[]).slice().sort(function(x,y){ return (x.seq||0)-(y.seq||0); });
+      var uMap={}; users.forEach(function(u){ uMap[u.id]=u; });
+      h+='<div style="font-size:13.5px;font-weight:900;color:#1E8449;margin:16px 0 6px">🟢 확인 완료 ('+sigs.length+'명)</div>';
+      if(!sigs.length){
+        h+='<div style="background:var(--g1);border-radius:var(--r2);padding:12px;text-align:center;font-size:13px;color:var(--g4)">아직 확인한 사람이 없습니다</div>';
+      }else{
+        h+='<div style="background:#E8F6EC;border:1.5px solid #66BB6A;border-radius:var(--r2);padding:6px 12px">'
+          +sigs.map(function(x){
+            var u=uMap[x.signed_by]; var t=x.created_at?String(x.created_at).replace('T',' ').slice(5,16):(x.confirmed_date||'');
+            return '<div style="display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px;border-bottom:1px solid rgba(30,132,73,.15)"><span style="min-width:64px;font-weight:800;color:#1E8449">'+lrptEsc((u&&u.team)||'-')+'</span><span style="flex:1;color:var(--g6)">'+lrptEsc(x.name||(u&&u.name)||'')+'</span><span style="font-size:11.5px;color:var(--g4)">'+lrptEsc(t)+'</span></div>';
+          }).join('')+'</div>';
+      }
     }
     body.innerHTML=h;
   }catch(e){ body.innerHTML='<div style="text-align:center;padding:24px;color:var(--danger)">불러오기 실패: '+lrptEsc(e.message||'')+'</div>'; }
@@ -30293,6 +30484,7 @@ async function refreshMpDataLight(){
       setTimeout(function(){ loadEqHomeSummary(); loadMpAverages(); loadNsAverage(); loadFacilityMenuViewCounts(); loadLostSafety(); }, 1700);
       setTimeout(function(){ tryAutoCheckin(); checkHeatAlert(); eeCheckAutoAttendance(); }, 2000);
       try{ frInit(); }catch(e){} // 층별 인력현황 리포트(08:20/14:00) — 자동 로그인(앱 재실행) 경로에서도 시작
+      try{ fcPopupInit(); }catch(e){} // 청결예보 팝업
       return;
     }
   }catch(e){}
@@ -33107,19 +33299,504 @@ async function loadMpHistory(){
       return;
     }
     var h='';
+    var canPastEdit=mpPastCanEdit();
+    var editCnt=canPastEdit?(await mpPastEditCounts()):{};
     dates.forEach(function(d){
       var info=byDate[d];
       h+='<div class="hist-item">';
       h+='<div class="h-dot"></div>';
-      h+='<div><div class="h-h4">'+d+'</div>';
+      h+='<div style="flex:1;min-width:0"><div class="h-h4">'+d+(editCnt[d]?'<span style="display:inline-block;margin-left:6px;padding:1px 7px;background:#FFF3D6;color:#8A6D00;border-radius:10px;font-size:11px;font-weight:800">✏️ 수정됨 '+editCnt[d]+'회</span>':'')+'</div>';
       h+='<div class="h-p">총계 '+info.total+'명 &middot; L/S '+info.ls+'명 &middot; A/S '+info.as+'명'+(info.night>0?' &middot; 🌙 야간 '+info.night+'명':'')+'</div></div>';
+      if(canPastEdit) h+='<button onclick="mpPastOpenDate(\''+d+'\')" style="flex-shrink:0;align-self:center;padding:6px 11px;background:var(--teal-bg);color:var(--teal2);border:1.5px solid var(--teal);border-radius:8px;font-size:12.5px;font-weight:800;cursor:pointer">✏️ 수정</button>';
       h+='</div>';
     });
+    if(canPastEdit) h+='<div onclick="mpEditLogOpen()" style="display:flex;align-items:center;gap:10px;margin:10px 12px;padding:11px 13px;background:#FFFBEE;border:1px solid #F0DFA0;border-radius:10px;cursor:pointer"><div style="flex:1"><div style="font-size:14px;font-weight:800;color:#8A6D00">📜 수정 이력 보기</div><div style="font-size:12px;color:var(--g4)">누가 언제 무엇을 바꿨는지</div></div><span style="font-size:13px;font-weight:800;color:#8A6D00">열기 ›</span></div>';
     listEl.innerHTML=h;
   }catch(e){ listEl.innerHTML='<div style="text-align:center;padding:16px;color:var(--g3);font-size:14px">불러오기 실패</div>'; }
 }
 
 // ══════════════════════════════════════════
+// 지난 날짜 인력 수정 (master·admin 전용) + 수정 이력 (mp_edit_log)
+// - 일별 이력에서 날짜 → 근무조·팀 선택 → 값 수정 → 사유 입력 → 변경 내용 확인 → 저장
+// - 저장 시 mp_data / night_special_data 를 해당 날짜 기준으로 갱신하고, 바뀐 항목을 mp_edit_log 에 기록
+// - 당일 입력·조장 입력 화면은 건드리지 않는다(이 모달은 별도)
+// ══════════════════════════════════════════
+var _mpPast={date:'',rows:{},counts:{},cur:null};
+var MP_PAST_ROW_LABELS=['L/S 동편','L/S 서편','A/S 동편','A/S 서편'];
+function mpPastCanEdit(){ return !!(me&&(me.role==='master'||me.role==='admin')); }
+function mpPastCodeSort(a,b){ return String(a).localeCompare(String(b),'ko',{numeric:true}); }
+function mpPastNum(v){ var n=parseInt(v,10); return (isNaN(n)||n<0)?0:n; }
+function mpPastMatrix(row){
+  var v=row&&row.values;
+  if(typeof v==='string'){ try{ v=JSON.parse(v); }catch(e){ v=null; } }
+  var out=[];
+  for(var ri=0;ri<4;ri++){ out.push([]); for(var ci=0;ci<7;ci++){ out[ri].push(mpPastNum(v&&v[ri]&&v[ri][ci])); } }
+  return out;
+}
+function mpPastTotal(m){ var s=0; m.forEach(function(r){ r.forEach(function(x){ s+=x; }); }); return s; }
+function mpPastNsTotal(row){ var s=0; NIGHT_SPECIAL_FIELDS.forEach(function(f){ s+=(Number(row[f.col])||0); }); return s; }
+async function mpPastEditCounts(){
+  var out={};
+  try{ var r=await sb.from('mp_edit_log').select('edit_date'); (r.data||[]).forEach(function(x){ out[x.edit_date]=(out[x.edit_date]||0)+1; }); }catch(e){}
+  return out;
+}
+function mpPastClose(){ hideM('mpPastModal'); _mpPast.cur=null; }
+function mpPastShow(){ var el=document.getElementById('mpPastModal'); if(el&&!el.classList.contains('on')) showM('mpPastModal'); }
+
+// ① 날짜의 근무조·팀 목록
+async function mpPastOpenDate(date){
+  if(!mpPastCanEdit()){ toast('⚠️ master·admin만 수정할 수 있습니다'); return; }
+  _mpPast.date=date; _mpPast.cur=null;
+  var body=document.getElementById('mpPastBody'), title=document.getElementById('mpPastTitle');
+  if(!body) return;
+  if(title) title.textContent='✏️ '+date+' 인력 수정';
+  body.innerHTML='<div style="text-align:center;padding:26px;color:var(--g3);font-size:14px">불러오는 중...</div>';
+  mpPastShow();
+  try{
+    var r1=await sb.from('mp_data').select('*').eq('date',date);
+    var r2=await sb.from('night_special_data').select('*').eq('date',date);
+    var r3=await sb.from('mp_edit_log').select('shift,team_code').eq('edit_date',date);
+    if(r1.error) throw r1.error;
+    _mpPast.rows={}; _mpPast.counts={};
+    (r3.data||[]).forEach(function(x){ var k=x.shift+'|'+x.team_code; _mpPast.counts[k]=(_mpPast.counts[k]||0)+1; });
+    var byShift={오전:[],오후:[],야간:[]};
+    (r1.data||[]).forEach(function(row){
+      if(!row.team_code||String(row.team_code).charAt(0)==='_') return;
+      if(row.shift!=='오전'&&row.shift!=='오후') return;
+      _mpPast.rows[row.shift+'|'+row.team_code]=row; byShift[row.shift].push(row);
+    });
+    (r2.data||[]).forEach(function(row){
+      if(!row.team_code||String(row.team_code).charAt(0)==='_') return;
+      _mpPast.rows['야간|'+row.team_code]=row; byShift['야간'].push(row);
+    });
+    var h='<div style="font-size:12.5px;color:var(--g4);line-height:1.6;margin-bottom:10px">수정할 근무조·팀을 누르세요. 저장하면 통계에 바로 반영되고, 수정 내용은 <b>수정 이력</b>에 기록됩니다.</div>';
+    var any=false;
+    ['오전','오후','야간'].forEach(function(shift){
+      var arr=byShift[shift]; if(!arr.length) return; any=true;
+      arr.sort(function(a,b){ return mpPastCodeSort(a.team_code,b.team_code); });
+      h+='<div style="font-size:13px;font-weight:800;color:var(--teal2);margin:12px 0 4px">'+(shift==='야간'?'🌙 ':'')+shift+'</div>';
+      arr.forEach(function(row){
+        var tot=(shift==='야간')?mpPastNsTotal(row):mpPastTotal(mpPastMatrix(row));
+        var cnt=_mpPast.counts[shift+'|'+row.team_code]||0;
+        var wr=row.writer?(' · 입력 '+eeEsc(row.writer)+(row.proxy_writer?'(대리:'+eeEsc(row.proxy_writer)+')':'')):'';
+        h+='<div style="display:flex;align-items:center;gap:8px;padding:9px 4px;border-bottom:1px solid var(--g1)">'
+          +'<div style="min-width:54px;font-weight:800;font-size:14px;color:var(--g7)">'+eeEsc(row.team_code)+'</div>'
+          +'<div style="flex:1;font-size:13px;color:var(--g5);line-height:1.4">합계 <b>'+tot+'명</b>'
+          +(cnt?'<span style="display:inline-block;margin-left:5px;padding:1px 7px;background:#FFF3D6;color:#8A6D00;border-radius:10px;font-size:11px;font-weight:800">수정됨 '+cnt+'회</span>':'')
+          +'<div style="font-size:11.5px;color:var(--g3)">'+(wr?wr.slice(3):'')+'</div></div>'
+          +'<button onclick="mpPastEdit(\''+shift+'\',\''+eeEsc(row.team_code)+'\')" style="padding:6px 12px;background:var(--teal-bg);color:var(--teal2);border:1.5px solid var(--teal);border-radius:8px;font-size:13px;font-weight:800;cursor:pointer">수정</button>'
+          +'</div>';
+      });
+    });
+    if(!any) h+='<div style="text-align:center;padding:24px;color:var(--g3);font-size:14px">이 날짜에는 입력된 인력 데이터가 없습니다</div>';
+    h+='<div style="font-size:11.5px;color:var(--g3);margin-top:12px;line-height:1.5">※ 다른 조로 보낸 지원 인원, 관리자 출근은 이 화면에서 수정하지 않습니다.</div>';
+    body.innerHTML=h;
+  }catch(e){ body.innerHTML='<div style="text-align:center;padding:24px;color:var(--danger)">불러오기 실패: '+eeEsc(_safeErrMsg(e)||e)+'</div>'; }
+}
+
+// ② 한 팀의 수정 화면 (기존 입력 수정 화면과 같은 구성)
+function mpPastEdit(shift,team){
+  var row=_mpPast.rows[shift+'|'+team]; if(!row) return;
+  var body=document.getElementById('mpPastBody'), title=document.getElementById('mpPastTitle');
+  if(!body) return;
+  _mpPast.cur={shift:shift,team:team,row:row,confirmed:false};
+  if(title) title.textContent='✏️ '+_mpPast.date+' · '+team+' · '+shift;
+  var inpSt='width:100%;padding:6px 3px;border:1.5px solid var(--g2);border-radius:6px;font-size:14px;text-align:center';
+  var h='<button onclick="mpPastOpenDate(_mpPast.date)" style="margin-bottom:10px;padding:5px 11px;background:var(--g1);border:none;border-radius:8px;font-size:12.5px;font-weight:700;color:var(--g5);cursor:pointer">← 목록</button>';
+  var legacy=false;
+  if(shift==='야간'){
+    h+='<table style="width:100%;border-collapse:collapse"><thead><tr><th style="text-align:left;font-size:12px;color:var(--g4);padding:4px">항목</th><th style="font-size:12px;color:var(--g4)">L/S</th><th style="font-size:12px;color:var(--g4)">A/S</th></tr></thead><tbody>';
+    NIGHT_SPECIAL_FIELDS.forEach(function(f){
+      var l=Number(row[f.col+'_land'])||0, a=Number(row[f.col+'_air'])||0;
+      if(l+a===0&&(Number(row[f.col])||0)>0){ l=Number(row[f.col])||0; legacy=true; }
+      h+='<tr style="border-bottom:1px solid var(--g1)"><td style="padding:6px 4px;font-size:13px;color:var(--g6)">'+f.label+'</td>'
+        +'<td style="padding:4px"><input type="number" min="0" class="pe_ns" data-col="'+f.col+'" data-side="land" data-orig="'+l+'" value="'+l+'" style="'+inpSt+'" onfocus="this.select()"></td>'
+        +'<td style="padding:4px"><input type="number" min="0" class="pe_ns" data-col="'+f.col+'" data-side="air" data-orig="'+a+'" value="'+a+'" style="'+inpSt+'" onfocus="this.select()"></td></tr>';
+    });
+    h+='</tbody></table>';
+  }else{
+    var m=mpPastMatrix(row), split=mpRowToSplit(row);
+    var zone=getTeamZone(team), building=getTeamBuilding(team);
+    var tn=(String(team).match(/^(\d+)팀/)||[])[1];
+    if(zone==='집하장'&&(tn==='1'||tn==='6')){
+      var yri=(tn==='1')?3:2;
+      h+='<div style="font-size:13px;color:var(--g5);margin-bottom:8px">'+team+' 담당구역 · '+(tn==='1'?'A/S 서편 집하장':'A/S 동편 집하장')+'</div>'
+        +'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 10px;background:var(--g1);border-radius:8px"><span style="font-size:13px;color:var(--g6)">집하장</span>'
+        +'<input type="number" min="0" id="pe_yard" data-ri="'+yri+'" data-orig="'+m[yri][6]+'" value="'+m[yri][6]+'" style="width:80px;padding:6px;border:1.5px solid var(--g2);border-radius:6px;font-size:14px;text-align:center" onfocus="this.select()"></div>';
+    }else if(zone&&building&&getTeamFloorCols(team)){
+      var zi=(zone==='동편')?(building==='AS'?2:0):(building==='AS'?3:1);
+      var cols=getTeamFloorCols(team);
+      h+='<div style="font-size:13px;color:var(--g5);margin-bottom:8px">'+team+' 담당구역 · '+MP_PAST_ROW_LABELS[zi]+' '+cols.map(function(ci){return MP_FLOOR_LABELS[ci];}).join('·')+'</div>'
+        +'<table style="width:100%;border-collapse:collapse;table-layout:fixed" data-zi="'+zi+'"><colgroup><col style="width:16%"><col style="width:28%"><col style="width:28%"><col style="width:28%"></colgroup>'
+        +'<thead><tr><th></th><th style="font-size:10.5px;color:#166534;background:#EAF3DE;padding:4px;border-radius:6px">화장실</th><th style="font-size:10.5px;color:#92400E;background:#FDF0DA;padding:4px;border-radius:6px;white-space:nowrap">화장실+공용</th><th style="font-size:10.5px;color:#1E40AF;background:#E0EAFB;padding:4px;border-radius:6px">공용구역</th></tr></thead><tbody>';
+      cols.forEach(function(ci){
+        var t=split.toilet[zi][ci]||0, b=split.both[zi][ci]||0, c=split.common[zi][ci]||0;
+        if(t+b+c===0&&m[zi][ci]>0){ t=m[zi][ci]; legacy=true; }
+        h+='<tr style="border-bottom:1px solid var(--g1)"><td style="font-size:12.5px;color:var(--g6);padding:5px 2px">'+MP_FLOOR_LABELS[ci]+'</td>'
+          +['t','b','c'].map(function(k,i){ var v=[t,b,c][i]; return '<td style="padding:3px"><input type="number" min="0" class="pe_zone pe_z'+k+'" data-ci="'+ci+'" data-k="'+k+'" data-orig="'+v+'" value="'+v+'" style="'+inpSt+'" onfocus="this.select()"></td>'; }).join('')
+          +'</tr>';
+      });
+      h+='</tbody></table>';
+    }else{
+      // 담당구역을 알 수 없는 팀 코드 — 전체 칸 직접 수정 (세부 구분 열은 건드리지 않음)
+      h+='<div style="font-size:12.5px;color:var(--g4);margin-bottom:6px">담당구역을 알 수 없는 팀이라 전체 칸을 직접 수정합니다.</div>'
+        +'<table style="width:100%;border-collapse:collapse;table-layout:fixed"><thead><tr><th style="width:21%"></th>'+MP_FLOOR_LABELS.concat(['집하장']).map(function(l){return '<th style="font-size:10.5px;color:var(--g4)">'+l+'</th>';}).join('')+'</tr></thead><tbody>';
+      for(var ri=0;ri<4;ri++){
+        h+='<tr><td style="font-size:11px;color:var(--g6)">'+MP_PAST_ROW_LABELS[ri]+'</td>';
+        for(var ci2=0;ci2<7;ci2++) h+='<td style="padding:2px"><input type="number" min="0" class="pe_mat" data-ri="'+ri+'" data-ci="'+ci2+'" data-orig="'+m[ri][ci2]+'" value="'+m[ri][ci2]+'" style="width:100%;padding:5px 1px;border:1.5px solid var(--g2);border-radius:6px;font-size:12.5px;text-align:center" onfocus="this.select()"></td>';
+        h+='</tr>';
+      }
+      h+='</tbody></table>';
+    }
+  }
+  if(legacy) h+='<div style="font-size:11.5px;color:var(--g4);margin-top:8px;line-height:1.5">※ 세부 구분 없이 저장된 옛 기록은 합계를 "화장실" 칸에 표시합니다.</div>';
+  h+='<div style="font-size:13px;font-weight:800;color:var(--danger);margin:14px 0 5px">수정 사유 (필수)</div>'
+    +'<textarea id="mpPastReason" rows="2" placeholder="예) 조장 입력 실수 (12명 → 10명)" style="width:100%;padding:9px 10px;border:1.5px solid var(--g2);border-radius:8px;font-size:14px;font-family:inherit;resize:none"></textarea>'
+    +'<div id="mpPastDiff" style="display:none;margin-top:10px"></div>'
+    +'<div style="display:flex;gap:7px;margin-top:12px"><button onclick="mpPastOpenDate(_mpPast.date)" style="flex:1;padding:11px;background:var(--g1);border:none;border-radius:var(--r2);font-size:15px;font-weight:700;color:var(--g5);cursor:pointer">취소</button>'
+    +'<button id="mpPastSaveBtn" onclick="mpPastSaveStep()" style="flex:2;padding:11px;background:linear-gradient(135deg,var(--teal),var(--teal2));color:white;border:none;border-radius:var(--r2);font-size:15px;font-weight:700;cursor:pointer">변경 내용 확인</button></div>';
+  body.innerHTML=h;
+  body.oninput=function(e){
+    var c=_mpPast.cur; if(!c||(e.target&&e.target.id==='mpPastReason')) return;
+    c.confirmed=false;
+    var d=document.getElementById('mpPastDiff'); if(d) d.style.display='none';
+    var b=document.getElementById('mpPastSaveBtn'); if(b) b.textContent='변경 내용 확인';
+  };
+}
+
+// 현재 입력값으로 새 값/변경 목록 계산
+function mpPastCollect(){
+  var c=_mpPast.cur, row=c.row, changes=[], res={};
+  if(c.shift==='야간'){
+    var vals={};
+    NIGHT_SPECIAL_FIELDS.forEach(function(f){ vals[f.col+'_land']=0; vals[f.col+'_air']=0; });
+    document.querySelectorAll('#mpPastBody .pe_ns').forEach(function(inp){
+      var col=inp.dataset.col, side=inp.dataset.side, nv=mpPastNum(inp.value), ov=mpPastNum(inp.dataset.orig);
+      vals[col+'_'+side]=nv;
+      if(nv!==ov){ var f=NIGHT_SPECIAL_FIELDS.filter(function(x){return x.col===col;})[0]; changes.push({f:(f?f.label:col)+' '+(side==='land'?'L/S':'A/S'),o:ov,n:nv}); }
+    });
+    var oldTot=0,newTot=0;
+    NIGHT_SPECIAL_FIELDS.forEach(function(f){ vals[f.col]=vals[f.col+'_land']+vals[f.col+'_air']; newTot+=vals[f.col]; });
+    NIGHT_SPECIAL_FIELDS.forEach(function(f){ oldTot+=(Number(row[f.col])||0); });
+    res={kind:'ns',vals:vals,oldTotal:oldTot,newTotal:newTot,changes:changes};
+    return res;
+  }
+  var oldM=mpPastMatrix(row), newM=oldM.map(function(r){return r.slice();}), splitCols=null;
+  var yard=document.getElementById('pe_yard');
+  var zoneTbl=document.querySelector('#mpPastBody table[data-zi]');
+  if(yard){
+    var ri=parseInt(yard.dataset.ri,10), nv=mpPastNum(yard.value), ov=mpPastNum(yard.dataset.orig);
+    newM[ri][6]=nv; if(nv!==ov) changes.push({f:MP_PAST_ROW_LABELS[ri]+' 집하장',o:ov,n:nv});
+  }else if(zoneTbl){
+    var zi=parseInt(zoneTbl.dataset.zi,10), t={},b={},cc={};
+    var KN={t:'화장실',b:'화장실+공용',c:'공용구역'};
+    document.querySelectorAll('#mpPastBody .pe_zone').forEach(function(inp){
+      var ci=parseInt(inp.dataset.ci,10), k=inp.dataset.k, nv=mpPastNum(inp.value), ov=mpPastNum(inp.dataset.orig);
+      (k==='t'?t:k==='b'?b:cc)[MP_FLOOR_SUFFIX[ci]]=nv;
+      if(nv!==ov) changes.push({f:MP_PAST_ROW_LABELS[zi]+' '+MP_FLOOR_LABELS[ci]+' '+KN[k],o:ov,n:nv});
+    });
+    MP_FLOOR_SUFFIX.forEach(function(suf,ci){
+      if(t[suf]===undefined) return;
+      newM[zi][ci]=(t[suf]||0)+(b[suf]||0)+(cc[suf]||0);
+    });
+    splitCols={prefix:MP_ZONE_PREFIX[zi],toilet:t,both:b,common:cc};
+  }else{
+    document.querySelectorAll('#mpPastBody .pe_mat').forEach(function(inp){
+      var ri=parseInt(inp.dataset.ri,10), ci=parseInt(inp.dataset.ci,10), nv=mpPastNum(inp.value), ov=mpPastNum(inp.dataset.orig);
+      newM[ri][ci]=nv; if(nv!==ov) changes.push({f:MP_PAST_ROW_LABELS[ri]+' '+(ci<6?MP_FLOOR_LABELS[ci]:'집하장'),o:ov,n:nv});
+    });
+  }
+  return {kind:'mp',vals:newM,split:splitCols,oldTotal:mpPastTotal(oldM),newTotal:mpPastTotal(newM),changes:changes};
+}
+
+// 1단계: 변경 내용 확인 표시 → 2단계: 저장
+async function mpPastSaveStep(){
+  var c=_mpPast.cur; if(!c) return;
+  if(!mpPastCanEdit()){ toast('⚠️ master·admin만 수정할 수 있습니다'); return; }
+  var reasonEl=document.getElementById('mpPastReason');
+  var reason=reasonEl?reasonEl.value.trim():'';
+  if(reason.length<2){ toast('⚠️ 수정 사유를 입력해주세요'); if(reasonEl) reasonEl.focus(); return; }
+  var r=mpPastCollect();
+  if(!r.changes.length){ toast('변경된 값이 없습니다'); return; }
+  var diffEl=document.getElementById('mpPastDiff'), btn=document.getElementById('mpPastSaveBtn');
+  if(!c.confirmed){
+    var h='<div style="background:#FFFBEE;border:1px solid #F0DFA0;border-radius:10px;padding:10px 12px;font-size:13px;line-height:1.7">'
+      +'<div style="font-weight:800;color:#8A6D00;margin-bottom:4px">변경 내용 확인</div>'
+      +r.changes.map(function(x){ return eeEsc(x.f)+' : <b style="color:#C0392B">'+x.o+'명</b> → <b style="color:#1E8449">'+x.n+'명</b>'; }).join('<br>')
+      +'<div style="margin-top:5px;padding-top:5px;border-top:1px solid #F0DFA0">합계 : '+r.oldTotal+'명 → <b>'+r.newTotal+'명</b></div></div>';
+    if(diffEl){ diffEl.innerHTML=h; diffEl.style.display='block'; }
+    c.confirmed=true; if(btn) btn.textContent='✅ 이대로 저장';
+    return;
+  }
+  if(btn){ btn.disabled=true; btn.textContent='저장 중...'; }
+  var date=_mpPast.date, ok=false;
+  try{
+    var iso=new Date().toISOString();
+    if(r.kind==='ns'){
+      var p2=Object.assign({date:date,team_code:c.team},r.vals);
+      var s2=await sb.from('night_special_data').upsert(p2,{onConflict:'date,team_code'});
+      if(s2&&s2.error) throw s2.error;
+      Object.assign(c.row,r.vals);
+    }else{
+      var p1={date:date,shift:c.shift,team_code:c.team,values:r.vals,updated_at:iso};
+      if(r.split){
+        MP_FLOOR_SUFFIX.forEach(function(suf){
+          p1[r.split.prefix+'_toilet_'+suf]=r.split.toilet[suf]||0;
+          p1[r.split.prefix+'_both_'+suf]=r.split.both[suf]||0;
+          p1[r.split.prefix+'_common_'+suf]=r.split.common[suf]||0;
+        });
+      }
+      var s1=await sb.from('mp_data').upsert(p1,{onConflict:'date,shift,team_code'});
+      if(s1&&s1.error) throw s1.error;
+      Object.assign(c.row,p1);
+    }
+    ok=true;
+    var lg=await sb.from('mp_edit_log').insert({division_id:iaosDID(),edit_date:date,shift:c.shift,team_code:c.team,old_total:r.oldTotal,new_total:r.newTotal,changes:r.changes,reason:reason,edited_by:me?me.name:'',edited_by_role:me?me.role:''});
+    if(lg&&lg.error) toast('⚠️ 수정은 저장됐지만 수정 이력 기록에 실패했습니다: '+_safeErrMsg(lg.error));
+    else toast('✅ '+date+' '+c.team+' '+c.shift+' 수정 완료 (이력 기록됨)');
+  }catch(e){
+    toast('⚠️ 저장 실패 — 반영되지 않았습니다 ('+_safeErrMsg(e)+')');
+    if(btn){ btn.disabled=false; btn.textContent='✅ 이대로 저장'; }
+    return;
+  }
+  // 화면 갱신: 오늘(또는 야간 새벽 시간대) 데이터면 입력화면 상태도 다시 읽고, 일별 이력·목록 새로고침
+  try{ if(typeof refreshMpDataLight==='function') await refreshMpDataLight(); }catch(e){}
+  try{ loadMpHistory(); }catch(e){}
+  mpPastOpenDate(date);
+}
+
+// ③ 수정 이력 보기
+async function mpEditLogOpen(){
+  if(!mpPastCanEdit()){ toast('⚠️ master·admin만 볼 수 있습니다'); return; }
+  var body=document.getElementById('mpPastBody'), title=document.getElementById('mpPastTitle');
+  if(!body) return;
+  _mpPast.cur=null;
+  if(title) title.textContent='📜 인력 수정 이력';
+  body.innerHTML='<div style="text-align:center;padding:26px;color:var(--g3);font-size:14px">불러오는 중...</div>';
+  mpPastShow();
+  try{
+    var r=await sb.from('mp_edit_log').select('*').order('edited_at',{ascending:false}).limit(200);
+    if(r.error) throw r.error;
+    var rows=r.data||[];
+    if(!rows.length){ body.innerHTML='<div style="text-align:center;padding:26px;color:var(--g3);font-size:14px">수정 이력이 없습니다</div>'; return; }
+    body.innerHTML=rows.map(function(x){
+      var ch=Array.isArray(x.changes)?x.changes:[];
+      var lines=ch.slice(0,8).map(function(c){ return eeEsc(c.f)+' <b style="color:#C0392B">'+c.o+'</b>→<b style="color:#1E8449">'+c.n+'</b>'; }).join('<br>')+(ch.length>8?'<br>외 '+(ch.length-8)+'건':'');
+      return '<div style="background:var(--g1);border-radius:10px;padding:10px 12px;margin-bottom:8px;font-size:13px;line-height:1.6">'
+        +'<div style="font-weight:800;color:var(--g7)">'+eeEsc(x.edit_date)+' · '+eeEsc(x.team_code)+' '+eeEsc(x.shift)+' <span style="font-weight:600;color:var(--g4)">합계 '+(x.old_total==null?'-':x.old_total)+'→'+(x.new_total==null?'-':x.new_total)+'명</span></div>'
+        +'<div style="color:var(--g6)">'+lines+'</div>'
+        +'<div style="color:var(--g5);margin-top:3px">사유: '+eeEsc(x.reason)+'</div>'
+        +'<div style="font-size:11.5px;color:var(--g3);margin-top:2px">'+eeEsc(x.edited_by||'')+(x.edited_by_role?'('+eeEsc(x.edited_by_role)+')':'')+' · '+eeEsc(toKSTDateTime(x.edited_at))+'</div></div>';
+    }).join('');
+  }catch(e){ body.innerHTML='<div style="text-align:center;padding:24px;color:var(--danger)">불러오기 실패: '+eeEsc(_safeErrMsg(e)||e)+'</div>'; }
+}
+
+// ══════════════════════════════════════════
+// ═══ 청결예보: 과거 민원(voc_data) 통계로 요일·시간대·구역별 청소수요를 4단계로 보여주고 근무조 인력과 비교 ═══
+// (DopS 이식용: 아래 FC_* 상수와 fc* 함수만 가져가면 됨. 사업부별 구역명/열 구성은 FC_ZONES·FC_FLOORS에서 수정)
+var FC_ZONES=[{k:'L/S|동편',zi:0,lbl:'L/S 동편'},{k:'L/S|서편',zi:1,lbl:'L/S 서편'},{k:'A/S|동편',zi:2,lbl:'A/S 동편'},{k:'A/S|서편',zi:3,lbl:'A/S 서편'},{k:'L/S|중앙',zi:null,lbl:'L/S 중앙'},{k:'A/S|중앙',zi:null,lbl:'A/S 중앙'}]; // 중앙은 인력현황 표에 없어 인력 비교 제외
+var FC_FLOORS=[{f:'4F',cols:[5]},{f:'3F',cols:[4]},{f:'2F',cols:[3]},{f:'1F',cols:[2]},{f:'B1F',cols:[1,6]},{f:'B2F',cols:[0]}];
+var FC_BLOCKS=[{a:6,b:10,shift:'오전'},{a:10,b:14,shift:'오전'},{a:14,b:18,shift:'오후'},{a:18,b:22,shift:'오후'}];
+var FC_LV=[{n:'비바람',ic:'⛈️',bg:'#6F82B8',fg:'#fff',bar:'#6F82B8'},{n:'완전흐림',ic:'☁️',bg:'#C7D3E3',fg:'#2F4560',bar:'#9DB0C9'},{n:'흐림',ic:'🌥️',bg:'#E8EFF6',fg:'#51708C',bar:'#C5D4E3'},{n:'맑음',ic:'☀️',bg:'#FFF3C9',fg:'#8A6A12',bar:'#F2D56B'}]; // 0=가장 바쁨 … 3=한산
+var FC_WD=['일','월','화','수','목','금','토'];
+var FC={more:false,ready:false,wd:null,rows:[],lam:null,cuts:null,staff:null,span:null};
+function fcIsT1(){ try{ return iaosDID()==='T1'; }catch(e){ return true; } } // 인력 비교·구역 고정 설정은 T1 전용
+function fcCanUse(){ return !!(me&&(me.role==='master'||me.role==='admin'||me.role==='manager'||me.role==='leader'||me.role==='acting_leader'||isExecRole(me.role))); }
+function fcKstParts(iso){ var d=new Date(new Date(iso).getTime()+9*3600000); return {h:d.getUTCHours(),ds:d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0')}; }
+function fcWdOf(ds){ return new Date(ds+'T00:00:00Z').getUTCDay(); }
+async function fcEnter(){
+  if(!fcCanUse()){ toast('⚠️ 조장 이상만 접근할 수 있습니다'); return; }
+  if(FC.div!==iaosDID()){ FC.ready=false; FC.div=iaosDID(); } // 사업부가 바뀌면(마스터가 사업부 전환) 다시 불러옴
+  var nowK=fcKstParts(new Date().toISOString());
+  if(FC.wd===null) FC.wd=fcWdOf(nowK.ds);
+  fcRenderPills();
+  var body=document.getElementById('fcBody');
+  if(!FC.ready){ if(body) body.innerHTML='<div style="text-align:center;padding:30px;color:var(--g3);font-size:14px">불러오는 중...</div>'; await fcLoad(); }
+  fcRender();
+}
+function fcRenderPills(){
+  var el=document.getElementById('fcDayPills'); if(!el) return;
+  var today=fcWdOf(fcKstParts(new Date().toISOString()).ds), order=[1,2,3,4,5,6,0], h='';
+  order.forEach(function(w){ h+='<div class="rp'+(FC.wd===w?' on':'')+'" onclick="fcPickDay('+w+')" style="flex:1;text-align:center;padding:9px 0;'+(w===today?'font-weight:800':'')+'">'+FC_WD[w]+(w===today?'<div style="font-size:9.5px;font-weight:700;opacity:.8">오늘</div>':'')+'</div>'; });
+  el.innerHTML=h;
+}
+// ── 청결예보 팝업: 조장 이상 계정이 앱을 새로 열 때마다(로그인·앱 재실행) 1회, 공지·회사소식·층별 리포트 팝업이 끝난 뒤 표시 ──
+var _fcPopupTimer=null, _fcPopupUser=null, _fcPopupStart=0;
+function fcPopupInit(){
+  if(!fcCanUse()||!me) return;
+  if(_fcPopupUser===me.id) return; // 이번 앱 실행에서 이미 보여준 계정
+  _fcPopupStart=Date.now();
+  if(_fcPopupTimer) clearInterval(_fcPopupTimer);
+  _fcPopupTimer=setInterval(fcPopupCheck,3000);
+  setTimeout(fcPopupCheck,6000);
+}
+function fcPopupBusy(){
+  if(document.querySelector('.modal-bg.on')) return true; // 다른 팝업·입력창이 떠 있으면 기다림
+  if(typeof frAllowed==='function'&&frAllowed()&&typeof frSlotNow==='function'){ // 08:20/14:00 층별 리포트가 아직 안 뜬 시간대면 그 뒤로
+    var sl=frSlotNow(); if(sl){ var today=new Date(Date.now()+9*3600000).toISOString().slice(0,10); if(!localStorage.getItem('frseen_'+today+'_'+sl.k)) return true; }
+  }
+  var waited=Date.now()-_fcPopupStart;
+  if(waited<15000){
+    if(typeof _noticeDone!=='undefined'&&!_noticeDone) return true;
+    if(typeof _newsQueue!=='undefined'&&_newsQueue===null) return true;
+  }
+  if(typeof _newsQueue!=='undefined'&&_newsQueue&&_newsQueue.length) return true;
+  return false;
+}
+async function fcPopupCheck(){
+  try{
+    if(!me||!fcCanUse()||_fcPopupUser===me.id){ clearInterval(_fcPopupTimer); return; }
+    if(Date.now()-_fcPopupStart>120000){ clearInterval(_fcPopupTimer); return; } // 2분 넘게 다른 팝업이 이어지면 포기
+    if(document.hidden||fcPopupBusy()) return;
+    clearInterval(_fcPopupTimer); _fcPopupUser=me.id;
+    if(!FC.ready) await fcLoad();
+    if(!FC.ready) return;
+    FC.wd=fcWdOf(fcKstParts(new Date().toISOString()).ds);
+    fcRenderPills(); fcRender();
+    var src=document.getElementById('fcTop'); if(!src) return;
+    var m=document.getElementById('fcPopupM');
+    if(!m){
+      m=document.createElement('div'); m.id='fcPopupM'; m.className='modal-bg';
+      m.innerHTML='<div class="modal" style="max-width:440px"><div class="m-hd" style="background:linear-gradient(135deg,#3FB6A0,#3A8FC4)"><h3>🌤️ 오늘의 청결예보</h3><button class="m-x" onclick="fcPopupClose()">×</button></div><div id="fcPopupBody" style="padding:14px 14px 4px;max-height:70vh;overflow-y:auto"></div><div style="display:flex;gap:8px;padding:6px 14px 16px"><button onclick="fcPopupClose();go(\'forecast\')" style="flex:1;padding:12px;background:var(--teal);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer">전체 예보 보기</button><button onclick="fcPopupClose()" style="flex:0 0 84px;padding:12px;background:var(--g2);color:var(--g6);border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">닫기</button></div></div>';
+      document.body.appendChild(m);
+    }
+    document.getElementById('fcPopupBody').innerHTML=src.innerHTML;
+    if(!m.classList.contains('on')) showM('fcPopupM');
+  }catch(e){}
+}
+function fcPopupClose(){ hideM('fcPopupM'); }
+function fcPickDay(w){ FC.wd=w; fcRenderPills(); fcRender(); }
+function fcToggleMore(){ FC.more=!FC.more; fcRender(); }
+async function fcLoad(){
+  try{
+    var vr=await msFetchAll(function(){ return sb.from('voc_data').select('voc_date,created_at,loc_zone,loc_side,loc_floor').order('id',{ascending:true}); });
+    if(vr.error) throw vr.error;
+    var rowsMap={}, lam={}, nDay=[0,0,0,0,0,0,0], nAll=0, minD=null;
+    var vocs=(vr.data||[]).filter(function(x){ return x.voc_date&&x.created_at; });
+    vocs.forEach(function(x){ if(!minD||x.voc_date<minD) minD=x.voc_date; });
+    var todayK=fcKstParts(new Date().toISOString()).ds;
+    if(minD){
+      var d=new Date(minD+'T00:00:00Z'), end=new Date(todayK+'T00:00:00Z');
+      while(d<=end){ nDay[d.getUTCDay()]++; nAll++; d=new Date(d.getTime()+86400000); }
+    }
+    var cWd={}, cAll={}, skipped=0;
+    vocs.forEach(function(x){
+      if(!x.loc_zone||!x.loc_side||!x.loc_floor){ skipped++; return; }
+      if(fcIsT1()){ // T1은 인력현황 표 구조에 맞춘 구역만, 다른 사업부는 자기 민원 기록의 구역명을 그대로 사용
+        if((x.loc_zone!=='L/S'&&x.loc_zone!=='A/S')||(x.loc_side!=='동편'&&x.loc_side!=='서편'&&x.loc_side!=='중앙')){ skipped++; return; }
+        if(!FC_FLOORS.find(function(f){ return f.f===x.loc_floor; })) return;
+      }
+      var hr=fcKstParts(x.created_at).h; var bi=-1;
+      FC_BLOCKS.forEach(function(b,i){ if(hr>=b.a&&hr<b.b) bi=i; });
+      if(bi<0) return;
+      var rk=x.loc_zone+'|'+x.loc_side+'|'+x.loc_floor, w=fcWdOf(x.voc_date);
+      rowsMap[rk]=1;
+      var kA=rk+'#'+bi, kW=rk+'#'+bi+'#'+w;
+      cAll[kA]=(cAll[kA]||0)+1; cWd[kW]=(cWd[kW]||0)+1;
+    });
+    // λ = 하루 평균 예상 민원 건수 (같은 요일 60% + 전체 40%)
+    var all=[];
+    Object.keys(rowsMap).forEach(function(rk){
+      lam[rk]=[];
+      for(var w=0;w<7;w++){ lam[rk][w]=[]; for(var bi=0;bi<FC_BLOCKS.length;bi++){
+        var a=nAll?((cAll[rk+'#'+bi]||0)/nAll):0, b=nDay[w]?((cWd[rk+'#'+bi+'#'+w]||0)/nDay[w]):0;
+        var v=0.6*b+0.4*a; lam[rk][w][bi]=v; if(v>0) all.push(v);
+      } }
+    });
+    all.sort(function(p,q){ return q-p; });
+    var n=all.length, pick=function(r){ return n?all[Math.min(n-1,Math.floor(n*r))]:Infinity; };
+    FC.cuts=[pick(0.06),pick(0.18),pick(0.40)]; // 상위 6% 집중, 다음 12% 주의, 다음 22% 관심
+    FC.lam=lam; FC.rows=Object.keys(rowsMap);
+    FC.span={from:minD,n:vocs.length,skipped:skipped};
+    // 근무조 인력: 최근 5주 같은 요일 평균
+    var s0=new Date(new Date(todayK+'T00:00:00Z').getTime()-35*86400000).toISOString().slice(0,10);
+    var mr=fcIsT1()?await msFetchAll(function(){ return sb.from('mp_data').select('date,shift,values').gte('date',s0).in('shift',['오전','오후']); }):{data:[]};
+    var sum={}, dset={};
+    (mr.data||[]).forEach(function(r){
+      var v=r.values; if(typeof v==='string'){ try{ v=JSON.parse(v); }catch(e){ v=null; } } if(!v) return;
+      var w=fcWdOf(r.date), dk=r.date+'|'+r.shift; dset[w+'|'+r.shift+'|'+r.date]=1;
+      FC_ZONES.forEach(function(z){ if(z.zi===null) return; FC_FLOORS.forEach(function(f){
+        var t=0; f.cols.forEach(function(c){ t+=Number(v[z.zi]&&v[z.zi][c])||0; });
+        var k=z.k+'|'+f.f+'|'+w+'|'+r.shift; sum[k]=(sum[k]||0)+t;
+      }); });
+    });
+    FC.staffSum=sum; FC.staffDays={};
+    Object.keys(dset).forEach(function(d){ var p=d.split('|'); var key=p[0]+'|'+p[1]; FC.staffDays[key]=(FC.staffDays[key]||0)+1; });
+    FC.ready=true; FC.div=iaosDID();
+  }catch(e){
+    var body=document.getElementById('fcBody'); if(body) body.innerHTML='<div style="padding:20px;color:var(--danger);font-size:13px">예보 데이터를 불러오지 못했습니다: '+_safeErrMsg(e)+'</div>';
+  }
+}
+function fcLevel(v){ if(!(v>0)) return 3; if(v>=FC.cuts[0]) return 0; if(v>=FC.cuts[1]) return 1; if(v>=FC.cuts[2]) return 2; return 3; }
+function fcStaff(rk,w,shift){ var p=rk.split('|'); if(p[1]==='중앙'||!fcIsT1()) return null; var k=p[0]+'|'+p[1]+'|'+p[2]+'|'+w+'|'+shift; var d=FC.staffDays[w+'|'+shift]||0; return d?((FC.staffSum[k]||0)/d):null; }
+function fcRender(){
+  if(!FC.ready) return;
+  var w=FC.wd, rows=FC.rows.slice();
+  var info=rows.map(function(rk){ var l=FC.lam[rk][w], lv=l.map(fcLevel); return {rk:rk,l:l,lv:lv,sum:l.reduce(function(a,b){return a+b;},0),best:Math.min.apply(null,lv)}; });
+  // 근무조별 전체 수요·인력 합 (부족 판단용)
+  var dem={'오전':0,'오후':0}, stf={'오전':0,'오후':0};
+  info.forEach(function(r){ FC_BLOCKS.forEach(function(b,bi){ dem[b.shift]+=r.l[bi]; }); ['오전','오후'].forEach(function(sh){ var s=fcStaff(r.rk,w,sh); if(s) stf[sh]+=s; }); });
+  info.forEach(function(r){ r.short=FC_BLOCKS.map(function(b,bi){
+    if(r.lv[bi]>1) return false; var s=fcStaff(r.rk,w,b.shift); if(s===null||!stf[b.shift]||!dem[b.shift]) return false;
+    var ds=r.l[bi]/dem[b.shift], ss=s/stf[b.shift]; return ds>=1.5*ss;
+  }); });
+  var showAll=info.filter(function(r){ return r.best<=2; }).sort(function(a,b){ return b.sum-a.sum; });
+  var LIM=8, show=FC.more?showAll:showAll.slice(0,LIM), hidden=showAll.length-show.length;
+  var calm=info.length-showAll.length;
+  // 상단 카드: 가장 높은 3칸
+  var cells=[]; info.forEach(function(r){ r.lv.forEach(function(lv,bi){ if(lv<=1) cells.push({r:r,bi:bi,lv:lv,v:r.l[bi]}); }); });
+  cells.sort(function(a,b){ return b.v-a.v; });
+  var top=document.getElementById('fcTop'), h='';
+  var nC=0,nJ=0,flc={}; info.forEach(function(r){ r.lv.forEach(function(lv){ if(lv===0) nC++; else if(lv===1) nJ++; if(lv<=1){ var fl=r.rk.split('|')[2]; flc[fl]=(flc[fl]||0)+1; } }); });
+  var topFl=Object.keys(flc).sort(function(a,b){ return flc[b]-flc[a]; })[0];
+  var bs=FC_BLOCKS.map(function(_,bi){ var sc=0; info.forEach(function(r){ if(r.lv[bi]===0) sc+=2; else if(r.lv[bi]===1) sc+=1; }); return sc; });
+  var bmax=Math.max.apply(null,bs), nowK0=fcKstParts(new Date().toISOString()), isTd=(fcWdOf(nowK0.ds)===w);
+  var wx=function(sc){ var r=bmax?sc/bmax:0, lv=sc===0?3:(r<0.4?2:(r<0.75?1:0)); return [FC_LV[lv].ic,FC_LV[lv].n]; };
+  var heroIcon=bmax===0?'☀️':wx(bmax)[0];
+  var strip=FC_BLOCKS.map(function(bk,bi){ var x=wx(bs[bi]), cur=isTd&&nowK0.h>=bk.a&&nowK0.h<bk.b;
+    return '<div style="flex:1;text-align:center;padding:9px 0 8px;border-radius:14px;background:'+(cur?'rgba(255,255,255,.95)':'rgba(255,255,255,.16)')+';color:'+(cur?'#1E5A7A':'#fff')+'"><div style="font-size:10.5px;font-weight:700;opacity:.85">'+(cur?'지금':bk.a+'~'+bk.b+'시')+'</div><div style="font-size:21px;line-height:1.35">'+x[0]+'</div><div style="font-size:10.5px;font-weight:700">'+x[1]+'</div></div>'; }).join('');
+  h+='<div style="position:relative;overflow:hidden;border-radius:20px;padding:16px 16px 14px;margin-bottom:16px;color:#fff;background:linear-gradient(135deg,#3FB6A0 0%,#3A8FC4 100%);box-shadow:0 6px 18px rgba(58,143,196,.28)">'
+    +'<div style="position:absolute;right:-30px;top:-34px;width:130px;height:130px;border-radius:50%;background:rgba(255,255,255,.12)"></div><div style="position:absolute;right:46px;top:38px;width:60px;height:60px;border-radius:50%;background:rgba(255,255,255,.09)"></div>'
+    +'<div style="position:relative;display:flex;align-items:center;gap:12px"><div style="flex:1"><div style="font-size:12px;font-weight:600;opacity:.9">'+FC_WD[w]+'요일 청결예보</div><div style="font-size:18px;font-weight:800;margin-top:4px;line-height:1.35">'+(nC+nJ===0?'온종일 맑음,<br>한산한 날이에요':(topFl&&(nC+nJ)>=3?topFl+' 쪽에<br>민원이 몰릴 수 있어요':'일부 구역만<br>살펴보면 돼요'))+'</div><div style="font-size:11.5px;opacity:.92;margin-top:6px">⛈️ 비바람 '+nC+'칸 · ☁️ 완전흐림 '+nJ+'칸</div></div><div style="font-size:46px;line-height:1;filter:drop-shadow(0 3px 6px rgba(0,0,0,.15))">'+heroIcon+'</div></div>'
+    +'<div style="position:relative;display:flex;gap:7px;margin-top:14px">'+strip+'</div></div>';
+  if(cells.length){
+    h+='<div style="font-size:13px;font-weight:800;color:var(--g7);margin:0 0 8px">📍 '+FC_WD[w]+'요일 먼저 살필 곳</div><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">';
+    cells.slice(0,3).forEach(function(c){
+      var p=c.r.rk.split('|'), b=FC_BLOCKS[c.bi], L=FC_LV[c.lv], st=fcStaff(c.r.rk,w,b.shift);
+      h+='<div style="display:flex;align-items:stretch;background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(15,40,60,.08);overflow:hidden">'
+        +'<div style="width:6px;background:'+L.bar+'"></div>'
+        +'<div style="flex:1;min-width:0;padding:11px 13px"><div style="display:flex;align-items:center;gap:8px"><span style="padding:2px 9px;border-radius:10px;background:'+L.bg+';color:'+L.fg+';font-size:11.5px;font-weight:800">'+L.ic+' '+L.n+'</span><span style="font-size:14px;font-weight:800;color:var(--g7)">'+p[0]+' '+p[1]+' '+p[2]+'</span><span style="margin-left:auto;font-size:12.5px;font-weight:700;color:var(--g5)">'+b.a+'~'+b.b+'시</span></div>'
+        +'<div style="font-size:12px;color:var(--g5);margin-top:5px">민원 발생 가능성 약 '+Math.round((1-Math.exp(-c.v))*100)+'% · '+b.shift+' 평소 인력 '+(st===null?'정보 없음':(st%1?st.toFixed(1):st)+'명')+(c.r.short[c.bi]?' · <span style="color:#B4531A;font-weight:700">👥 보강 고려</span>':'')+'</div></div></div>';
+    });
+    h+='</div>';
+  } else h+='<div style="padding:12px 14px;background:#EEF6F1;border-radius:12px;font-size:13px;font-weight:700;color:#4C8566;margin-bottom:14px">☀️ '+FC_WD[w]+'요일은 뚜렷한 주의 구역이 없습니다</div>';
+  top.innerHTML=h;
+  // 예보표
+  var nowK=fcKstParts(new Date().toISOString()), isToday=(fcWdOf(nowK.ds)===w), curB=-1;
+  if(isToday) FC_BLOCKS.forEach(function(b,i){ if(nowK.h>=b.a&&nowK.h<b.b) curB=i; });
+  var t='<div class="card" style="border:none;box-shadow:0 1px 6px rgba(15,40,60,.08);border-radius:16px"><div class="cb" style="padding:12px"><div style="font-size:13px;font-weight:800;color:var(--g7);margin-bottom:8px">구역별 예보 <span style="font-weight:600;color:var(--g4)">· '+FC_WD[w]+'요일</span></div>'
+    +'<div style="overflow-x:auto"><table style="width:100%;border-collapse:separate;border-spacing:3px;table-layout:fixed;font-size:12px"><colgroup><col style="width:30%"><col><col><col><col></colgroup><thead><tr><th style="text-align:left;color:var(--g4);font-size:11px;padding:2px 4px">구역</th>';
+  FC_BLOCKS.forEach(function(b,i){ t+='<th style="font-size:11px;color:'+(i===curB?'var(--teal2)':'var(--g4)')+';padding:2px 0;font-weight:'+(i===curB?'800':'600')+'">'+b.a+'~'+b.b+'시'+(i===curB?'<div style="font-size:9px">지금</div>':'')+'</th>'; });
+  t+='</tr></thead><tbody>';
+  show.forEach(function(r){
+    var p=r.rk.split('|'), sa=fcStaff(r.rk,w,'오전'), sp=fcStaff(r.rk,w,'오후');
+    var f1=function(x){ return x===null?'-':(Math.round(x*10)/10); }; var stTxt=(sa===null&&sp===null)?'인력 비교 대상 아님':('오전 '+f1(sa)+' · 오후 '+f1(sp));
+    t+='<tr><td style="padding:4px;vertical-align:middle"><div style="display:flex;align-items:center;gap:6px"><span style="padding:1px 7px;border-radius:8px;background:#E3F1F7;color:#26718F;font-size:11.5px;font-weight:800">'+p[2]+'</span><span style="font-size:12.5px;font-weight:800;color:var(--g7)">'+p[0]+' '+p[1]+'</span></div><div style="font-size:10px;color:var(--g4);line-height:1.3">'+stTxt+'</div></td>';
+    r.lv.forEach(function(lv,bi){ var L=FC_LV[lv];
+      t+='<td style="text-align:center;padding:6px 0;border-radius:11px;background:'+L.bg+';color:'+L.fg+';font-weight:'+(lv<=1?'800':'600')+';font-size:10.5px;'+(bi===curB?'box-shadow:inset 0 0 0 2px var(--teal);':'')+'"><div style="font-size:17px;line-height:1.25">'+L.ic+'</div>'+L.n+(r.short[bi]?' 👥':'')+'</td>'; });
+    t+='</tr>';
+  });
+  if(!show.length) t+='<tr><td colspan="5" style="text-align:center;padding:18px;color:var(--g4)">표시할 구역이 없습니다</td></tr>';
+  t+='</tbody></table></div>'
+    +(showAll.length>LIM?'<button onclick="fcToggleMore()" style="width:100%;margin-top:8px;padding:9px;background:var(--g1);border:none;border-radius:8px;font-size:12.5px;font-weight:700;color:var(--g6);cursor:pointer">'+(FC.more?'접기 ▲':'구역 '+hidden+'개 더 보기 ▼')+'</button>':'')
+    +(calm>0?'<div style="margin-top:8px;font-size:11.5px;color:var(--g4)">그 밖의 '+calm+'개 구역은 모든 시간대가 맑음입니다</div>':'')+'</div></div>';
+  document.getElementById('fcBody').innerHTML=t;
+  var lg=document.getElementById('fcLegend');
+  lg.style.display='flex'; lg.style.cssText='display:flex;gap:7px;flex-wrap:wrap;margin-top:12px;padding:12px 13px;background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(15,40,60,.08);font-size:11.5px;align-items:center';
+  lg.innerHTML='<div style="width:100%;font-size:12px;font-weight:800;color:var(--g7);margin-bottom:2px">보는 법</div>'+[3,2,1,0].map(function(i){ var L=FC_LV[i], d=['민원이 가장 몰리는 시간 — 인력을 먼저 보내두기','민원이 늘어날 수 있어 미리 살피기','보통, 평소대로 순회','민원이 거의 없는 한산한 시간'][i]; return '<div style="width:100%;display:flex;align-items:center;gap:8px"><span style="min-width:84px;text-align:center;padding:3px 8px;border-radius:10px;background:'+L.bg+';color:'+L.fg+';font-weight:800">'+L.ic+' '+L.n+'</span><span style="color:var(--g5)">'+d+'</span></div>'; }).join('')+'<div style="width:100%;color:var(--g5);margin-top:2px">👥 = 예보에 비해 근무 인력이 적은 칸</div>';
+  var sub=document.getElementById('fcSub'); if(sub&&FC.span) sub.textContent=iaosDN()+' · 민원 '+(FC.span.n-FC.span.skipped)+'건('+(FC.span.from||'').slice(5).replace('-','/')+'~) 기준 · 위치 미기재 '+FC.span.skipped+'건 제외 · 인력은 최근 5주 같은 요일 평균';
+}
+
 // 알림 시스템
 // ══════════════════════════════════════════
 var notifList = [];
@@ -37060,7 +37737,7 @@ async function wfSpLoadEvents(){
   wrap.innerHTML='<div style="text-align:center;padding:30px;color:var(--g3);font-size:14px">불러오는 중...</div>';
   var res=await sb.from('wf_special_events').select('*').order('start_date',{ascending:false});
   if(res.error){ wrap.innerHTML='<div style="color:#dc2626;padding:20px;text-align:center">불러오기 실패</div>'; return; }
-  wfSpEvents=res.data||[];
+  wfSpEvents=(res.data||[]).filter(function(ev){ return noticeVisibleFor(ev.target_roles, me?me.role:null); }); // 공개범위: 선택한 직급 이상만 (master·admin은 전체)
   var assignRes=await msFetchAll(function(){ return sb.from('wf_special_assignments').select('event_id,team_no,work_date'); });
   wfSpAssignCountMap={};
   (assignRes.data||[]).forEach(function(a){
@@ -37097,7 +37774,7 @@ function wfSpRenderListForTab(){
        '<div onclick="markItemSeen(\'workforce\',\''+ev.id+'\');wfSpOpenEvent(\''+ev.id+'\')" style="cursor:pointer">'+
        '<div style="font-weight:800;font-size:15px;color:var(--g7)">'+ev.title+(isItemNew('workforce',ev.id,ev.created_at)?newBadgeHtml():'')+'</div>'+
        '<div style="font-size:13px;color:var(--g4);margin-top:4px">'+ev.start_date+' ~ '+ev.end_date+'</div>'+
-       '<div style="font-size:11.5px;color:var(--g4);margin-top:2px">작성자: '+eeEsc(ev.created_by||'-')+'</div>'+
+       '<div style="font-size:11.5px;color:var(--g4);margin-top:2px">작성자: '+eeEsc(ev.created_by||'-')+' · 구분: '+eeEsc(ev.period_type||'-')+((ev.target_roles&&ev.target_roles.length&&ev.target_roles.indexOf('all')===-1)?' · 🔒 '+eeEsc(wfSpTargetLabel(ev.target_roles)):'')+'</div>'+
        '<span style="display:inline-block;margin-top:8px;padding:3px 10px;border-radius:10px;background:'+badgeColor+';color:'+badgeText+';font-size:12px;font-weight:700">'+badgeLabel+'</span>'+
        '</div>'+
        '<div style="display:flex;gap:6px;margin-top:10px">'+
@@ -37109,6 +37786,34 @@ function wfSpRenderListForTab(){
   });
   wrap.innerHTML=h;
 }
+var WF_SP_TARGET_DEFS=[{key:'all',label:'전체'},{key:'manager',label:'팀장'},{key:'leader',label:'조장'},{key:'acting_leader',label:'액팅리더'}];
+function wfSpRenderTargets(){
+  var wrap=document.getElementById('wfSpTargetGrp'); if(!wrap) return;
+  wrap.innerHTML=WF_SP_TARGET_DEFS.map(function(t){
+    return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;color:var(--g5);padding:5px 10px;background:var(--g1);border-radius:20px;cursor:pointer"><input type="checkbox" class="wfSpTargetChk" value="'+t.key+'" style="accent-color:var(--teal)"> '+t.label+'</label>';
+  }).join('');
+  wrap.querySelectorAll('.wfSpTargetChk').forEach(function(cb){
+    cb.addEventListener('change',function(){
+      if(cb.value==='all'&&cb.checked){ wrap.querySelectorAll('.wfSpTargetChk').forEach(function(o){ if(o.value!=='all') o.checked=false; }); }
+      else if(cb.checked){ var a=wrap.querySelector('.wfSpTargetChk[value="all"]'); if(a) a.checked=false; }
+    });
+  });
+}
+function wfSpGetTargets(){
+  var wrap=document.getElementById('wfSpTargetGrp'); if(!wrap) return ['all'];
+  var c=Array.prototype.slice.call(wrap.querySelectorAll('.wfSpTargetChk:checked')).map(function(cb){return cb.value;});
+  return c.length?c:['all'];
+}
+function wfSpSetTargets(arr){
+  wfSpRenderTargets();
+  var wrap=document.getElementById('wfSpTargetGrp'); if(!wrap) return;
+  var vals=(arr&&arr.length)?arr:['all'];
+  wrap.querySelectorAll('.wfSpTargetChk').forEach(function(cb){ cb.checked=vals.indexOf(cb.value)!==-1; });
+}
+function wfSpTargetLabel(arr){
+  if(!arr||!arr.length||arr.indexOf('all')!==-1) return '전체';
+  return WF_SP_TARGET_DEFS.filter(function(t){ return arr.indexOf(t.key)!==-1; }).map(function(t){ return t.label; }).join(', ')+' 이상';
+}
 var wfSpEditId=null;
 function wfSpOpenCreate(){
   wfSpEditId=null;
@@ -37118,6 +37823,7 @@ function wfSpOpenCreate(){
   document.getElementById('wfSpType').value='성수기';
   document.getElementById('wfSpStart').value='';
   document.getElementById('wfSpEnd').value='';
+  wfSpSetTargets(['all']);
   showM('wfSpCreateModal');
 }
 function wfSpOpenEdit(id){
@@ -37129,6 +37835,7 @@ function wfSpOpenEdit(id){
   document.getElementById('wfSpType').value=ev.period_type||'성수기';
   document.getElementById('wfSpStart').value=ev.start_date||'';
   document.getElementById('wfSpEnd').value=ev.end_date||'';
+  wfSpSetTargets(ev.target_roles);
   showM('wfSpCreateModal');
 }
 async function wfSpCreateEvent(){
@@ -37136,11 +37843,12 @@ async function wfSpCreateEvent(){
   var type=document.getElementById('wfSpType').value;
   var s=document.getElementById('wfSpStart').value;
   var en=document.getElementById('wfSpEnd').value;
+  var targets=wfSpGetTargets();
   if(!title||!s||!en){ toast('⚠️ 제목·기간을 모두 입력해주세요'); return; }
   if(s>en){ toast('⚠️ 종료일이 시작일보다 빠릅니다'); return; }
   if(wfSpEditId){
     var evBefore=wfSpEvents.find(function(x){return x.id===wfSpEditId;});
-    var res2=await sb.from('wf_special_events').update({title:title, period_type:type, start_date:s, end_date:en}).eq('id', wfSpEditId);
+    var res2=await sb.from('wf_special_events').update({title:title, period_type:type, start_date:s, end_date:en, target_roles:targets}).eq('id', wfSpEditId);
     if(res2.error){ toast('수정 오류: '+_safeErrMsg(res2.error)); return; }
     // 수정 이력 기록 (값이 실제로 바뀐 항목만)
     if(evBefore){
@@ -37149,6 +37857,7 @@ async function wfSpCreateEvent(){
       if(evBefore.period_type!==type) changes.push(['구분', evBefore.period_type, type]);
       if(evBefore.start_date!==s) changes.push(['시작일', evBefore.start_date, s]);
       if(evBefore.end_date!==en) changes.push(['종료일', evBefore.end_date, en]);
+      if(wfSpTargetLabel(evBefore.target_roles)!==wfSpTargetLabel(targets)) changes.push(['공개범위', wfSpTargetLabel(evBefore.target_roles), wfSpTargetLabel(targets)]);
       for(var ci=0;ci<changes.length;ci++){
         try{
           await sb.from('wf_special_edit_log').insert({
@@ -37172,7 +37881,7 @@ async function wfSpCreateEvent(){
     }
   }else{
     var id='sp_'+Date.now();
-    var res=await sb.from('wf_special_events').insert({id:id, title:title, period_type:type, start_date:s, end_date:en, created_by: me?me.name:''});
+    var res=await sb.from('wf_special_events').insert({id:id, title:title, period_type:type, start_date:s, end_date:en, target_roles:targets, created_by: me?me.name:''});
     if(res.error){ toast('등록 오류: '+_safeErrMsg(res.error)); return; }
     toast('✓ 등록되었습니다');
   }
@@ -37191,6 +37900,7 @@ async function wfSpOpenEvent(id){
   var ev=wfSpEvents.find(function(x){return x.id===id;});
   if(!ev){ var r=await sb.from('wf_special_events').select('*').eq('id',id).maybeSingle(); ev=r.data; }
   if(!ev) return;
+  if(!noticeVisibleFor(ev.target_roles, me?me.role:null)){ toast('⚠️ 열람 권한이 없는 특별근무입니다'); return; }
   wfSpCurEvent=ev;
   document.getElementById('wfSpListView').style.display='none';
   document.getElementById('wfSpDetailView').style.display='block';

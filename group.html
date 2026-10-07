@@ -210,6 +210,8 @@ s{text-decoration:none}
 .lb-it{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #F0F1F4;padding:10px 2px}.lb-it:last-child{border:0}.lb-it .ic{font-size:22px}.lb-it b{font-size:13.5px;display:block;word-break:break-all}.lb-it small{color:var(--mut);font-size:11px}.lb-grp{font-size:12px;font-weight:800;color:var(--mut);margin:10px 0 2px}
 @media print{.tabs,.ex,.live,.chips,#logout{display:none!important}.pane{display:block!important}body{background:#fff}.card,.hero,.kp div,.pt{break-inside:avoid}}
 @media (prefers-reduced-motion:no-preference){.gcol div,.share i,.br .b i{transition:all .5s ease}}
+@media (max-width:600px){.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;overflow:visible;position:static;margin-top:10px;padding:3px}.tabs button{flex:none;padding:8px 0;font-size:12.5px}
+.gobar{gap:6px;margin-top:8px}.gobar a{padding:7px 2px;font-size:12.5px;border-radius:10px}.gobar a small{display:inline;font-size:11px;margin-left:3px}.wx-now{margin-top:6px}}
 </style>
 </head>
 <body>
@@ -1742,8 +1744,14 @@ function gfBuild(div,raw){
   sec.cuts=[pick(0.06),pick(0.18),pick(0.40)]; sec.rows=Object.keys(rows);
   if(div==='T1'){ // 근무조 인력은 T1 인력현황 표 구조만 해석 가능
     var dset={};
-    (raw.mp||[]).forEach(function(r){
-      if(r.div!==div) return; var v=r.v; if(!v) return;
+    var mats={}; // 칸 단위 행(r{행}c{열}) → 날짜·근무조별 4×7 행렬
+    (raw.mp||[]).forEach(function(c){
+      if(c.div!==div) return; var m=/^r(\d+)c(\d+)$/.exec(c.k); if(!m) return;
+      var key=c.d+'|'+c.shift, o=mats[key]||(mats[key]={d:c.d,shift:c.shift,v:[[],[],[],[]]});
+      var ri=+m[1],ci=+m[2]; if(ri<4&&ci<7) o.v[ri][ci]=Number(c.q)||0;
+    });
+    Object.keys(mats).forEach(function(k){
+      var r=mats[k], v=r.v;
       var w=gfWd(r.d); dset[w+'|'+r.shift+'|'+r.d]=1;
       GF_ZONES.forEach(function(z){GF_FLOORS.forEach(function(f){var t=0;f.cols.forEach(function(c){t+=Number(v[z.zi]&&v[z.zi][c])||0;});
         var k=z.k+'|'+f.f+'|'+w+'|'+r.shift;sec.staffSum[k]=(sec.staffSum[k]||0)+t;});});

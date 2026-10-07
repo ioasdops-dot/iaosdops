@@ -1785,9 +1785,11 @@ function gfSummary(sec,info,w){ // 시간대 4칸 + 요약 문구
   return {strip:strip,msg:msg,nC:nC,nJ:nJ};
 }
 function gfCells(info){var c=[];info.forEach(function(r){r.lv.forEach(function(lv,bi){if(lv<=1)c.push({r:r,bi:bi,lv:lv,v:r.l[bi]});});});c.sort(function(a,b){return b.v-a.v;});return c;}
+function gfCol(div){var d=divs.filter(function(x){return x.id===div;})[0];return d?d.color:'#3A8FC4';}
+function gfSoft(div){var d=divs.filter(function(x){return x.id===div;})[0];return d?d.soft:'#E3F1F7';}
 function gfHero(meta,sec,info,w){
-  var s=gfSummary(sec,info,w);
-  return '<div style="border-radius:18px;padding:14px 14px 12px;color:#fff;background:linear-gradient(135deg,#3FB6A0 0%,#3A8FC4 100%);margin-bottom:10px">'
+  var s=gfSummary(sec,info,w), c=gfCol(sec.div);
+  return '<div style="border-radius:18px;padding:14px 14px 12px;color:#fff;background:linear-gradient(135deg,rgba(255,255,255,.14),rgba(0,0,0,.2)),'+c+';margin-bottom:10px">'
    +'<div style="font-size:12px;font-weight:700;opacity:.92">'+meta.ic+' '+esc(meta.name)+' · '+GF_WD[w]+'요일</div>'
    +'<div style="font-size:16px;font-weight:800;margin:4px 0 10px;line-height:1.35">'+(sec.n?esc(s.msg):'민원 기록이 아직 없어요')+'</div>'
    +(sec.n?'<div style="display:flex;gap:6px">'+s.strip+'</div>':'')+'</div>';
@@ -1809,7 +1811,7 @@ function gfTable(meta,sec,info,w){
   GF_BLOCKS.forEach(function(b,i){t+='<th style="font-size:11px;color:'+(i===curB?'#26718F':'#888')+';padding:2px 0;font-weight:'+(i===curB?'800':'600')+'">'+b.a+'~'+b.b+'시</th>';});
   t+='</tr></thead><tbody>';
   show.forEach(function(r){var p=r.rk.split('|');
-    t+='<tr><td style="padding:4px"><span style="padding:1px 6px;border-radius:8px;background:#E3F1F7;color:#26718F;font-size:11px;font-weight:800">'+esc(p[2])+'</span> <b style="font-size:12px">'+esc(p[0]+' '+p[1])+'</b></td>';
+    t+='<tr><td style="padding:4px"><span style="padding:1px 6px;border-radius:8px;background:'+gfSoft(sec.div)+';color:#2b3a55;font-size:11px;font-weight:800">'+esc(p[2])+'</span> <b style="font-size:12px">'+esc(p[0]+' '+p[1])+'</b></td>';
     r.lv.forEach(function(lv,bi){var L=GF_LV[lv];t+='<td style="text-align:center;padding:5px 0;border-radius:10px;background:'+L.bg+';color:'+L.fg+';font-weight:'+(lv<=1?'800':'600')+';font-size:10px"><div style="font-size:15px;line-height:1.25">'+L.ic+'</div>'+L.n+(r.short[bi]?' 👥':'')+'</td>';});
     t+='</tr>';});
   if(!show.length)t+='<tr><td colspan="5" style="text-align:center;padding:14px;color:#999">표시할 구역이 없습니다</td></tr>';
@@ -1842,7 +1844,7 @@ function gfPopup(){
     var w=gfWd(gfKst().ds),h='';
     GF.secs.forEach(function(sec){var meta=GF_SECS.filter(function(m){return m.div===sec.div;})[0],info=gfInfo(sec,w);h+=gfHero(meta,sec,info,w)+(sec.n?gfTop3(sec,info,w):'');});
     var m=document.createElement('div');m.id='gfPop';m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:50;display:flex;align-items:center;justify-content:center;padding:14px';
-    m.innerHTML='<div style="background:#F5F6F8;border-radius:20px;max-width:440px;width:100%;max-height:86vh;display:flex;flex-direction:column;overflow:hidden"><div style="padding:14px 16px;background:linear-gradient(135deg,#3FB6A0,#3A8FC4);color:#fff;font-weight:800;font-size:15px">🌤️ 오늘의 청결예보</div><div style="padding:12px 14px;overflow-y:auto">'+h+'</div><div style="display:flex;gap:8px;padding:6px 14px 14px"><button class="sp-btn g" data-gfpop="close" style="flex:1">닫기</button><button class="sp-btn" data-gfpop="open" style="flex:1">자세히 보기</button></div></div>';
+    m.innerHTML='<div style="background:#F5F6F8;border-radius:20px;max-width:440px;width:100%;max-height:86vh;display:flex;flex-direction:column;overflow:hidden"><div style="padding:14px 16px;background:#4B5563;color:#fff;font-weight:800;font-size:15px">🌤️ 오늘의 청결예보</div><div style="padding:12px 14px;overflow-y:auto">'+h+'</div><div style="display:flex;gap:8px;padding:6px 14px 14px"><button class="sp-btn g" data-gfpop="close" style="flex:1">닫기</button><button class="sp-btn" data-gfpop="open" style="flex:1">자세히 보기</button></div></div>';
     document.body.appendChild(m);
   }).catch(function(){});
 }

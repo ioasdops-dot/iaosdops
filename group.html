@@ -212,6 +212,8 @@ s{text-decoration:none}
 @media (prefers-reduced-motion:no-preference){.gcol div,.share i,.br .b i{transition:all .5s ease}}
 @media (max-width:600px){.tabs{display:grid;grid-template-columns:repeat(5,1fr);gap:3px;overflow:visible;position:static;margin-top:10px;padding:3px}.tabs button{flex:none;padding:8px 0;font-size:12.5px}
 .gobar{gap:6px;margin-top:8px}.gobar a{padding:7px 2px;font-size:12.5px;border-radius:10px}.gobar a small{display:inline;font-size:11px;margin-left:3px}.wx-now{margin-top:6px}}
+#wxAlert .wx-chips{display:flex;gap:7px;margin-top:10px}.wx-c{flex:1;background:#fff;border-radius:14px;padding:8px 2px 7px;text-align:center;box-shadow:0 1px 5px rgba(15,40,60,.07);font-size:10.5px;color:var(--mut);line-height:1.3}.wx-c span{display:block;font-size:19px;line-height:1.2}.wx-c b{display:block;font-size:16px;color:var(--ink);margin:1px 0}
+.wx-st{background:#E8F5EE;color:#2F8F5B;font-weight:800;font-size:11.5px;display:flex;align-items:center;justify-content:center}.wx-st.al{background:#FDE9ED;color:#C0485F}.wx-src{font-size:10px;color:var(--mut);text-align:right;margin:3px 4px 0}
 </style>
 </head>
 <body>
@@ -836,9 +838,13 @@ function wxRender(w){
   var cold=f(WX_COLD,function(l){return w.temp<=l.max;}); if(cold) h+=wxBanner(cold,'기온 '+Math.round(w.temp)+'℃','체감온도 '+Math.round(w.feels)+'℃');
   var wind=f(WX_WIND,function(l){return w.wind>=l.min||(w.gust!=null&&w.gust>=l.gustMin);}); if(wind) h+=wxBanner(wind,'풍속 '+Math.round(w.wind)+'m/s','순간최대풍속 '+Math.round(w.gust||w.wind)+'m/s');
   var rain=f(WX_RAIN,function(l){return w.rain3h>=l.min3h||w.rain12h>=l.min12h;}); if(rain) h+=wxBanner(rain,'3시간 '+Math.round(w.rain3h)+'mm · 12시간 '+Math.round(w.rain12h)+'mm','기상청 호우특보 기준');
-  box.innerHTML=(h?'<div class="wx">'+h+'<div class="wx-now">※ 실시간 관측값 기준 간이 판단이며, 공식 기상특보는 기상청 발표를 따르세요</div></div>':'')
-    +'<div class="wx-now" style="'+(h?'':'margin-top:8px')+'">인천공항 현재 '+Math.round(w.temp)+'℃ · 체감 '+Math.round(w.feels)+'℃ · 바람 '+Math.round(w.wind)+'m/s'+(h?'':' · 기상특보 없음')+'</div>';
+  var nAl=(h.match(/class="wx-b"/g)||[]).length;
+  var cp=function(ic,v,l){return '<div class="wx-c"><span>'+ic+'</span><b>'+v+'</b>'+l+'</div>';};
+  var chips='<div class="wx-chips">'+cp(wxIcon(w.code,w.day),Math.round(w.temp)+'℃','기온')+cp('🤒',Math.round(w.feels)+'℃','체감')+cp('💨',Math.round(w.wind)+'m/s','바람')
+    +'<div class="wx-c wx-st'+(nAl?' al':'')+'">'+(nAl?'⚠️<br>특보 '+nAl+'건':'✅<br>기상특보<br>없음')+'</div></div><div class="wx-src">인천공항 현재 기준</div>';
+  box.innerHTML=chips+(h?'<div class="wx">'+h+'<div class="wx-now">※ 실시간 관측값 기준 간이 판단이며, 공식 기상특보는 기상청 발표를 따르세요</div></div>':'');
 }
+function wxIcon(c,day){ if(c==null) return '⛅'; if(c===0) return day===0?'🌙':'☀️'; if(c<=2) return '⛅'; if(c===3) return '☁️'; if(c>=45&&c<=48) return '🌫️'; if(c>=95) return '⛈️'; if((c>=71&&c<=77)||c===85||c===86) return '❄️'; if(c>=51) return '🌧️'; return '⛅'; }
 function wxLoad(){
   if(Date.now()-WX.at<13*60000) return; WX.at=Date.now();
   var url='https://api.open-meteo.com/v1/forecast?latitude='+WX.lat+'&longitude='+WX.lng+'&current=temperature_2m,relative_humidity_2m,apparent_temperature,precipitation,weather_code,is_day,wind_speed_10m,wind_gusts_10m&wind_speed_unit=ms&hourly=precipitation&timezone=Asia%2FSeoul&forecast_days=1&past_days=1';
@@ -847,7 +853,7 @@ function wxLoad(){
     var r3=c.precipitation||0, r12=c.precipitation||0;
     try{var hp=d.hourly.precipitation, ht=d.hourly.time, i=ht.indexOf(c.time); if(i<0) i=ht.length-1;
       r3=hp.slice(Math.max(0,i-2),i+1).reduce(function(a,v){return a+(v||0);},0); r12=hp.slice(Math.max(0,i-11),i+1).reduce(function(a,v){return a+(v||0);},0);}catch(e){}
-    wxRender({feels:c.apparent_temperature,temp:c.temperature_2m,hum:c.relative_humidity_2m,wind:c.wind_speed_10m,gust:c.wind_gusts_10m,rain3h:r3,rain12h:r12});
+    wxRender({code:c.weather_code,day:c.is_day,feels:c.apparent_temperature,temp:c.temperature_2m,hum:c.relative_humidity_2m,wind:c.wind_speed_10m,gust:c.wind_gusts_10m,rain3h:r3,rain12h:r12});
   }).catch(function(){});
 }
 setInterval(function(){if(!document.hidden) wxLoad();},15*60000);

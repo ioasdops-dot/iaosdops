@@ -255,6 +255,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
     <button data-t="stat" role="tab">통계</button>
     <button data-t="vh" role="tab">차량</button>
     <button data-t="fc" role="tab">청결예보</button>
+    <button data-t="px" role="tab">여객</button>
     <button data-t="rep" role="tab">리포트</button>
   </div>
 
@@ -269,6 +270,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
   <section class="pane" id="p-at"></section>
   <section class="pane" id="p-vh"></section>
   <section class="pane" id="p-fc"></section>
+  <section class="pane" id="p-px"></section>
   <section class="pane" id="p-rep"></section>
 </div>
 
@@ -1712,6 +1714,312 @@ function loadStat(){
     renderStat({stats:r[0],detail:r[1],kpi:r[2].map(function(x){x.month=+x.month;return x;}),kpiT:r[3].map(function(x){x.idx=+x.idx;return x;}),intake:r[4]});
   });
 }
+/* ═══ 항공 여객 (제1·제2여객터미널) 공용 모듈 — 사업부앱·그룹앱 동일 ═══
+   fc_pax(terminal,pax_date,hour,dep,arr): 인천공항 '공항 예상 혼잡도' 엑셀을 터미널별로 저장. 그룹앱에서만 올리고 모든 앱이 읽음. */
+var PX_BLOCKS=[{a:6,b:10,shift:'오전'},{a:10,b:14,shift:'오전'},{a:14,b:18,shift:'오후'},{a:18,b:22,shift:'오후'}];
+var PX_WD=['일','월','화','수','목','금','토'];
+var PX_NAME={T1:'제1여객터미널',T2:'제2여객터미널',SUM:'제1+제2 합산'};
+var PX_COL={T1:'#12A594',T2:'#2F7DE1'};
+var PX={data:{T1:{},T2:{}},loaded:false};
+PX.kst=function(iso){ var d=new Date(new Date(iso).getTime()+9*3600000); return {h:d.getUTCHours(),ds:d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0')}; };
+PX.wd=function(ds){ return new Date(ds+'T00:00:00Z').getUTCDay(); };
+PX.md=function(d){ return (+d.slice(5,7))+'/'+(+d.slice(8,10))+'('+PX_WD[PX.wd(d)]+')'; };
+PX.load=async function(fetchAll){
+  try{
+    var r=await fetchAll(), m={T1:{},T2:{}};
+    if(!r.error) (r.data||[]).forEach(function(x){ var t=(x.terminal==='T2')?'T2':'T1', d=String(x.pax_date).slice(0,10); (m[t][d]=m[t][d]||[])[x.hour]=[Number(x.dep)||0,Number(x.arr)||0]; });
+    Object.keys(m).forEach(function(t){ Object.keys(m[t]).forEach(function(d){ for(var i=0;i<24;i++) if(!m[t][d][i]) m[t][d][i]=[0,0]; }); });
+    PX.data=m;
+  }catch(e){ PX.data={T1:{},T2:{}}; }
+  PX.loaded=true;
+};
+PX.series=function(t){
+  if(t==='T1'||t==='T2') return PX.data[t];
+  var a=PX.data.T1,b=PX.data.T2,o={};
+  Object.keys(a).forEach(function(d){ if(!b[d]) return; var v=[]; for(var i=0;i<24;i++) v[i]=[a[d][i][0]+b[d][i][0],a[d][i][1]+b[d][i][1]]; o[d]=v; });
+  return o;
+};
+PX.dates=function(t){ return Object.keys(PX.series(t)).sort(); };
+PX.blockTotals=function(S,d){ var v=S[d]||[]; return PX_BLOCKS.map(function(b){ var t=0; for(var h=b.a;h<b.b;h++){ var x=v[h]; if(x) t+=x[0]+x[1]; } return t; }); };
+PX.dayTotal=function(S,d){ var t=0; (S[d]||[]).forEach(function(x){ if(x) t+=x[0]+x[1]; }); return t; };
+// 청결예보 보정계수: 해당 요일의 가장 가까운 등록 일자 여객 ÷ 등록 일자 평균 (0.7~1.5배)
+PX.factors=function(t,w){
+  var S=PX.series(t), ds=Object.keys(S).sort(); if(ds.length<3) return null;
+  var today=PX.kst(new Date().toISOString()).ds, tgt=null;
+  for(var i=0;i<ds.length;i++){ if(ds[i]>=today&&PX.wd(ds[i])===w){ tgt=ds[i]; break; } }
+  if(!tgt) return null;
+  var base=[0,0,0,0]; ds.forEach(function(d){ PX.blockTotals(S,d).forEach(function(x,i){ base[i]+=x; }); }); base=base.map(function(x){ return x/ds.length; });
+  var tot=PX.blockTotals(S,tgt);
+  return {date:tgt,term:t,f:tot.map(function(x,i){ var r=base[i]>0?x/base[i]:1; return Math.max(0.7,Math.min(1.5,r)); }),tot:tot,n:ds.length};
+};
+PX.label=function(f){ return f>=1.12?['많음','#B4531A']:(f<=0.88?['적음','#4C8566']:['보통','#51708C']); };
+PX.cardHtml=function(fx){
+  if(!fx) return '';
+  var cells=PX_BLOCKS.map(function(b,i){ var L=PX.label(fx.f[i]); return '<div style="flex:1;text-align:center;padding:8px 0;border-radius:11px;background:#F4F8FB"><div style="font-size:10.5px;color:#999;font-weight:600">'+b.a+'~'+b.b+'시</div><div style="font-size:13px;font-weight:800;color:'+L[1]+';margin-top:2px">'+L[0]+'</div><div style="font-size:10.5px;color:#666;margin-top:1px">'+(fx.tot[i]/10000).toFixed(1)+'만명</div></div>'; }).join('');
+  return '<div style="background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(15,40,60,.08);padding:11px 12px;margin-bottom:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:800;color:#333">✈️ '+PX.md(fx.date)+' '+PX_NAME[fx.term]+' 여객 반영</span><span style="font-size:10.5px;color:#999">출국+입국 · 평균 대비</span></div><div style="display:flex;gap:6px">'+cells+'</div></div>';
+};
+PX.pills=function(view,own){
+  var items=[['cmp','T1·T2 비교'],['T1','제1여객터미널'],['T2','제2여객터미널']];
+  return '<div style="display:flex;gap:6px;margin-bottom:12px">'+items.map(function(x){ var on=(view===x[0]), c=x[0]==='T1'?PX_COL.T1:(x[0]==='T2'?PX_COL.T2:'#4B5563');
+    return '<button data-pxv="'+x[0]+'" style="flex:1;padding:11px 2px;border-radius:14px;border:2px solid '+(on?c:'transparent')+';background:'+(on?'#fff':'#E8ECF0')+';color:'+(on?c:'#667')+';font-size:13px;font-weight:900;cursor:pointer;box-shadow:'+(on?'0 2px 8px rgba(0,0,0,.1)':'none')+'">'+x[1]+(own===x[0]?'<div style="font-size:9.5px;font-weight:700;opacity:.8">내 터미널</div>':'')+'</button>'; }).join('')+'</div>';
+};
+/* ── T1·T2 비교 화면 ── */
+PX.compare=function(el,sub){
+  var S1=PX.series('T1'),S2=PX.series('T2'),d1=Object.keys(S1).sort(),d2=Object.keys(S2).sort();
+  var card='background:#fff;border-radius:22px;box-shadow:0 2px 12px rgba(15,40,60,.09);padding:18px 14px 16px;margin-bottom:16px';
+  var ttl='font-size:19px;font-weight:900;color:#1B2A38;padding:0 4px',cap='font-size:14px;color:#4A5F72;line-height:1.55;margin:3px 4px 8px';
+  if(sub) sub.textContent='제1 '+d1.length+'일 · 제2 '+d2.length+'일 등록';
+  if(!d1.length||!d2.length){
+    el.innerHTML='<div style="'+card+';text-align:center;padding:34px 18px"><div style="font-size:46px">✈️</div><div style="font-size:19px;font-weight:800;color:#1B2A38;margin-top:8px">비교할 자료가 부족합니다</div><div style="font-size:14px;color:#4A5F72;margin-top:6px;line-height:1.6">제1·제2여객터미널 자료가 모두 있어야 비교할 수 있어요.<br>(제1 '+d1.length+'일 · 제2 '+d2.length+'일 등록) 그룹앱에서 엑셀을 올려 주세요.</div></div>';
+    return;
+  }
+  var today=PX.kst(new Date().toISOString()).ds, h='';
+  var avg=function(S,ds){ return ds.reduce(function(a,d){ return a+PX.dayTotal(S,d); },0)/ds.length; };
+  var a1=avg(S1,d1),a2=avg(S2,d2);
+  var pick=function(ds){ var t=null; ds.forEach(function(d){ if(d===today) t=d; }); if(!t) ds.forEach(function(d){ if(!t&&d>today) t=d; }); return t||ds[ds.length-1]; };
+  var info=function(S,ds,a,k){ var d=pick(ds),dep=0,arr=0; S[d].forEach(function(x){ dep+=x[0]; arr+=x[1]; }); var t=dep+arr,r=t/a,
+    lv=r>=1.1?['평균 대비 높음','#FDEBDD','#9A4413']:(r<=0.9?['평균 대비 낮음','#E1F3E9','#27694A']:['평균 수준','#E3EEF8','#2A5B84']);
+    var hr=[];for(var q=0;q<24;q++){var s=0;ds.forEach(function(x){s+=S[x][q][0]+S[x][q][1];});hr[q]=s/ds.length;} var pk=0;hr.forEach(function(v,i){if(v>hr[pk])pk=i;});
+    return {k:k,d:d,t:t,dep:dep,arr:arr,lv:lv,hr:hr,pk:pk,avg:a,n:ds.length}; };
+  var i1=info(S1,d1,a1,'T1'),i2=info(S2,d2,a2,'T2');
+  // ① 예상 여객 비교 카드
+  var big=function(i){ var c=PX_COL[i.k]; return '<div style="flex:1;min-width:0;border-radius:18px;padding:12px 10px;background:'+c+'14;border:2px solid '+c+'55;text-align:center"><div style="font-size:13px;font-weight:900;color:'+c+'">'+PX_NAME[i.k]+'</div><div style="font-size:24px;font-weight:900;color:#1B2A38;margin:4px 0 0">'+paxKor(i.t).replace(' 명','')+'</div><div style="font-size:12px;color:#4A5F72">명 · '+PX.md(i.d)+'</div><div style="margin:8px 0 6px"><span style="display:inline-block;padding:5px 10px;border-radius:12px;background:'+i.lv[1]+';color:'+i.lv[2]+';font-size:12.5px;font-weight:900">'+i.lv[0]+'</span></div><div style="font-size:12px;color:#33475A;line-height:1.6">출국 <b>'+paxKor(i.dep)+'</b><br>입국 <b>'+paxKor(i.arr)+'</b></div></div>'; };
+  var ratio=i1.t?(i2.t/i1.t):0;
+  h+='<div style="'+card+'"><div style="'+ttl+'">✈️ 예상 여객 비교</div><div style="'+cap+'">출국+입국 · 날짜는 오늘 또는 가장 가까운 등록일</div><div style="display:flex;gap:10px">'+big(i1)+big(i2)+'</div>'
+    +'<div style="margin-top:12px;padding:10px 12px;background:#F3F7FA;border-radius:14px;font-size:13.5px;color:#33475A;line-height:1.6">제2터미널은 제1터미널의 약 <b style="font-size:16px;color:#1B2A38">'+Math.round(ratio*100)+'%</b> 수준 · 일평균 제1 '+paxKor(a1)+' / 제2 '+paxKor(a2)+'</div></div>';
+  // ② 시간대별 곡선 겹쳐 보기
+  var W=340,H=200,PL=8,PR=8,PT=14,PB=30,hm=Math.max.apply(null,i1.hr.concat(i2.hr))||1;
+  var X=function(t){return PL+(W-PL-PR)*t/24;},Y=function(v){return PT+(H-PT-PB)*(1-v/(hm*1.05));};
+  var line=function(hr,c,dash){ var pts=hr.map(function(v,k){return [X(k+0.5),Y(v)];}); return '<path d="'+paxSmooth(pts)+'" fill="none" stroke="'+c+'" stroke-width="3.2" stroke-linecap="round"'+(dash?' stroke-dasharray="'+dash+'"':'')+'/>'; };
+  var sv='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block" role="img" aria-label="시간대별 여객 비교">';
+  PX_BLOCKS.forEach(function(b,bi){ sv+='<rect x="'+X(b.a).toFixed(1)+'" y="'+PT+'" width="'+(X(b.b)-X(b.a)).toFixed(1)+'" height="'+(H-PT-PB)+'" fill="'+(bi%2?'#EEF4F9':'#E4EDF5')+'" rx="6"/><text x="'+((X(b.a)+X(b.b))/2).toFixed(1)+'" y="'+(H-PB-8)+'" text-anchor="middle" font-size="11" font-weight="800" fill="#3E6180">'+b.a+'~'+b.b+'시</text>'; });
+  sv+=line(i1.hr,PX_COL.T1)+line(i2.hr,PX_COL.T2);
+  [[i1,PX_COL.T1],[i2,PX_COL.T2]].forEach(function(p){ sv+='<circle cx="'+X(p[0].pk+0.5).toFixed(1)+'" cy="'+Y(p[0].hr[p[0].pk]).toFixed(1)+'" r="5.5" fill="#fff" stroke="'+p[1]+'" stroke-width="3.4"/>'; });
+  [0,6,12,18,24].forEach(function(t){ sv+='<text x="'+X(t).toFixed(1)+'" y="'+(H-9)+'" text-anchor="'+(t===0?'start':(t===24?'end':'middle'))+'" font-size="12" font-weight="700" fill="#4A5F72">'+t+'시</text>'; });
+  sv+='</svg>';
+  var lg='<div style="display:flex;gap:16px;font-size:13.5px;color:#33475A;font-weight:700;margin:6px 4px 0"><span><i style="display:inline-block;width:14px;height:5px;border-radius:3px;background:'+PX_COL.T1+';margin-right:5px;vertical-align:3px"></i>제1 · 최대 '+i1.pk+'~'+(i1.pk+1)+'시</span><span><i style="display:inline-block;width:14px;height:5px;border-radius:3px;background:'+PX_COL.T2+';margin-right:5px;vertical-align:3px"></i>제2 · 최대 '+i2.pk+'~'+(i2.pk+1)+'시</span></div>';
+  h+='<div style="'+card+'"><div style="'+ttl+'">시간대별 여객 비교</div><div style="'+cap+'">1시간 단위 일평균 (출국+입국)</div>'+sv+lg+'</div>';
+  // ③ 시간대 4구간 비교
+  var bl=function(S,ds){ return PX_BLOCKS.map(function(b){ var t=0; ds.forEach(function(d){ for(var k=b.a;k<b.b;k++) t+=S[d][k][0]+S[d][k][1]; }); return t/ds.length; }); };
+  var b1=bl(S1,d1),b2=bl(S2,d2),bm=Math.max.apply(null,b1.concat(b2))||1;
+  h+='<div style="'+card+'"><div style="'+ttl+'">시간대별 구간 비교</div><div style="'+cap+'">청결예보 시간대 기준 일평균 (단위: 만 명)</div>';
+  PX_BLOCKS.forEach(function(b,i){ var row=function(v,c,nm){ return '<div style="display:flex;align-items:center;gap:8px;margin-top:5px"><span style="width:20px;font-size:12px;font-weight:800;color:'+c+'">'+nm+'</span><div style="flex:1;height:16px;background:#EEF2F6;border-radius:8px;overflow:hidden"><div style="width:'+(v/bm*100).toFixed(1)+'%;height:100%;background:'+c+';border-radius:8px"></div></div><b style="width:42px;text-align:right;font-size:13px;color:#1B2A38">'+(v/10000).toFixed(1)+'</b></div>'; };
+    h+='<div style="margin-top:'+(i?12:4)+'px"><div style="font-size:14px;font-weight:900;color:#1B2A38">'+b.a+'~'+b.b+'시</div>'+row(b1[i],PX_COL.T1,'제1')+row(b2[i],PX_COL.T2,'제2')+'</div>'; });
+  h+='</div>';
+  // ④ 요일별 비교
+  var wk=function(S,ds){ return [1,2,3,4,5,6,0].map(function(w){ var a=ds.filter(function(d){return PX.wd(d)===w;}); return a.length?a.reduce(function(s,d){return s+PX.dayTotal(S,d);},0)/a.length:null; }); };
+  var w1=wk(S1,d1),w2=wk(S2,d2),wm=Math.max.apply(null,w1.concat(w2).map(function(x){return x||0;}))||1;
+  var W2=340,H2=210,B2=34,T2=26,gw=(W2-16)/7,bw=(gw-8)/2,Yb=function(v){return H2-B2-(H2-B2-T2)*v/(wm*1.04);},s3='<svg viewBox="0 0 '+W2+' '+H2+'" style="width:100%;display:block" role="img" aria-label="요일별 여객 비교">';
+  [1,2,3,4,5,6,0].forEach(function(w,k){ var x0=8+k*gw;
+    [[w1[k],PX_COL.T1,0],[w2[k],PX_COL.T2,1]].forEach(function(p){ if(p[0]===null) return; var yy=Yb(p[0]), bx=x0+4+p[2]*bw; s3+='<rect x="'+bx.toFixed(1)+'" y="'+yy.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+(H2-B2-yy).toFixed(1)+'" rx="5" fill="'+p[1]+'"/><text x="'+(bx+bw/2).toFixed(1)+'" y="'+(yy-5).toFixed(1)+'" text-anchor="middle" font-size="9.5" font-weight="800" fill="#1B2A38">'+(p[0]/10000).toFixed(1)+'</text>'; });
+    s3+='<text x="'+(x0+gw/2).toFixed(1)+'" y="'+(H2-10)+'" text-anchor="middle" font-size="16" font-weight="900" fill="'+(w===0?'#C0504D':(w===6?'#2F7FB8':'#1B2A38'))+'">'+PX_WD[w]+'</text>'; });
+  s3+='</svg>';
+  h+='<div style="'+card+'"><div style="'+ttl+'">요일별 평균 비교</div><div style="'+cap+'">요일별 일평균 (단위: 만 명)</div>'+s3+'<div style="display:flex;gap:16px;font-size:13.5px;color:#33475A;font-weight:700;margin:6px 4px 0"><span><i style="display:inline-block;width:13px;height:13px;border-radius:4px;background:'+PX_COL.T1+';margin-right:5px;vertical-align:-2px"></i>제1</span><span><i style="display:inline-block;width:13px;height:13px;border-radius:4px;background:'+PX_COL.T2+';margin-right:5px;vertical-align:-2px"></i>제2</span></div></div>';
+  h+='<div style="padding:13px 14px;background:#EEF3F7;border-radius:14px;font-size:14px;line-height:1.7;color:#33475A;margin-bottom:6px">※ 인천공항 <b>공항 예상 혼잡도</b> 예상 인원 기준이며 실제와 다를 수 있음. 각 사업부 청결예보는 자기 터미널 여객으로 보정됩니다(부대건물은 제1+제2 합산).</div>';
+  el.innerHTML=h;
+};
+/* ── 보기 전환: 비교 / 제1 / 제2 ── */
+PX.renderView=function(el,view,sub,own){
+  if(!el) return;
+  var tmp=document.createElement('div'), body=document.createElement('div'); tmp.innerHTML='';
+  if(view==='cmp') PX.compare(body,sub); else pxRenderTerm(body,view,sub);
+  el.innerHTML=PX.pills(view,own)+body.innerHTML;
+};
+
+function paxFmt(n){ return Math.round(n).toLocaleString(); }
+function paxPol(cx,cy,r,deg){ var a=deg*Math.PI/180; return [cx+r*Math.cos(a),cy-r*Math.sin(a)]; }
+function paxArc(cx,cy,r,d0,d1){ var p0=paxPol(cx,cy,r,d0), p1=paxPol(cx,cy,r,d1); return 'M'+p0[0].toFixed(1)+' '+p0[1].toFixed(1)+' A'+r+' '+r+' 0 0 1 '+p1[0].toFixed(1)+' '+p1[1].toFixed(1); }
+function paxSmooth(pts){ var d='M'+pts[0][0].toFixed(1)+','+pts[0][1].toFixed(1); for(var i=0;i<pts.length-1;i++){ var p0=pts[i-1]||pts[i], p1=pts[i], p2=pts[i+1], p3=pts[i+2]||p2; var c1=[p1[0]+(p2[0]-p0[0])/6,p1[1]+(p2[1]-p0[1])/6], c2=[p2[0]-(p3[0]-p1[0])/6,p2[1]-(p3[1]-p1[1])/6]; d+=' C'+c1[0].toFixed(1)+','+c1[1].toFixed(1)+' '+c2[0].toFixed(1)+','+c2[1].toFixed(1)+' '+p2[0].toFixed(1)+','+p2[1].toFixed(1); } return d; }
+function paxKor(n){ n=Math.round(n/1000)*1000; var m=Math.floor(n/10000), c=Math.round((n%10000)/1000); if(c===10){ m++; c=0; } if(!m) return c+'천 명'; return m+'만'+(c?' '+c+'천':'')+' 명'; }
+function pxRenderTerm(el,t,sub){
+  if(!el) return; var S=PX.series(t), ds=Object.keys(S).sort();
+  if(!ds.length){ if(sub) sub.textContent='공항 예상 여객 · 그룹앱에서 엑셀을 올리면 표시됩니다'; el.innerHTML='<div style="background:#fff;border-radius:20px;box-shadow:0 2px 12px rgba(15,40,60,.1);padding:34px 18px;text-align:center"><div style="font-size:46px">✈️</div><div style="font-size:19px;font-weight:800;color:#1B2A38;margin-top:8px">등록된 여객 자료가 없습니다</div><div style="font-size:15px;color:#3D5163;margin-top:10px;line-height:1.7">아래 <b>엑셀 올리기</b>에서<br>인천공항 홈페이지의 공항 예상 혼잡도 파일을<br>등록해 주세요.</div></div>'; return; }
+  if(sub) sub.textContent='등록 '+ds.length+'일 ('+PX.md(ds[0])+' ~ '+PX.md(ds[ds.length-1])+')';
+  var DEP='#2F7FB8', ARR='#2FA58C', MANY='#E08A4F', FEW='#5DB38A', MID='#7FB3DA';
+  var day=ds.map(function(d){ var v=S[d], dep=0, arr=0; for(var i=0;i<24;i++){ if(v[i]){ dep+=v[i][0]; arr+=v[i][1]; } } return {d:d,dep:dep,arr:arr,t:dep+arr}; });
+  var avg=day.reduce(function(a,x){ return a+x.t; },0)/day.length;
+  var today=PX.kst(new Date().toISOString()).ds, tg=null;
+  day.forEach(function(x){ if(x.d===today) tg=x; }); if(!tg) day.forEach(function(x){ if(!tg&&x.d>today) tg=x; }); if(!tg) tg=day[day.length-1];
+  var card='background:#fff;border-radius:22px;box-shadow:0 2px 12px rgba(15,40,60,.09);padding:18px 14px 16px;margin-bottom:16px';
+  var ttl='font-size:19px;font-weight:900;color:#1B2A38;padding:0 4px', cap='font-size:14px;color:#4A5F72;line-height:1.55;margin:3px 4px 8px';
+  var lv=function(r){ return r>=1.1?{k:2,t:'평균 대비 높음',c:MANY,bg:'#FDEBDD',fg:'#9A4413'}:(r<=0.9?{k:0,t:'평균 대비 낮음',c:FEW,bg:'#E1F3E9',fg:'#27694A'}:{k:1,t:'평균 수준',c:MID,bg:'#E3EEF8',fg:'#2A5B84'}); };
+  var r0=tg.t/avg, L=lv(r0), pos=Math.max(0,Math.min(1,(r0-0.7)/0.6)), ang=180-pos*180;
+  var wl=(tg.d===today?'오늘':(tg.d>today?'예정':'최근'))+' '+PX.md(tg.d)+' 예상 여객';
+  // ① 게이지
+  var cx=160, cy=128, R=100, mk=paxPol(cx,cy,R,ang);
+  var g='<svg viewBox="0 0 320 160" style="width:100%;display:block" role="img" aria-label="평소 대비 여객 수준">'
+    +'<path d="'+paxArc(cx,cy,R,180,122)+'" stroke="'+FEW+'" stroke-width="24" fill="none" stroke-linecap="round"/>'
+    +'<path d="'+paxArc(cx,cy,R,118,62)+'" stroke="'+MID+'" stroke-width="24" fill="none" stroke-linecap="round"/>'
+    +'<path d="'+paxArc(cx,cy,R,58,0)+'" stroke="'+MANY+'" stroke-width="24" fill="none" stroke-linecap="round"/>'
+    +'<circle cx="'+mk[0].toFixed(1)+'" cy="'+mk[1].toFixed(1)+'" r="15" fill="#fff" stroke="#1B2A38" stroke-width="4"/><text x="'+mk[0].toFixed(1)+'" y="'+(mk[1]+5).toFixed(1)+'" text-anchor="middle" font-size="14">✈️</text>'
+    +'<text x="'+cx+'" y="'+(cy-30)+'" text-anchor="middle" font-size="13" font-weight="700" fill="#4A5F72">출국+입국</text>'
+    +'<text x="'+cx+'" y="'+(cy+2)+'" text-anchor="middle" font-size="25" font-weight="900" fill="#1B2A38">약 '+paxKor(tg.t).replace(' 명','')+'</text>'
+    +'<text x="'+cx+'" y="'+(cy+22)+'" text-anchor="middle" font-size="14" font-weight="700" fill="#4A5F72">명</text>'
+    +'<text x="'+(cx-R)+'" y="'+(cy+26)+'" text-anchor="middle" font-size="12.5" font-weight="800" fill="#27694A">낮음</text><text x="'+(cx+R)+'" y="'+(cy+26)+'" text-anchor="middle" font-size="12.5" font-weight="800" fill="#9A4413">높음</text></svg>';
+  var mid=(tg.dep+tg.arr)||1, dp=tg.dep/mid;
+  var donut='<svg viewBox="0 0 44 44" style="width:92px;flex:none"><circle cx="22" cy="22" r="15.9" fill="none" stroke="'+ARR+'" stroke-width="7"/><circle cx="22" cy="22" r="15.9" fill="none" stroke="'+DEP+'" stroke-width="7" stroke-dasharray="'+(dp*100).toFixed(1)+' '+(100-dp*100).toFixed(1)+'" stroke-dashoffset="25"/><text x="22" y="24.5" text-anchor="middle" font-size="7" font-weight="900" fill="#1B2A38">'+Math.round(dp*100)+'%</text></svg>';
+  var h='<div style="'+card+';padding-bottom:18px"><div style="'+ttl+'">✈️ '+wl+'</div><div style="font-size:14px;color:#4A5F72;margin:3px 4px 0">등록 일자 평균 '+paxKor(avg)+' 대비</div>'+g
+    +'<div style="text-align:center;margin-top:2px"><span style="display:inline-block;padding:9px 18px;border-radius:16px;background:'+L.bg+';color:'+L.fg+';font-size:18px;font-weight:900">'+L.t+'</span></div>'
+    +'<div style="display:flex;align-items:center;gap:14px;margin-top:16px;padding:12px 14px;background:#F3F7FA;border-radius:16px">'+donut
+    +'<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:800;color:#33475A">출국 · 입국 구성</div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-top:7px"><i style="width:14px;height:14px;border-radius:5px;background:'+DEP+'"></i><span style="font-size:16px;font-weight:900;color:#1B2A38">'+paxKor(tg.dep)+'</span><span style="font-size:12.5px;color:#4A5F72">출국</span></div>'
+    +'<div style="display:flex;align-items:center;gap:8px;margin-top:5px"><i style="width:14px;height:14px;border-radius:5px;background:'+ARR+'"></i><span style="font-size:16px;font-weight:900;color:#1B2A38">'+paxKor(tg.arr)+'</span><span style="font-size:12.5px;color:#4A5F72">입국</span></div></div></div></div>';
+  // ② 하루 흐름 (면적 그래프)
+  var hr=[]; for(var q=0;q<24;q++){ var s=0; ds.forEach(function(d){ var x=S[d][q]; if(x) s+=x[0]+x[1]; }); hr[q]=s/ds.length; }
+  var W=340,H=210,PL=10,PR=10,PT=40,PB=34, hm=Math.max.apply(null,hr)||1;
+  var X=function(t){ return PL+(W-PL-PR)*t/24; }, Y=function(v){ return PT+(H-PT-PB)*(1-v/(hm*1.05)); };
+  var pts=hr.map(function(v,k){ return [X(k+0.5),Y(v)]; }), line=paxSmooth(pts), area=line+' L'+X(23.5).toFixed(1)+','+(H-PB)+' L'+X(0.5).toFixed(1)+','+(H-PB)+' Z';
+  var pk=0; hr.forEach(function(v,k){ if(v>hr[pk]) pk=k; });
+  var sv='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block" role="img" aria-label="하루 시간대별 여객"><defs><linearGradient id="paxAr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+DEP+'" stop-opacity=".55"/><stop offset="1" stop-color="'+DEP+'" stop-opacity=".05"/></linearGradient></defs>';
+  PX_BLOCKS.forEach(function(b,bi){ sv+='<rect x="'+X(b.a).toFixed(1)+'" y="'+PT+'" width="'+(X(b.b)-X(b.a)).toFixed(1)+'" height="'+(H-PT-PB)+'" fill="'+(bi%2?'#EEF4F9':'#E4EDF5')+'" rx="6"/><text x="'+((X(b.a)+X(b.b))/2).toFixed(1)+'" y="'+(H-PB-9)+'" text-anchor="middle" font-size="11.5" font-weight="800" fill="#3E6180">'+b.a+'~'+b.b+'시</text>'; });
+  sv+='<path d="'+area+'" fill="url(#paxAr)"/><path d="'+line+'" fill="none" stroke="'+DEP+'" stroke-width="3.2" stroke-linecap="round"/>';
+  var px=X(pk+0.5), py=Y(hr[pk]), bx=Math.max(62,Math.min(W-62,px));
+  sv+='<circle cx="'+px.toFixed(1)+'" cy="'+py.toFixed(1)+'" r="6" fill="#fff" stroke="'+MANY+'" stroke-width="3.5"/><rect x="'+(bx-60).toFixed(1)+'" y="2" width="120" height="26" rx="13" fill="'+MANY+'"/><text x="'+bx.toFixed(1)+'" y="19.5" text-anchor="middle" font-size="12.5" font-weight="900" fill="#fff">'+pk+'~'+(pk+1)+'시 최대</text>';
+  [0,6,12,18,24].forEach(function(t){ sv+='<text x="'+X(t).toFixed(1)+'" y="'+(H-10)+'" text-anchor="'+(t===0?'start':(t===24?'end':'middle'))+'" font-size="12" font-weight="700" fill="#4A5F72">'+t+'시</text>'; });
+  sv+='</svg>';
+  h+='<div style="'+card+'"><div style="'+ttl+'">시간대별 여객</div><div style="'+cap+'">1시간 단위 일평균 (출국+입국)</div>'+sv;
+  var bl=PX_BLOCKS.map(function(b){ var dep=0,arr=0; ds.forEach(function(d){ for(var k=b.a;k<b.b;k++){ var x=S[d][k]; if(x){ dep+=x[0]; arr+=x[1]; } } }); return {b:b,dep:dep/ds.length,arr:arr/ds.length,t:(dep+arr)/ds.length}; });
+  var bmax=Math.max.apply(null,bl.map(function(x){ return x.t; }))||1;
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px">';
+  bl.forEach(function(x){ var q=x.t/bmax, st=q>=0.97?{t:'최대 혼잡',c:MANY,bg:'#FDEBDD',fg:'#9A4413'}:(q>=0.85?{t:'혼잡',c:MID,bg:'#E3EEF8',fg:'#2A5B84'}:{t:'여유',c:FEW,bg:'#E1F3E9',fg:'#27694A'});
+    h+='<div style="background:'+st.bg+';border-radius:16px;padding:12px 12px 11px"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:17px;font-weight:900;color:#1B2A38">'+x.b.a+'~'+x.b.b+'시</span><span style="font-size:12.5px;font-weight:900;color:'+st.fg+'">'+st.t+'</span></div><div style="font-size:16px;font-weight:900;color:#1B2A38;margin-top:5px">약 '+paxKor(x.t)+'</div><div style="display:flex;height:9px;border-radius:5px;overflow:hidden;margin-top:8px;background:rgba(255,255,255,.7)"><div style="width:'+(x.dep/x.t*100)+'%;background:'+DEP+'"></div><div style="flex:1;background:'+ARR+'"></div></div></div>'; });
+  h+='</div><div style="display:flex;gap:16px;font-size:13.5px;color:#33475A;font-weight:700;margin:10px 4px 0"><span><i style="display:inline-block;width:13px;height:13px;border-radius:4px;background:'+DEP+';margin-right:5px;vertical-align:-2px"></i>출국</span><span><i style="display:inline-block;width:13px;height:13px;border-radius:4px;background:'+ARR+';margin-right:5px;vertical-align:-2px"></i>입국</span></div></div>';
+  // ③ 요일별 세로 막대
+  var wk=[1,2,3,4,5,6,0].map(function(w){ var a=day.filter(function(x){ return PX.wd(x.d)===w; }); return {w:w,n:a.length,v:a.length?a.reduce(function(s,x){return s+x.t;},0)/a.length:null}; });
+  var wmax=Math.max.apply(null,wk.map(function(x){ return x.v||0; }))||1;
+  var W2=340,H2=230,B2=46,T2=30, cw=34, gap=(W2-20-cw*7)/6, Yb=function(v){ return H2-B2-(H2-B2-T2)*v/(wmax*1.04); };
+  var s3='<svg viewBox="0 0 '+W2+' '+H2+'" style="width:100%;display:block" role="img" aria-label="요일별 평균 여객">';
+  var ay=Yb(avg); s3+='<line x1="6" x2="'+(W2-6)+'" y1="'+ay.toFixed(1)+'" y2="'+ay.toFixed(1)+'" stroke="#7C8E9E" stroke-width="1.6" stroke-dasharray="5 5"/><text x="'+(W2-8)+'" y="'+(ay-5).toFixed(1)+'" text-anchor="end" font-size="11" font-weight="800" fill="#5A6E80">평균</text>';
+  wk.forEach(function(x,k){ var bx2=10+k*(cw+gap), best=x.v!==null&&x.v===wmax, yy=x.v===null?H2-B2:Yb(x.v), wd=(x.w===0||x.w===6);
+    if(x.v===null) s3+='<rect x="'+bx2.toFixed(1)+'" y="'+(H2-B2-26)+'" width="'+cw+'" height="26" rx="9" fill="none" stroke="#C3CFDA" stroke-width="2" stroke-dasharray="4 4"/><text x="'+(bx2+cw/2).toFixed(1)+'" y="'+(H2-B2-9)+'" text-anchor="middle" font-size="11" fill="#7C8E9E">없음</text>';
+    else s3+='<rect x="'+bx2.toFixed(1)+'" y="'+yy.toFixed(1)+'" width="'+cw+'" height="'+(H2-B2-yy).toFixed(1)+'" rx="10" fill="'+(best?DEP:'#9CC5E3')+'"/><text x="'+(bx2+cw/2).toFixed(1)+'" y="'+(yy-7).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="900" fill="#1B2A38">'+(x.v/10000).toFixed(1)+'</text>'+(best?'<text x="'+(bx2+cw/2).toFixed(1)+'" y="'+(yy-21).toFixed(1)+'" text-anchor="middle" font-size="14">👑</text>':'');
+    s3+='<text x="'+(bx2+cw/2).toFixed(1)+'" y="'+(H2-22)+'" text-anchor="middle" font-size="17" font-weight="900" fill="'+(x.w===0?'#C0504D':(x.w===6?'#2F7FB8':'#1B2A38'))+'">'+PX_WD[x.w]+'</text><text x="'+(bx2+cw/2).toFixed(1)+'" y="'+(H2-6)+'" text-anchor="middle" font-size="11" fill="#6B7F90">'+x.n+'일</text>'; });
+  s3+='</svg>';
+  h+='<div style="'+card+'"><div style="'+ttl+'">요일별 평균 여객</div><div style="'+cap+'">요일별 일평균 (단위: 만 명) · 👑 최대 요일</div>'+s3+'</div>';
+  // ④ 달력
+  var first=ds[0], last=ds[ds.length-1];
+  var d0=new Date(first+'T00:00:00Z'); d0=new Date(d0.getTime()-((d0.getUTCDay()+6)%7)*86400000);
+  var d1=new Date(last+'T00:00:00Z'); d1=new Date(d1.getTime()+((7-d1.getUTCDay())%7)*86400000);
+  var weeks=Math.round((d1-d0)/86400000/7)+1; if(weeks>6){ d0=new Date(d1.getTime()-(6*7-1)*86400000); weeks=6; }
+  var map={}; day.forEach(function(x){ map[x.d]=x; });
+  h+='<div style="'+card+'"><div style="'+ttl+'">일자별 여객 현황</div><div style="'+cap+'">평균 대비 수준을 색으로 구분</div><div style="display:grid;grid-template-columns:repeat(7,1fr);gap:6px;text-align:center">';
+  ['월','화','수','목','금','토','일'].forEach(function(w,k){ h+='<div style="font-size:14px;font-weight:900;color:'+(k===6?'#C0504D':(k===5?'#2F7FB8':'#33475A'))+'">'+w+'</div>'; });
+  for(var wi=0;wi<weeks;wi++) for(var di=0;di<7;di++){
+    var dt=new Date(d0.getTime()+(wi*7+di)*86400000), ds2=dt.toISOString().slice(0,10), x=map[ds2], dn=dt.getUTCDate();
+    var isT=ds2===today, ring=isT?'box-shadow:0 0 0 3px #1B2A38;':'';
+    if(x){ var rr=lv(x.t/avg), bg=rr.k===2?'#F4B98B':(rr.k===0?'#BFE5D0':'#C9DFF1');
+      h+='<div style="background:'+bg+';border-radius:12px;padding:6px 0 5px;'+ring+'"><div style="font-size:11px;font-weight:800;color:#33475A">'+(dn===1?(dt.getUTCMonth()+1)+'월':'')+'&nbsp;</div><div style="font-size:19px;font-weight:900;color:#1B2A38;line-height:1.05">'+dn+'</div><div style="font-size:12px;font-weight:800;color:#1B2A38;margin-top:2px">'+(x.t/10000).toFixed(1)+'</div></div>'; }
+    else h+='<div style="border-radius:12px;padding:6px 0 5px;background:#F1F5F8;'+ring+'"><div style="font-size:11px">&nbsp;</div><div style="font-size:17px;font-weight:700;color:#A4B3C0;line-height:1.1">'+dn+'</div><div style="font-size:12px">&nbsp;</div></div>'; }
+  h+='</div><div style="display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px;font-size:13.5px;font-weight:700;color:#33475A"><span><i style="display:inline-block;width:14px;height:14px;border-radius:5px;background:#F4B98B;margin-right:5px;vertical-align:-2px"></i>평균 대비 높음</span><span><i style="display:inline-block;width:14px;height:14px;border-radius:5px;background:#C9DFF1;margin-right:5px;vertical-align:-2px"></i>평균 수준</span><span><i style="display:inline-block;width:14px;height:14px;border-radius:5px;background:#BFE5D0;margin-right:5px;vertical-align:-2px"></i>낮음</span></div><div style="font-size:12.5px;color:#4A5F72;margin-top:6px">칸 안 숫자는 일 여객 (단위: 만 명)</div></div>';
+  h+='<div style="padding:13px 14px;background:#EEF3F7;border-radius:14px;font-size:14px;line-height:1.7;color:#33475A;margin-bottom:6px">※ 인천공항 <b>공항 예상 혼잡도</b>('+PX_NAME[t]+') 예상 인원 기준이며 실제와 다를 수 있음. 3일 이상 등록 시 해당 터미널 <b>청결예보</b>에 자동 반영.</div>';
+  el.innerHTML=h;
+}
+
+
+/* ---------- 여객 탭 (T1·T2 비교 + 엑셀 올리기: 그룹 소속 관리자만) ---------- */
+var PXG={view:'cmp',up:{term:'T1',files:[],busy:false},ed:null};
+function gpxFetchAll(){
+  var all=[],from=0,PAGE=1000;
+  function next(){ return sb.from('fc_pax').select('terminal,pax_date,hour,dep,arr').order('pax_date',{ascending:true}).order('hour',{ascending:true}).range(from,from+PAGE-1).then(function(r){
+    if(r.error) return {error:r.error,data:null}; all=all.concat(r.data||[]); if((r.data||[]).length<PAGE) return {data:all,error:null}; from+=PAGE; return next(); }); }
+  return next();
+}
+function gpxReload(){ return PX.load(gpxFetchAll); }
+function loadPx(){
+  var p=PX.loaded?Promise.resolve():gpxReload();
+  return p.then(function(){ renderPx(); });
+}
+function renderPx(){
+  var pane=$('p-px'); if(!pane) return;
+  var h='<div class="card" style="padding:12px 14px"><div style="font-size:15px;font-weight:800">✈️ 항공 여객</div><div id="pxSub" style="font-size:11.5px;color:#888;margin-top:2px">제1·제2여객터미널 예상 여객 · T1·T2 비교</div></div>'
+   +'<div id="pxBody"></div>'+(atCanEdit()?'<div id="pxMgr"></div>':'');
+  pane.innerHTML=h;
+  PX.renderView($('pxBody'),PXG.view,$('pxSub'),null);
+  if(atCanEdit()) pxMgrRender();
+}
+function pxMgrRender(){
+  var el=$('pxMgr'); if(!el) return;
+  var u=PXG.up, btn='border:0;border-radius:11px;padding:11px;font-size:13.5px;font-weight:800;cursor:pointer;';
+  var h='<div class="card" style="padding:14px"><div style="font-size:14px;font-weight:800;margin-bottom:8px">📂 엑셀 올리기 · 수정</div>'
+   +'<div style="font-size:11.5px;color:#666;line-height:1.55;background:#F3F4F6;border-radius:10px;padding:9px 11px;margin-bottom:10px">인천공항 홈페이지 <b>공항 예상 혼잡도</b>에서 받은 <b>E2026MMDD.xls</b> 파일을 터미널별로 올려 주세요. 여러 날짜를 한 번에 선택할 수 있어요. 같은 날짜는 덮어씁니다.</div>'
+   +'<div style="display:flex;gap:6px;margin-bottom:8px">'+['T1','T2'].map(function(t){var on=u.term===t;return '<button data-pxup="term" data-v="'+t+'" style="flex:1;'+btn+'background:'+(on?PX_COL[t]:'#E8ECF0')+';color:'+(on?'#fff':'#667')+'">'+PX_NAME[t]+'</button>';}).join('')+'</div>'
+   +'<button data-pxup="pick" style="width:100%;'+btn+'background:#2B2F36;color:#fff">📂 '+PX_NAME[u.term]+' 엑셀 선택</button><input id="pxFile" type="file" accept=".xls,.xlsx" multiple style="display:none">';
+  if(u.files.length){
+    h+='<div style="margin-top:12px;font-size:12.5px;font-weight:800">올릴 파일 확인</div>';
+    u.files.forEach(function(f){ if(!f.ok){h+='<div style="padding:9px 11px;margin-top:6px;background:#FDECEC;border-radius:10px;font-size:12px;color:#B03A3A"><b>'+esc(f.name)+'</b><br>'+esc(f.err)+'</div>';return;}
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-top:6px;background:#F3F7FA;border-radius:10px;font-size:12.5px"><b style="flex:1">'+PX.md(f.date)+'</b><span>출국 '+f.dep.toLocaleString()+' · 입국 '+f.arr.toLocaleString()+'</span></div>'; });
+    var ok=u.files.filter(function(f){return f.ok;}).length;
+    h+='<div style="display:flex;gap:6px;margin-top:10px"><button data-pxup="cancel" style="flex:1;'+btn+'background:#E6E8EC;color:#333">취소</button><button data-pxup="save" '+((ok&&!u.busy)?'':'disabled ')+'style="flex:2;'+btn+'background:'+PX_COL[u.term]+';color:#fff;opacity:'+((ok&&!u.busy)?1:.5)+'">'+(u.busy?'저장 중…':PX_NAME[u.term]+' '+ok+'일 저장')+'</button></div>';
+  }
+  h+='</div>';
+  ['T1','T2'].forEach(function(t){
+    var ds=Object.keys(PX.data[t]).sort().reverse();
+    h+='<div class="card" style="padding:14px"><div style="font-size:14px;font-weight:800;margin-bottom:8px;color:'+PX_COL[t]+'">'+PX_NAME[t]+' 저장된 날짜 ('+ds.length+')</div>';
+    if(!ds.length) h+='<div style="text-align:center;padding:14px;color:#999;font-size:12.5px">아직 저장된 자료가 없어요</div>';
+    ds.slice(0,40).forEach(function(d){ var tt=PX.dayTotal(PX.data[t],d);
+      h+='<div data-pxed="'+t+'|'+d+'" style="display:flex;align-items:center;gap:8px;padding:10px 11px;margin-bottom:5px;background:#fff;border:1px solid #E6E8EC;border-radius:10px;cursor:pointer;font-size:13px"><b style="flex:1">'+PX.md(d)+'</b><span style="color:#555">'+tt.toLocaleString()+'명</span><span style="color:#999">수정 ›</span></div>'; });
+    h+='</div>';
+  });
+  el.innerHTML=h;
+  var f=$('pxFile'); if(f) f.onchange=function(){ pxPick(f); };
+}
+function pxDetect(rows){ var s=''; for(var i=0;i<Math.min(rows.length,4);i++) s+=' '+rows[i].join(' '); if(/제\s*2\s*(여객)?\s*터미널|T\s*2|2\s*터미널/i.test(s)) return 'T2'; if(/제\s*1\s*(여객)?\s*터미널|T\s*1|1\s*터미널/i.test(s)) return 'T1'; return null; }
+function pxParse(file){
+  return file.arrayBuffer().then(function(buf){
+    var wb=XLSX.read(buf,{type:'array'}), so=wb.Sheets['출국승객예고'], si=wb.Sheets['입국승객예고'];
+    if(!so||!si) throw new Error('공항 승객예고 엑셀이 아닙니다 (출국승객예고·입국승객예고 시트 없음)');
+    var ro=XLSX.utils.sheet_to_json(so,{header:1,defval:''}), ri=XLSX.utils.sheet_to_json(si,{header:1,defval:''});
+    var dm=String((ro[0]||[])[0]||'').match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/); if(!dm) throw new Error('날짜를 찾지 못했습니다');
+    var date=dm[1]+'-'+String(dm[2]).padStart(2,'0')+'-'+String(dm[3]).padStart(2,'0');
+    var grab=function(rows){
+      var h0=rows.findIndex(function(r){return /^\s*0\s*~\s*1\s*시/.test(String(r[0]));}); if(h0<0) throw new Error('시간대별 표를 찾지 못했습니다');
+      var hi=-1; for(var k=h0-1;k>=0;k--){ if(String(rows[k][0]).trim()==='항목'){hi=k;break;} } if(hi<0) throw new Error('표 머리글(항목)을 찾지 못했습니다');
+      var ci=rows[hi].findIndex(function(c){return String(c).replace(/\s/g,'')==='계';}); if(ci<0) throw new Error("'계' 열을 찾지 못했습니다");
+      var out=[]; rows.slice(hi+1).forEach(function(r){ var m=String(r[0]).match(/^\s*(\d+)\s*~\s*(\d+)\s*시/); if(m&&+m[2]===+m[1]+1&&out[+m[1]]===undefined) out[+m[1]]=Number(r[ci])||0; });
+      for(var i=0;i<24;i++) if(out[i]===undefined) throw new Error(i+'~'+(i+1)+'시 행이 없습니다'); return out; };
+    var dep=grab(ro), arr=grab(ri), v=[], sd=0, sa=0; for(var i=0;i<24;i++){v[i]=[dep[i],arr[i]];sd+=dep[i];sa+=arr[i];}
+    return {ok:true,name:file.name,date:date,v:v,dep:sd,arr:sa,term:pxDetect(ro)||pxDetect(ri)};
+  });
+}
+function pxPick(inp){
+  var fs=Array.prototype.slice.call(inp.files||[]); if(!fs.length) return;
+  Promise.all(fs.map(function(f){ return pxParse(f).catch(function(e){return {ok:false,name:f.name,err:e.message||String(e)};}); })).then(function(out){
+    out.sort(function(a,b){return String(a.date||'z').localeCompare(String(b.date||'z'));});
+    var det=out.filter(function(f){return f.ok&&f.term;}); if(det.length&&det.every(function(f){return f.term===det[0].term;})) PXG.up.term=det[0].term;
+    PXG.up.files=out; pxMgrRender();
+  });
+}
+function pxSave(){
+  var u=PXG.up; if(u.busy) return; u.busy=true; pxMgrRender();
+  var list=u.files.filter(function(f){return f.ok;}), n=0;
+  list.reduce(function(p,f){ return p.then(function(){ return rpc('group_fc_pax_save',{p_terminal:u.term,p_date:f.date,p_vals:f.v}).then(function(){n++;}); }); },Promise.resolve())
+   .then(function(){ u.busy=false; u.files=[]; return gpxReload(); }).then(function(){ GF.ready=false; alert(n+'일치 저장했어요'); renderPx(); })
+   .catch(function(e){ u.busy=false; pxMgrRender(); alert('저장하지 못했어요: '+((e&&e.message)||e)); });
+}
+function pxEditOpen(t,d){
+  var v=[]; for(var i=0;i<24;i++) v[i]=(PX.data[t][d]&&PX.data[t][d][i])?PX.data[t][d][i].slice():[0,0];
+  PXG.ed={t:t,d:d,v:v};
+  var rows=''; for(var k=0;k<24;k++) rows+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="width:56px;font-size:12px;color:#555">'+k+'~'+(k+1)+'시</span><input id="pxd'+k+'" type="number" min="0" value="'+v[k][0]+'" style="flex:1;min-width:0;padding:7px;border:1px solid #D9DDE3;border-radius:8px"><input id="pxa'+k+'" type="number" min="0" value="'+v[k][1]+'" style="flex:1;min-width:0;padding:7px;border:1px solid #D9DDE3;border-radius:8px"></div>';
+  var m=document.createElement('div'); m.id='pxEd'; m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:60;display:flex;align-items:center;justify-content:center;padding:14px';
+  m.innerHTML='<div style="background:#fff;border-radius:18px;max-width:420px;width:100%;max-height:88vh;display:flex;flex-direction:column;overflow:hidden"><div style="padding:13px 16px;font-weight:800;font-size:15px;color:#fff;background:'+PX_COL[t]+'">'+PX_NAME[t]+' · '+PX.md(d)+' 수정</div><div style="padding:6px 14px 0;font-size:11.5px;color:#888;display:flex;gap:6px"><span style="width:56px"></span><b style="flex:1;text-align:center">출국</b><b style="flex:1;text-align:center">입국</b></div><div style="padding:6px 14px;overflow-y:auto">'+rows+'</div><div style="display:flex;gap:6px;padding:10px 14px 14px"><button data-pxe="del" class="sp-btn r" style="flex:1">삭제</button><button data-pxe="close" class="sp-btn g" style="flex:1">닫기</button><button data-pxe="save" class="sp-btn" style="flex:1.4">저장</button></div></div>';
+  document.body.appendChild(m);
+}
+function pxEditAct(a){
+  var e=PXG.ed; if(!e) return; var m=$('pxEd');
+  if(a==='close'){ if(m)m.remove(); PXG.ed=null; return; }
+  if(a==='del'){ if(!confirm(PX.md(e.d)+' '+PX_NAME[e.t]+' 자료를 삭제할까요?')) return;
+    rpc('group_fc_pax_delete',{p_terminal:e.t,p_date:e.d}).then(gpxReload).then(function(){GF.ready=false;if(m)m.remove();PXG.ed=null;renderPx();}).catch(function(x){alert('삭제하지 못했어요: '+((x&&x.message)||x));}); return; }
+  if(a==='save'){ var v=[]; for(var i=0;i<24;i++){ v[i]=[Math.max(0,parseInt($('pxd'+i).value,10)||0),Math.max(0,parseInt($('pxa'+i).value,10)||0)]; }
+    rpc('group_fc_pax_save',{p_terminal:e.t,p_date:e.d,p_vals:v}).then(gpxReload).then(function(){GF.ready=false;if(m)m.remove();PXG.ed=null;renderPx();}).catch(function(x){alert('저장하지 못했어요: '+((x&&x.message)||x));}); }
+}
+document.addEventListener('click',function(e){
+  var a=e.target.closest('#p-px [data-pxv]'); if(a){PXG.view=a.dataset.pxv;renderPx();return;}
+  a=e.target.closest('[data-pxup]'); if(a){ var k=a.dataset.pxup, u=PXG.up;
+    if(k==='term'){u.term=a.dataset.v;pxMgrRender();} else if(k==='pick'){var f=$('pxFile');if(f){f.value='';f.click();}} else if(k==='cancel'){u.files=[];pxMgrRender();} else if(k==='save'&&!a.disabled){pxSave();} return; }
+  a=e.target.closest('[data-pxed]'); if(a){var p=a.dataset.pxed.split('|');pxEditOpen(p[0],p[1]);return;}
+  a=e.target.closest('[data-pxe]'); if(a){pxEditAct(a.dataset.pxe);}
+});
+
 /* ---------- 청결예보 (그룹: 전 사업부 합산, 제1·제2여객터미널·부대건물 구분) ---------- */
 var GF_SECS=[{div:'T1',name:'제1여객터미널',ic:'🛫'},{div:'T2',name:'제2여객터미널',ic:'🛬'},{div:'BD',name:'부대건물',ic:'🏢'}];
 var GF_ZONES=[{k:'L/S|동편',zi:0},{k:'L/S|서편',zi:1},{k:'A/S|동편',zi:2},{k:'A/S|서편',zi:3}];
@@ -1767,8 +2075,10 @@ function gfBuild(div,raw){
   return sec;
 }
 function gfStaff(sec,rk,w,shift){var p=rk.split('|');if(sec.div!=='T1'||p[1]==='중앙')return null;var d=sec.staffDays[w+'|'+shift]||0;return d?((sec.staffSum[rk+'|'+w+'|'+shift]||0)/d):null;}
+function gfTerm(div){return div==='T1'?'T1':(div==='T2'?'T2':'SUM');}
 function gfInfo(sec,w){
-  var info=sec.rows.map(function(rk){var l=sec.lam[rk][w],lv=l.map(function(v){return gfLevel(sec,v);});return {rk:rk,l:l,lv:lv,sum:l.reduce(function(a,b){return a+b;},0),best:Math.min.apply(null,lv)};});
+  var fx=PX.factors(gfTerm(sec.div),w); sec.fx=fx;
+  var info=sec.rows.map(function(rk){var l=sec.lam[rk][w].map(function(v,i){return v*(fx?fx.f[i]:1);}),lv=l.map(function(v){return gfLevel(sec,v);});return {rk:rk,l:l,lv:lv,sum:l.reduce(function(a,b){return a+b;},0),best:Math.min.apply(null,lv)};});
   var dem={'오전':0,'오후':0},stf={'오전':0,'오후':0};
   info.forEach(function(r){GF_BLOCKS.forEach(function(b,bi){dem[b.shift]+=r.l[bi];});['오전','오후'].forEach(function(sh){var s=gfStaff(sec,r.rk,w,sh);if(s)stf[sh]+=s;});});
   info.forEach(function(r){r.short=GF_BLOCKS.map(function(b,bi){if(r.lv[bi]>1)return false;var s=gfStaff(sec,r.rk,w,b.shift);if(s===null||!stf[b.shift]||!dem[b.shift])return false;return (r.l[bi]/dem[b.shift])>=1.5*(s/stf[b.shift]);});});
@@ -1827,11 +2137,11 @@ function gfRender(){
   h+='</div></div>';
   h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(15,40,60,.08);font-size:11px;align-items:center"><b style="width:100%;font-size:12px">보는 법</b>'+[3,2,1,0].map(function(i){var L=GF_LV[i],d=['가장 몰림 · 인력 먼저 배치','민원 늘 수 있어 미리 살핌','보통 · 평소대로 순회','한산'][i];return '<span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:9px;background:'+L.bg+';color:'+L.fg+';font-weight:700">'+L.ic+' '+L.n+'<span style="font-weight:500;opacity:.85">'+d+'</span></span>';}).join('')+'</div>';
   GF.secs.forEach(function(sec){var meta=GF_SECS.filter(function(m){return m.div===sec.div;})[0], info=gfInfo(sec,w);
-    h+='<div class="card" style="padding:12px">'+gfHero(meta,sec,info,w)+(sec.n?gfTop3(sec,info,w)+'<div style="font-size:12.5px;font-weight:800;margin:4px 0 4px">구역별 예보</div>'+gfTable(meta,sec,info,w)+'<div style="margin-top:8px;font-size:10.5px;color:#aaa">민원 '+sec.n+'건('+((sec.from||'').slice(5).replace('-','/'))+'~) 기준'+(sec.skipped?' · 위치 미기재/기타 '+sec.skipped+'건 제외':'')+(sec.div!=='T1'?' · 인력 비교 없음':'')+'</div>':'<div style="font-size:12.5px;color:#999;padding:4px 2px">이 사업부는 아직 예보를 만들 민원 기록이 없어요.</div>')+'</div>';});
+    h+='<div class="card" style="padding:12px">'+gfHero(meta,sec,info,w)+(sec.n?PX.cardHtml(sec.fx)+gfTop3(sec,info,w)+'<div style="font-size:12.5px;font-weight:800;margin:4px 0 4px">구역별 예보</div>'+gfTable(meta,sec,info,w)+'<div style="margin-top:8px;font-size:10.5px;color:#aaa">민원 '+sec.n+'건('+((sec.from||'').slice(5).replace('-','/'))+'~) 기준'+(sec.skipped?' · 위치 미기재/기타 '+sec.skipped+'건 제외':'')+(sec.div!=='T1'?' · 인력 비교 없음':'')+'</div>':'<div style="font-size:12.5px;color:#999;padding:4px 2px">이 사업부는 아직 예보를 만들 민원 기록이 없어요.</div>')+'</div>';});
   pane.innerHTML=h;
 }
 function loadFc(){
-  var p=GF.ready?Promise.resolve(GF.raw):rpc('group_forecast_data').then(function(r){return r;});
+  var p=GF.ready?Promise.resolve(GF.raw):Promise.all([rpc('group_forecast_data'),gpxReload()]).then(function(r){return r[0];});
   return p.then(function(raw){
     if(!GF.ready){GF.raw=raw;GF.secs=GF_SECS.filter(function(m){return !divs.length||divs.some(function(d){return d.id===m.div;});}).map(function(m){return gfBuild(m.div,raw);});GF.ready=true;}
     if(GF.wd===null)GF.wd=gfWd(gfKst().ds);
@@ -1856,7 +2166,7 @@ document.addEventListener('click',function(e){
 
 function load(){
   stamp(); wxLoad();
-  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : state.tab==='fc' ? loadFc() : (state.tab==='stat' ? loadStat() : loadRep()));
+  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : state.tab==='fc' ? loadFc() : state.tab==='px' ? loadPx() : (state.tab==='stat' ? loadStat() : loadRep()));
   return p.catch(function(e){
     var msg=(e&&e.message)||'알 수 없는 오류';
     $('p-'+state.tab).innerHTML='<div class="card empty">데이터를 불러오지 못했어요.<br>'+esc(msg)+'<br>잠시 후 새로고침을 눌러 주세요.</div>';
@@ -1865,7 +2175,7 @@ function load(){
 function showTab(t){
   state.tab=t;
   document.querySelectorAll('.tabs button').forEach(function(b){var on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
-  ['now','div','at','sp','sc','lb','vh','fc','stat','rep'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
+  ['now','div','at','sp','sc','lb','vh','fc','px','stat','rep'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
   load();
 }
 

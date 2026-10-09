@@ -1100,7 +1100,9 @@ function spList(){
 }
 function spDetail(){
   var D=SP.detail, rows=D.rows||[], dates={}, by={};
-  rows.forEach(function(r){var d=String(r.work_date).slice(0,10); dates[d]=1; by[d]=by[d]||{}; by[d][r.division_id]=(by[d][r.division_id]||0)+Number(r.headcount||0);});
+  var unc={}, ucell=0;
+  rows.forEach(function(r){var d=String(r.work_date).slice(0,10); dates[d]=1; by[d]=by[d]||{}; by[d][r.division_id]=(by[d][r.division_id]||0)+Number(r.headcount||0);
+    if(r.confirmed===false){ucell++; unc[d]=unc[d]||{}; unc[d][r.division_id]=(unc[d][r.division_id]||0)+Number(r.headcount||0);}});
   var ds=Object.keys(dates).sort(), cols=divs.filter(function(d){return D.links.some(function(l){return l.division_id===d.id;});});
   var totD={}, grand=0, peak=0, peakD='';
   ds.forEach(function(d){var t=0; cols.forEach(function(c){var v=by[d][c.id]||0; totD[c.id]=(totD[c.id]||0)+v; t+=v;}); grand+=t; if(t>peak){peak=t;peakD=d;} by[d]._t=t;});
@@ -1111,8 +1113,8 @@ function spDetail(){
   if(!ds.length) return h+'<div class="card empty">연결된 행사에 입력된 날짜별 편성이 없어요.</div>';
   var mx=Math.max.apply(null,cols.map(function(c){return totD[c.id]||0;}).concat([1]));
   h+='<div class="card"><h3>사업부별 비교 <small>연인원</small></h3>'+cols.map(function(c){return '<div class="hb"><span>'+esc(c.short)+'</span><div class="b"><i style="width:'+((totD[c.id]||0)/mx*100)+'%;background:'+c.color+'"></i></div><em>'+n0(totD[c.id]||0)+'</em></div>';}).join('')+'</div>';
-  h+='<div class="card" style="overflow-x:auto"><h3>날짜별 투입 인원 <small>편성 기준</small></h3><table class="sp-tbl"><tr><th>날짜</th>'+cols.map(function(c){return '<th style="color:'+c.color+'">'+esc(c.short)+'</th>';}).join('')+'<th>합계</th></tr>'
-    +ds.map(function(d){return '<tr><td>'+d.slice(5)+'</td>'+cols.map(function(c){return '<td>'+n0(by[d][c.id]||0)+'</td>';}).join('')+'<td class="sm">'+n0(by[d]._t)+'</td></tr>';}).join('')
+  h+='<div class="card" style="overflow-x:auto"><h3>날짜별 투입 인원 <small>편성 기준</small></h3>'+(ucell?'<div class="note" style="text-align:left;color:#B45309">사업부에서 아직 확정하지 않은 편성 '+ucell+'칸이 포함돼 있어요. 확정 전에는 인원이 바뀔 수 있어요. (자동 편성만 있는 칸은 포함되지 않아요)</div>':'')+'<table class="sp-tbl"><tr><th>날짜</th>'+cols.map(function(c){return '<th style="color:'+c.color+'">'+esc(c.short)+'</th>';}).join('')+'<th>합계</th></tr>'
+    +ds.map(function(d){return '<tr><td>'+d.slice(5)+'</td>'+cols.map(function(c){var u=(unc[d]||{})[c.id]||0;return '<td>'+n0(by[d][c.id]||0)+(u?'<div style="font-size:10px;color:#B45309;font-weight:700">미확정 '+n0(u)+'</div>':'')+'</td>';}).join('')+'<td class="sm">'+n0(by[d]._t)+'</td></tr>';}).join('')
     +'<tr class="tot"><td>합계</td>'+cols.map(function(c){return '<td>'+n0(totD[c.id]||0)+'</td>';}).join('')+'<td>'+n0(grand)+'</td></tr></table></div>';
   h+=spCompare(D,ds,cols,by);
   return h;
@@ -1123,6 +1125,8 @@ function spTeamLabel(t){return t==='ADMIN'?'행정':t==='HQ'?'총괄':t;}
 function spCompare(D,ds,cols,by){
   if(D.actual===null||D.actual===undefined) return '<div class="card"><h3>편성 vs 실제 출근</h3><div class="empty">비교 함수(SQL 32)가 아직 적용되지 않았어요.</div></div>';
   var plan={},act={},allD={};
+  var pun={};
+  (D.rows||[]).forEach(function(r){var d=String(r.work_date).slice(0,10);if(r.confirmed===false)((pun[d]=pun[d]||{})[r.division_id]=pun[d][r.division_id]||{})[r.team_no]=1;});
   (D.rows||[]).forEach(function(r){var d=String(r.work_date).slice(0,10);allD[d]=1;((plan[d]=plan[d]||{})[r.division_id]=plan[d][r.division_id]||{})[r.team_no]=(plan[d][r.division_id][r.team_no]||0)+Number(r.headcount||0);});
   D.actual.forEach(function(r){var d=String(r.work_date).slice(0,10);allD[d]=1;((act[d]=act[d]||{})[r.division_id]=act[d][r.division_id]||{})[r.team_no]=spActHc(r);});
   var dl=Object.keys(allD).sort(), t=today(), tStr=ymd(t.y,t.m,t.d);
@@ -1147,7 +1151,7 @@ function spCompare(D,ds,cols,by){
     ks.forEach(function(k){any=true;
       var p=((plan[d]||{})[c.id]||{})[k]||0,a=((act[d]||{})[c.id]||{})[k]||0,future=d>tStr;
       var st=future?'예정':(!p&&a)?'계획 없음':(p&&!a)?'실적 없음':(p===a?'일치':'다름'), col=st==='일치'?GREEN:st==='다름'?BLUE:'#9AA0AB';
-      h+='<tr><td style="color:'+c.color+';font-weight:700">'+esc(c.short)+'</td><td>'+esc(spTeamLabel(k))+'</td><td>'+n0(p)+'</td><td style="color:'+col+';font-weight:800">'+(future?'–':n0(a))+'</td><td style="color:'+col+';font-size:11px;text-align:left">'+st+'</td></tr>';});
+      h+='<tr><td style="color:'+c.color+';font-weight:700">'+esc(c.short)+'</td><td>'+esc(spTeamLabel(k))+'</td><td>'+n0(p)+(((pun[d]||{})[c.id]||{})[k]?' <span style="font-size:10px;color:#B45309;font-weight:700">미확정</span>':'')+'</td><td style="color:'+col+';font-weight:800">'+(future?'–':n0(a))+'</td><td style="color:'+col+';font-size:11px;text-align:left">'+st+'</td></tr>';});
   });
   if(!any) h+='<tr><td colspan="5" style="text-align:center;color:#9AA0AB;padding:14px">이 날짜의 편성·실적이 없어요</td></tr>';
   return h+'</table></div>';

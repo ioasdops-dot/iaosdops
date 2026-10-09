@@ -4620,10 +4620,16 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
   <div id="wfSpDetailView" style="display:none;padding:13px">
     <button onclick="wfSpBackToList()" style="padding:6px 12px;background:var(--g2);color:var(--g5);border:none;border-radius:20px;font-size:12.5px;font-weight:700;cursor:pointer;margin-bottom:10px">← 목록</button>
     <div id="wfSpDetailHead" style="margin-bottom:10px"></div>
-    <div style="display:flex;gap:6px;margin-bottom:10px">
-      <button onclick="wfSpRefreshActuals()" style="padding:8px 14px;background:white;border:1.5px solid var(--g2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">🔄 실적 새로고침</button>
-      <button onclick="wfSpOpenReportPreview()" style="padding:8px 14px;background:white;border:1.5px solid var(--g2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">📄 보고서 미리보기</button>
+    <div style="display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap">
+      <button onclick="wfSpRefreshActuals()" style="padding:8px 14px;background:white;border:1.5px solid var(--g2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">🔄 새로고침</button>
+      <button onclick="wfSpConfirmAll()" style="padding:8px 14px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">✔ 전체 확정</button>
+      <button onclick="wfSpOpenReportPreview()" style="padding:8px 14px;background:white;border:1.5px solid var(--g2);border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap">📄 보고서 미리보기</button>
       <button onclick="wfSpDeleteEvent()" style="padding:8px 14px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">🗑 삭제</button>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:6px;font-size:12px;color:var(--g6);font-weight:600">
+      <span><span style="display:inline-block;width:12px;height:12px;background:#f3efff;border:1.5px solid #c4b5fd;border-radius:3px;margin-right:4px;vertical-align:middle"></span>자동 (ERP·휴무계획 반영, 미확인)</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:#e0f2fe;border:1.5px solid #7dd3fc;border-radius:3px;margin-right:4px;vertical-align:middle"></span>수정 (확정 전)</span>
+      <span><span style="display:inline-block;width:12px;height:12px;background:#fff;border-left:4px solid #16a34a;border-radius:3px;margin-right:4px;vertical-align:middle"></span>✔ 확정</span>
     </div>
     <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:11.5px;color:var(--g5)">
       <span><span style="display:inline-block;width:10px;height:10px;background:#dcfce7;border-radius:3px;margin-right:4px;vertical-align:middle"></span>실적 자동표시(계획 미입력)</span>
@@ -4665,10 +4671,11 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
     <h3 id="wfSpCellTitle" style="margin:0 0 12px">인원 입력</h3>
     <div id="wfSpCellBody"></div>
     <div style="display:flex;gap:8px">
-      <button onclick="wfSpDeleteCell()" style="padding:11px 14px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-weight:700;cursor:pointer">삭제</button>
-      <button onclick="hideM('wfSpCellModal')" style="flex:1;padding:11px;background:var(--g2);color:var(--g6);border:none;border-radius:8px;font-weight:700;cursor:pointer">취소</button>
-      <button onclick="wfSpSaveCell()" style="flex:1;padding:11px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">저장</button>
+      <button onclick="hideM('wfSpCellModal')" style="flex:1;padding:12px;background:var(--g2);color:var(--g6);border:none;border-radius:8px;font-weight:700;cursor:pointer">취소</button>
+      <button onclick="wfSpSaveCell(false)" style="flex:1;padding:12px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">저장</button>
+      <button onclick="wfSpSaveCell(true)" style="flex:1;padding:12px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-weight:700;cursor:pointer">✔ 확정</button>
     </div>
+    <button id="wfSpCellDelBtn" onclick="wfSpDeleteCell()" style="width:100%;margin-top:8px;padding:10px;background:#fee2e2;color:#dc2626;border:none;border-radius:8px;font-weight:700;cursor:pointer">삭제</button>
   </div></div>
 </div>
 
@@ -38683,12 +38690,15 @@ async function wfSpOpenEvent(id){
     '<div style="font-size:11.5px;color:var(--g4);margin-top:2px">작성자: '+eeEsc(ev.created_by||'-')+'</div>';
   var res=await sb.from('wf_special_assignments').select('*').eq('event_id', ev.id);
   wfSpAssignments=res.data||[];
+  await wfSpComputeAuto();
   await wfSpFetchActuals();
   wfSpRenderTable();
 }
 function wfSpBackToList(){ wfSpCurEvent=null; wfSpLoadEvents(); }
 async function wfSpRefreshActuals(){
-  toast('🔄 실적 불러오는 중...');
+  toast('🔄 ERP·휴무계획·실적 불러오는 중...');
+  try{ var rr=await sb.from('wf_special_assignments').select('*').eq('event_id', wfSpCurEvent.id); wfSpAssignments=rr.data||wfSpAssignments; }catch(e){}
+  await wfSpComputeAuto();
   await wfSpFetchActuals();
   wfSpRenderTable();
   toast('✓ 실적 반영 완료');
@@ -38699,8 +38709,61 @@ function wfSpDateRange(ev){
   return dates;
 }
 function wfSpFmtDate(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+// ★ 저장된 편성이 있으면 그것, 없으면 ERP근태·휴무계획으로 자동 계산한 값(_auto:true, id 없음)을 돌려줌 — 소계·내보내기·보고서도 이 값을 그대로 사용
 function wfSpFindAssign(teamCode, date){
-  return wfSpAssignments.find(function(a){ return a.team_no===teamCode && a.work_date===date; });
+  var saved=wfSpAssignments.find(function(a){ return a.team_no===teamCode && a.work_date===date; });
+  if(saved) return saved;
+  var au=wfSpAuto[date] && wfSpAuto[date][teamCode];
+  if(!au) return undefined;
+  if(teamCode==='ADMIN'||teamCode==='HQ'){
+    if(!au.names||!au.names.length) return undefined;
+    return {_auto:true, team_no:teamCode, work_date:date, names_text:au.names.join(', ')};
+  }
+  if(!au.leader && !(au.subs&&au.subs.length) && !au.staff) return undefined;
+  return {_auto:true, team_no:teamCode, work_date:date, leader_name:au.leader||null, subleader_names:(au.subs||[]).join(', ')||null, staff_count:au.staff||0};
+}
+// 칸 상태: 'none' | 'auto'(자동·미확인) | 'edited'(수정·미확정) | 'confirmed'(확정)
+function wfSpState(a){ if(!a) return 'none'; if(a._auto) return 'auto'; return a.confirmed?'confirmed':'edited'; }
+var WF_SP_STATE_STYLE={
+  auto:{bg:'background:#f3efff;box-shadow:inset 0 0 0 1.5px #c4b5fd', tag:'<span style="font-size:10px;font-weight:800;color:#6d28d9;background:#ede9fe;border-radius:6px;padding:1px 5px">자동</span>'},
+  edited:{bg:'background:#e0f2fe;box-shadow:inset 0 0 0 1.5px #7dd3fc', tag:'<span style="font-size:10px;font-weight:800;color:#0369a1;background:#bae6fd;border-radius:6px;padding:1px 5px">수정</span>'},
+  confirmed:{bg:'background:#fff;box-shadow:inset 4px 0 0 #16a34a', tag:'<span style="font-size:10px;font-weight:800;color:#15803d;background:#dcfce7;border-radius:6px;padding:1px 5px">✔확정</span>'}
+};
+// ── 자동 편성: 직원명단 − (고정휴무 + 휴직·산재 + ERP 근태[연차·병가 등]) = 출근 예정 인원 (반차는 출근으로 봄) ──
+var wfSpAuto={}; // date -> '1팀'..|'ADMIN'|'HQ' -> {leader, subs:[], staff, names:[]}
+async function wfSpComputeAuto(){
+  wfSpAuto={};
+  var ev=wfSpCurEvent; if(!ev) return;
+  try{
+    var dates=wfSpDateRange(ev); var dFrom=dates[0], dTo=dates[dates.length-1];
+    await wfLoadQStart();
+    var er=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,team'); });
+    var emps=er.data||[]; if(!emps.length) return;
+    var qs={}; dates.forEach(function(d){ qs[wfEffQuarter(d)]=1; qs[wfCalQuarter(d)]=1; });
+    var fo=await msFetchAll(function(){ return sb.from('wf_fixed_off').select('emp_no,off_day1,off_day2,quarter').in('quarter',Object.keys(qs)); });
+    var offBy={}; (fo.data||[]).forEach(function(o){ (offBy[o.emp_no]=offBy[o.emp_no]||{})[o.quarter]=o; });
+    var lv=await msFetchAll(function(){ return sb.from('wf_leave').select('emp_no,leave_type,start_date,end_date').lte('start_date',dTo).gte('end_date',dFrom); });
+    var el=await msFetchAll(function(){ return sb.from('erp_leave').select('emp_no,reason,start_date,end_date').lte('start_date',dTo).gte('end_date',dFrom); });
+    var asg=[]; try{ var ar=await sb.from('worklog_assign').select('*'); asg=ar.data||[]; }catch(e){}
+    dates.forEach(function(D){
+      var dow=wlDow(D), out={};
+      var absent={};
+      emps.forEach(function(e){ var o=wfPickOffRow(offBy[e.emp_no],D); if(o&&(o.off_day1===dow||o.off_day2===dow)) absent[e.emp_no]=1; });
+      (lv.data||[]).forEach(function(l){ if(String(l.start_date).slice(0,10)<=D && String(l.end_date).slice(0,10)>=D) absent[l.emp_no]=1; });
+      (el.data||[]).forEach(function(l){ if(String(l.start_date).slice(0,10)<=D && String(l.end_date).slice(0,10)>=D && !/전반|후반|반차/.test(l.reason||'')) absent[l.emp_no]=1; });
+      var wt={}; asg.forEach(function(a){ if(a.from_date<=D&&(!a.to_date||a.to_date>=D)) wt[a.emp_no]=a.work_team; });
+      emps.slice().sort(function(a,b){ return String(a.name).localeCompare(String(b.name),'ko'); }).forEach(function(e){
+        if(absent[e.emp_no]) return;
+        var t=wt[e.emp_no]||e.team, code=null;
+        if(/^\d+팀$/.test(t||'')) code=t; else if(t==='행정') code='ADMIN'; else if(/^총괄/.test(t||'')) code='HQ';
+        if(!code) return;
+        var o=out[code]||(out[code]={leader:null,subs:[],staff:0,names:[]});
+        if(code==='ADMIN'||code==='HQ'){ o.names.push(e.name); return; }
+        if(e.position==='팀장') o.leader=e.name; else if(e.position==='조장') o.subs.push(e.name); else o.staff++;
+      });
+      wfSpAuto[D]=out;
+    });
+  }catch(err){ console.error('특별근무 자동편성 계산 실패',err); wfSpAuto={}; }
 }
 function wfSpTeamHeadcount(a){
   if(!a) return 0;
@@ -38868,7 +38931,7 @@ function wfSpRenderTable(){
   var h='<table style="border-collapse:collapse;font-size:12px;white-space:nowrap">';
   h+='<thead><tr style="background:var(--navy);color:#fff">'+
      '<th style="padding:8px 8px;position:sticky;left:0;background:var(--navy);z-index:2">구분</th>'+
-     '<th style="padding:8px 10px;position:sticky;left:52px;background:var(--navy);z-index:2">팀/조</th>';
+     '<th style="padding:8px 10px;position:sticky;left:var(--sp1w,52px);background:var(--navy);z-index:2">팀/조</th>';
   dates.forEach(function(dt){
     var dobj=new Date(dt+'T00:00:00');
     h+='<th style="padding:8px 12px">'+(dobj.getMonth()+1)+'/'+dobj.getDate()+'('+weekMap[dobj.getDay()]+')</th>';
@@ -38895,7 +38958,7 @@ function wfSpRenderTable(){
     if(spanInfo){
       h+='<td rowspan="'+spanInfo.span+'" style="padding:8px;font-weight:800;text-align:center;position:sticky;left:0;background:var(--g2);color:var(--navy)">'+(spanInfo.label||'')+'</td>';
     }
-    h+='<td style="padding:8px 10px;font-weight:'+(isSum?'800':'700')+';position:sticky;left:52px;background:'+rowBg+'">'+row.label+'</td>';
+    h+='<td style="padding:8px 10px;font-weight:'+(isSum?'800':'700')+';position:sticky;left:var(--sp1w,52px);background:'+rowBg+'">'+row.label+'</td>';
     dates.forEach(function(dt){
       if(isSum){
         // ★ 소계/총계도 화면에 실제로 표시되는 각 칸의 값(실적 있으면 실적, 없으면 계획)을 그대로 더해야
@@ -38915,7 +38978,10 @@ function wfSpRenderTable(){
         var actN0=wfSpActualFor(row.code, dt);
         var isPastN=dt<kstDate();
         var labelN = isPastN ? ((wfSpActualAsNamesShape(actN0)||{}).names_text || '0명(실적)') : wfSpCellLabel(row, an);
-        h+='<td onclick="wfSpOpenCell(\''+row.code+'\',\''+dt+'\')" style="padding:8px 10px;cursor:pointer;'+(labelN?'color:var(--navy)':'color:var(--g3);text-align:center')+'">'+(labelN||'+ 등록')+'</td>';
+        var emptyN = !isPastN && !labelN && an && !an._auto; // 저장은 됐지만 아무도 없음
+        if(emptyN) labelN='근무자 없음';
+        var stN=wfSpState(an), ssN=WF_SP_STATE_STYLE[stN]||null;
+        h+='<td onclick="wfSpOpenCell(\''+row.code+'\',\''+dt+'\')" style="padding:8px 10px;cursor:pointer;'+(emptyN?'color:var(--g4);font-weight:700':(labelN?'color:var(--navy)':'color:var(--g3);text-align:center'))+(ssN?';'+ssN.bg:'')+'"><div>'+(labelN||'+ 등록')+'</div>'+(ssN&&!isPastN?'<div style="margin-top:3px">'+ssN.tag+'</div>':'')+'</td>';
       }else{
         var a=wfSpFindAssign(row.code, dt);
         var act=wfSpActualFor(row.code, dt);
@@ -38923,7 +38989,8 @@ function wfSpRenderTable(){
         // ★ 실적이 있으면 실적을 주(main) 텍스트로, 계획은 보조(sub) 텍스트로 표시 — 계획=실적 녹색 / 계획≠실적 파랑
         var label, cellBg='', cellColor='color:var(--g3);text-align:center', subline='';
         if(status==='none'){
-          label='+ 등록';
+          label=(a&&!a._auto)?'근무자 없음':'+ 등록';
+          if(a&&!a._auto) cellColor='color:var(--g4);font-weight:700';
         }else if(status==='auto'){
           label=wfSpActualSummary(act);
           cellBg='background:#dcfce7';
@@ -38944,13 +39011,21 @@ function wfSpRenderTable(){
           label=wfSpCellLabel(row, a);
           cellColor='color:var(--navy)';
         }
+        // ★ 자동(미확인)/수정(미확정)/확정 구분 — 계획만 있는 칸은 칸 전체 색, 실적과 함께 표시되는 칸은 작은 표식만
+        var stT=wfSpState(a), ssT=WF_SP_STATE_STYLE[stT]||null;
+        if(ssT){
+          if(status==='planonly'||(status==='none'&&a&&!a._auto)) cellBg=ssT.bg;
+          subline+='<div style="margin-top:3px">'+ssT.tag+'</div>';
+        }
         h+='<td onclick="wfSpOpenCell(\''+row.code+'\',\''+dt+'\')" style="padding:8px 10px;cursor:pointer;'+cellBg+';'+cellColor+'"><div>'+(label||'+ 등록')+'</div>'+subline+'</td>';
       }
     });
     h+='</tr>';
   });
   h+='</tbody></table>';
-  document.getElementById('wfSpTableWrap').innerHTML=h;
+  var wrapEl=document.getElementById('wfSpTableWrap'); wrapEl.innerHTML=h;
+  // ★ 왼쪽 고정열(구분) 실제 폭을 재서 두 번째 고정열(팀/조) 위치를 맞춤 — 글자 크기가 큰 기기에서 가로 스크롤 시 내용이 비쳐 보이던 문제 방지
+  try{ var th1=wrapEl.querySelector('thead th'); if(th1){ var tb=wrapEl.querySelector('table'); tb.style.setProperty('--sp1w', Math.ceil(th1.getBoundingClientRect().width)+'px'); } }catch(e){}
 }
 function wfSpRowDef(code){ return WF_SP_ROW_DEFS.find(function(r){return r.code===code;}); }
 var wfSpPick={leader:null, subs:[], names:[]};
@@ -38986,7 +39061,12 @@ async function wfSpOpenCell(code, date){
   var body=document.getElementById('wfSpCellBody');
   if(row.type==='names'){
     wfSpPick.names=(a&&a.names_text)?a.names_text.split(',').map(function(s){return s.trim();}).filter(Boolean):[];
-    body.innerHTML=
+    var stHintN='';
+    if(a&&a._auto) stHintN='<div style="font-size:12px;color:#6d28d9;background:#f3efff;padding:7px 9px;border-radius:6px;margin-bottom:10px">🤖 ERP 근태·휴무계획으로 자동 채운 값입니다 (확정 전).</div>';
+    else if(a&&a.confirmed) stHintN='<div style="font-size:12px;color:#15803d;background:#dcfce7;padding:7px 9px;border-radius:6px;margin-bottom:10px">✔ 확정됨 — '+eeEsc(a.confirmed_by||'')+'</div>';
+    else if(a) stHintN='<div style="font-size:12px;color:#0369a1;background:#e0f2fe;padding:7px 9px;border-radius:6px;margin-bottom:10px">✎ 수정됨 (아직 확정 전)</div>';
+    body.innerHTML=stHintN+
+      '<div style="font-size:12px;color:var(--g4);margin-bottom:8px">아무도 근무하지 않으면 선택 없이 [저장] 또는 [확정]을 누르세요 (근무자 없음).</div>'+
       '<label style="font-size:12.5px;font-weight:700;color:var(--g6)">선택 (여러명 가능, 검색으로 추가 가능)</label>'+
       '<input id="wfSpSearchNames" oninput="wfSpRenderNamesCandidates()" placeholder="다른 사람 이름 검색" style="width:100%;padding:9px;border:1.5px solid var(--g2);border-radius:8px;font-size:13px;margin:6px 0 8px;box-sizing:border-box">'+
       '<div id="wfSpNamesCandidates" style="display:flex;flex-wrap:wrap;max-height:200px;overflow-y:auto;margin-bottom:10px"></div>'+
@@ -39007,7 +39087,11 @@ async function wfSpOpenCell(code, date){
       wfSpPick.subs=(a&&a.subleader_names)?a.subleader_names.split(',').map(function(s){return s.trim();}).filter(Boolean):[];
     }
     var staffDefault = hasPlan ? ((a&&a.staff_count)!=null?a.staff_count:'') : (act?(act.staff||''):'');
-    var actualHintHtml = act ? ('<div style="font-size:11.5px;color:#15803d;background:#dcfce7;padding:6px 8px;border-radius:6px;margin-bottom:10px">📊 실제 출근실적: '+(wfSpActualSummary(act)||'-')+'</div>') : '';
+    var stHint='';
+    if(a&&a._auto) stHint='<div style="font-size:12px;color:#6d28d9;background:#f3efff;padding:7px 9px;border-radius:6px;margin-bottom:10px">🤖 ERP 근태·휴무계획으로 자동 채운 값입니다 (확정 전). 필요하면 고친 뒤 [저장] 또는 [확정]을 누르세요.</div>';
+    else if(a&&a.confirmed) stHint='<div style="font-size:12px;color:#15803d;background:#dcfce7;padding:7px 9px;border-radius:6px;margin-bottom:10px">✔ 확정됨 — '+eeEsc(a.confirmed_by||'')+'</div>';
+    else if(a) stHint='<div style="font-size:12px;color:#0369a1;background:#e0f2fe;padding:7px 9px;border-radius:6px;margin-bottom:10px">✎ 수정됨 (아직 확정 전)</div>';
+    var actualHintHtml = stHint+(act ? ('<div style="font-size:11.5px;color:#15803d;background:#dcfce7;padding:6px 8px;border-radius:6px;margin-bottom:10px">📊 실제 출근실적: '+(wfSpActualSummary(act)||'-')+'</div>') : '');
     body.innerHTML=
       actualHintHtml+
       '<label style="font-size:12.5px;font-weight:700;color:var(--g6)">팀장 선택 (1명, 검색으로 다른사람 추가 가능)</label>'+
@@ -39025,6 +39109,8 @@ async function wfSpOpenCell(code, date){
     wfSpRenderLeaderCandidates(); wfSpRenderLeaderSelected();
     wfSpRenderSubCandidates(); wfSpRenderSubSelected();
   }
+  var delBtn=document.getElementById('wfSpCellDelBtn');
+  if(delBtn){ var sv=wfSpAssignments.find(function(x){return x.team_no===code&&x.work_date===date;}); delBtn.style.display=sv?'block':'none'; delBtn.textContent=(wfSpAuto[date]&&wfSpAuto[date][code])?'↺ 자동값으로 되돌리기':'삭제'; }
   showM('wfSpCellModal');
 }
 var wfSp_namesDefaultCandidates=[], wfSp_leaderDefaultCandidates=[], wfSp_subDefaultCandidates=[];
@@ -39079,29 +39165,28 @@ function wfSpRenderSubSelected(){
     return '<span style="padding:6px 10px;background:var(--teal-bg);color:var(--teal);border-radius:16px;font-size:12.5px;font-weight:700;margin:2px 4px 0 0;display:inline-block">'+n+' <span onclick="wfSpToggleSub(\''+n.replace(/'/g,"\\'")+'\')" style="cursor:pointer;margin-left:4px">✕</span></span>';
   }).join('')||'<div style="font-size:12px;color:var(--g3)">선택된 조장이 없습니다</div>';
 }
-async function wfSpSaveCell(){
+async function wfSpSaveCell(doConfirm){
   if(!wfSpCellCtx||!wfSpCurEvent) return;
   var row=wfSpRowDef(wfSpCellCtx.code);
   var existing=wfSpFindAssign(wfSpCellCtx.code, wfSpCellCtx.date);
   var body={
-    id: existing?existing.id:('spa_'+Date.now()+'_'+Math.floor(Math.random()*1000)),
+    id: (existing&&existing.id)?existing.id:('spa_'+Date.now()+'_'+Math.floor(Math.random()*1000)),
     event_id: wfSpCurEvent.id, work_date: wfSpCellCtx.date, team_no: wfSpCellCtx.code,
-    updated_by: me?me.name:''
+    updated_by: me?me.name:'',
+    confirmed: !!doConfirm, confirmed_by: doConfirm?(me?me.name:''):null, confirmed_at: doConfirm?new Date().toISOString():null
   };
   if(row.type==='names'){
-    if(!wfSpPick.names.length){ toast('⚠️ 최소 1명 이상 선택해주세요'); return; }
-    body.names_text=wfSpPick.names.join(', ');
+    body.names_text=wfSpPick.names.join(', '); // 아무도 없으면 빈 값으로 저장 (근무자 없음)
   }else{
     var staffRaw=document.getElementById('wfSpStaffInput').value;
     var staff=staffRaw===''?0:parseInt(staffRaw,10);
-    if(!wfSpPick.leader&&!wfSpPick.subs.length&&!staff){ toast('⚠️ 팀장·조장·사원수 중 하나 이상 선택/입력해주세요'); return; }
     body.leader_name=wfSpPick.leader||null;
     body.subleader_names=wfSpPick.subs.join(', ')||null;
     body.staff_count=isNaN(staff)?0:staff;
   }
   var res=await sb.from('wf_special_assignments').upsert(body,{onConflict:'event_id,work_date,team_no'});
   if(res.error){ toast('저장 오류: '+_safeErrMsg(res.error)); return; }
-  toast('✓ 저장되었습니다');
+  toast(doConfirm?'✔ 확정되었습니다':'✓ 저장되었습니다 (확정 전)');
   hideM('wfSpCellModal');
   var r2=await sb.from('wf_special_assignments').select('*').eq('event_id', wfSpCurEvent.id);
   wfSpAssignments=r2.data||[];
@@ -39110,12 +39195,40 @@ async function wfSpSaveCell(){
 async function wfSpDeleteCell(){
   if(!wfSpCellCtx||!wfSpCurEvent) return;
   var existing=wfSpFindAssign(wfSpCellCtx.code, wfSpCellCtx.date);
-  if(!existing){ hideM('wfSpCellModal'); return; }
+  if(!existing||!existing.id){ hideM('wfSpCellModal'); return; }
   var res=await sb.from('wf_special_assignments').delete().eq('id', existing.id);
   if(res.error){ toast('삭제 오류: '+_safeErrMsg(res.error)); return; }
-  toast('🗑 삭제되었습니다');
+  toast((wfSpAuto[wfSpCellCtx.date]&&wfSpAuto[wfSpCellCtx.date][wfSpCellCtx.code])?'↺ 자동값으로 되돌렸습니다':'🗑 삭제되었습니다');
   hideM('wfSpCellModal');
   wfSpAssignments=wfSpAssignments.filter(function(a){return a.id!==existing.id;});
+  wfSpRenderTable();
+}
+async function wfSpConfirmAll(){
+  var ev=wfSpCurEvent; if(!ev) return;
+  var today=kstDate(), rows=[], nAuto=0, nEdit=0;
+  wfSpDateRange(ev).forEach(function(dt){
+    if(dt<today) return; // 지난 날짜는 실적 기준이라 제외
+    WF_SP_ROW_DEFS.forEach(function(row){
+      if(row.type==='sum') return;
+      var a=wfSpFindAssign(row.code, dt); if(!a) return;
+      var st=wfSpState(a); if(st==='confirmed') return;
+      var b={id:a.id||('spa_'+Date.now()+'_'+Math.floor(Math.random()*100000)+'_'+rows.length), event_id:ev.id, work_date:dt, team_no:row.code,
+             updated_by:me?me.name:'', confirmed:true, confirmed_by:me?me.name:'', confirmed_at:new Date().toISOString()};
+      if(row.type==='names'){ if(!a.names_text) return; b.names_text=a.names_text; }
+      else{ if(!a.leader_name&&!a.subleader_names&&!a.staff_count) return; b.leader_name=a.leader_name||null; b.subleader_names=a.subleader_names||null; b.staff_count=a.staff_count||0; }
+      if(st==='auto') nAuto++; else nEdit++;
+      rows.push(b);
+    });
+  });
+  if(!rows.length){ toast('확정할 칸이 없습니다'); return; }
+  if(!confirm('오늘 이후 날짜의 미확정 '+rows.length+'칸(자동 '+nAuto+' · 수정 '+nEdit+')을 현재 표시된 값 그대로 확정합니다.\n진행할까요?')) return;
+  for(var i=0;i<rows.length;i+=100){
+    var r=await sb.from('wf_special_assignments').upsert(rows.slice(i,i+100),{onConflict:'event_id,work_date,team_no'});
+    if(r.error){ toast('확정 오류: '+_safeErrMsg(r.error)); return; }
+  }
+  var r2=await sb.from('wf_special_assignments').select('*').eq('event_id', ev.id);
+  wfSpAssignments=r2.data||[];
+  toast('✔ '+rows.length+'칸 확정되었습니다');
   wfSpRenderTable();
 }
 async function wfSpDeleteEvent(){

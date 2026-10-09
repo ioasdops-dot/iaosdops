@@ -2175,7 +2175,6 @@ function admUserOpen(ix){
   var body='<div style="font-size:13px;font-weight:800;margin-bottom:8px">'+esc(u.name)+' <span style="font-weight:500;color:#777">('+esc(u.email||'')+')</span></div>'
    +'<label style="display:block;font-size:12px;color:#666;margin:6px 0 3px">직급</label><select data-adm-f="role" style="width:100%;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px">'+admRoleOpts(u.role)+'</select>'
    +'<label style="display:block;font-size:12px;color:#666;margin:8px 0 3px">소속 사업부</label><select data-adm-f="div" style="width:100%;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px">'+admDivOpts(u.division_id)+'</select>'
-   +'<label style="display:block;font-size:12px;color:#666;margin:8px 0 3px">팀</label><input data-adm-f="team" value="'+esc(u.team||'')+'" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px">'
    +'<label style="display:block;font-size:12px;color:#666;margin:8px 0 3px">상태</label><select data-adm-f="status" style="width:100%;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px"><option value="active"'+(u.status!=='inactive'?' selected':'')+'>사용 중</option><option value="inactive"'+(u.status==='inactive'?' selected':'')+'>사용 중지</option></select>'
    +(u.locked_at?'<label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-top:10px"><input type="checkbox" data-adm-f="unlock" checked> 🔒 로그인 잠금 해제</label>':'');
   var fcan=(state.role==='master'&&FEAT_ROLES.some(function(x){return x[0]===u.role;}));
@@ -2184,7 +2183,7 @@ function admUserOpen(ix){
     +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+FEATS.map(function(f){return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;padding:6px 10px;background:#F1F2F5;border-radius:16px"><input type="checkbox" data-adm-f="f_'+f[0]+'"'+(fsel.indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>';}).join('')+'</div>'
     +'<label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-top:8px;color:#666"><input type="checkbox" data-adm-f="f_reset"> 개인 지정 해제 (직급 기본값 따르기)</label></div>';
   admAsk('사용자 수정',body,'저장').then(function(v){ if(!v) return;
-    return rpc('group_adm_user_set',{p_target:u.id,p_pw:v.pw,p_role:v.role,p_div:v.div,p_team:v.team,p_status:v.status,p_unlock:!!v.unlock}).then(function(){
+    return rpc('group_adm_user_set',{p_target:u.id,p_pw:v.pw,p_role:v.role,p_div:v.div,p_status:v.status,p_unlock:!!v.unlock}).then(function(){
       if(!fcan) return;
       var nf=FEATS.map(function(f){return f[0];}).filter(function(k){return v['f_'+k];});
       var def=admFeatDefault(v.role).slice().sort().join(','), same=(nf.slice().sort().join(',')===def);

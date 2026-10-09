@@ -2110,7 +2110,17 @@ function admFeatHtml(){
      +admFeatBoxes(admFeatDefault(r[0]),'data-ftrole="'+r[0]+'" data-ftk')
      +'<button data-admact="ftrole" data-r="'+r[0]+'" class="sp-btn" style="width:100%;margin-top:10px">'+r[1]+' 기본값 저장</button></div>';
   });
+  h+='<div class="card" style="padding:13px 14px"><div style="font-size:13px;font-weight:800;margin-bottom:4px">서버 적용 상태</div><div style="font-size:11.5px;color:#888;margin-bottom:8px">화면 숨김과 별개로, DB 함수·자료 테이블에 기능 검사가 걸려 있는지 확인해요.</div><button data-admact="ftaudit" class="sp-btn g" style="width:100%">적용 상태 확인</button><div id="admAudit" style="margin-top:8px;font-size:12px;line-height:1.6"></div></div>';
   return h;
+}
+function admFeatAudit(){
+  var el=$('admAudit'); if(el) el.innerHTML='확인 중…';
+  rpc('group_feat_audit').then(function(rows){
+    rows=Array.isArray(rows)?rows:[]; var bad=rows.filter(function(r){return !r.ok&&r.detail!=='함수 없음(미설치)';}), none=rows.filter(function(r){return r.detail==='함수 없음(미설치)';});
+    var good=rows.length-bad.length-none.length;
+    el.innerHTML='<b style="color:'+(bad.length?'#C0485F':'#1B7A4B')+'">'+(bad.length?'⚠️ 검사가 빠진 항목 '+bad.length+'개':'✅ 모두 적용됨')+'</b> · 적용 '+good+'개'+(none.length?' · 미설치 '+none.length+'개':'')
+      +(bad.length?'<br>'+bad.map(function(r){return esc(r.item)+' ('+esc(r.kind)+(r.detail?' · '+esc(r.detail):'')+')';}).join('<br>')+'<br><span style="color:#888">41번 SQL을 다시 실행해 주세요.</span>':'');
+  }).catch(function(e){ if(el) el.textContent='확인하지 못했어요: '+admErr(e)+' (41번 SQL 실행 여부를 확인해 주세요)'; });
 }
 function admPwHtml(){
   var l=ADM.req; if(!l.length) return '<div class="card empty">비밀번호 재설정 요청이 없어요.</div>';
@@ -2187,7 +2197,7 @@ document.addEventListener('click',function(e){
   var a=e.target.closest('#p-adm [data-admsub]'); if(a){ ADM.sub=a.dataset.admsub; renderAdm(); return; }
   a=e.target.closest('#p-adm [data-admdiv]'); if(a){ ADM.div=a.dataset.admdiv; renderAdm(); return; }
   a=e.target.closest('#p-adm [data-admu]'); if(a){ admUserOpen(+a.dataset.admu); return; }
-  a=e.target.closest('#p-adm [data-admact]'); if(a){ if(a.dataset.admact==='ftrole'){ admFeatRoleSave(a.dataset.r); return; } admDo(a.dataset.admact,+a.dataset.i); }
+  a=e.target.closest('#p-adm [data-admact]'); if(a){ if(a.dataset.admact==='ftrole'){ admFeatRoleSave(a.dataset.r); return; } if(a.dataset.admact==='ftaudit'){ admFeatAudit(); return; } admDo(a.dataset.admact,+a.dataset.i); }
 });
 document.addEventListener('input',function(e){ if(e.target&&e.target.id==='admQ'){ ADM.q=e.target.value; var el=$('admUList'); var pos=e.target.selectionStart; renderAdm(); var q=$('admQ'); if(q){q.focus();try{q.setSelectionRange(pos,pos);}catch(x){}} } });
 

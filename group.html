@@ -334,7 +334,7 @@ function loadDivisions(){
 function renderGoBar(){
   var h='';
   divs.forEach(function(d){
-    var ok=(state.role==='master'||state.role==='group_viewer'||d.id===state.myDiv);
+    var ok=(state.role==='master'||state.role==='group_viewer'||state.role==='group_staff'||d.id===state.myDiv);
     h+='<a class="'+(ok?'':'off')+'" style="background:'+d.soft+'" href="index.html?app=1&div='+encodeURIComponent(d.id)+'">'+d.short+'<small>'+(ok?'앱 열기 ›':'내 사업부 아님')+'</small></a>';
   });
   $('goBar').innerHTML=h;
@@ -431,7 +431,7 @@ function renderNow(rows){
     }).join('')+'</div>';
   }
   var cards=divs.map(function(d){
-    var x=o[d.id], ok=(state.role==='master'||state.role==='group_viewer'||d.id===state.myDiv);
+    var x=o[d.id], ok=(state.role==='master'||state.role==='group_viewer'||state.role==='group_staff'||d.id===state.myDiv);
     return '<a class="dc" style="background:'+d.soft+'" href="index.html?app=1&div='+encodeURIComponent(d.id)+'"><div class="t"><span style="color:var(--ink)"><i style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+d.color+';margin-right:6px"></i>'+esc(d.name)+'</span><span>'+(ok?'상세 ›':'')+'</span></div>'
       +'<div class="big">'+n0(x.staff)+'<i>명</i><em>'+(x.rate==null?'정원 미등록':('근무율 '+x.rate+'%'))+'</em></div>'
       +'<div class="m6"><div>오전<b>'+n0(x.sh['오전'])+'</b></div><div>오후<b>'+n0(x.sh['오후'])+'</b></div><div>야간<b>'+n0(x.sh['야간'])+'</b></div>'
@@ -461,8 +461,17 @@ var AT_LV=['연차','반차','교육','출장','경조','건강검진','휴무',
 var AT_OPS={'유준영':'사업부장','양민석':'총괄1팀장','조준희':'총괄2팀장','이동환':'행정1','한지원':'행정2'};
 var AT_GRP={id:'ALL',short:'그룹',name:'그룹 소속 관리자',color:'#6B7280',soft:'#EEF0F4'};
 function admCanUse(){return state.role==='master'||state.role==='admin';}
+/* 기능 권한: 직급 기본값 + 개인 지정 (최고관리자가 관리 탭에서 지정) */
+var FEATS=[['now','현황판'],['div','사업부'],['at','근태'],['sp','특별근무'],['sc','일정'],['lb','자료실'],['stat','통계'],['vh','차량'],['fc','청결예보'],['px','여객'],['rep','리포트']];
+function featOk(k){ return !state.feats||state.feats.indexOf(k)>=0; }
+function applyFeats(){
+  document.querySelectorAll('.tabs button').forEach(function(b){ var k=b.dataset.t; if(k==='adm') return; b.style.display=featOk(k)?'':'none'; });
+  if(!featOk(state.tab)){ var f=FEATS.filter(function(x){return featOk(x[0]);})[0]; state.tab=f?f[0]:'now'; }
+  document.querySelectorAll('.tabs button').forEach(function(b){ b.classList.toggle('on',b.dataset.t===state.tab); });
+  ['now','div','at','sp','sc','lb','vh','fc','px','stat','rep','adm'].forEach(function(k){ var e=$('p-'+k); if(e) e.classList.toggle('on',k===state.tab); });
+}
 function atCanEdit(){return state.role==='master'||(state.role==='admin'&&state.myDiv==='ALL');}
-function atIsGroupMe(){return state.role!=='group_viewer'&&(state.myDiv==='ALL'||state.role==='master');}
+function atIsGroupMe(){return state.role!=='group_viewer'&&state.role!=='group_staff'&&(state.myDiv==='ALL'||state.role==='master');}
 function atToday(){var t=today();return ymd(t.y,t.m,t.d);}
 function atShift(ds,n){var d=new Date(ds+'T00:00:00Z');d.setUTCDate(d.getUTCDate()+n);return d.toISOString().slice(0,10);}
 function atSlot(p){
@@ -2024,7 +2033,8 @@ document.addEventListener('click',function(e){
 });
 
 /* ---------- 관리 탭 (그룹 관리자: 전 사업부 총괄) ---------- */
-var ADM={sub:'pend',pend:[],users:[],req:[],div:'ALL',q:'',busy:false};
+var ADM={sub:'pend',pend:[],users:[],req:[],div:'ALL',q:'',busy:false,feat:{roles:{},users:{}}};
+var FEAT_ROLES=[['admin','관리자'],['group_viewer','그룹 조회'],['group_staff','그룹 직원']];
 var ADM_ROLES=[['admin','관리자'],['manager','팀장'],['leader','조장'],['acting_leader','액팅리더'],['work_vehicle','차량운행'],['group_viewer','그룹 조회'],['group_staff','그룹 직원'],['group_leader','그룹 리더'],['division_head','사업부장'],['vehicle_guest','차량 게스트'],['member','열람전용']];
 function admRoleName(r){ if(r==='master') return '최고관리자'; var f=ADM_ROLES.filter(function(x){return x[0]===r;})[0]; return f?f[1]:(r||'-'); }
 function admDivOf(id){ return divs.filter(function(d){return d.id===id;})[0]||(id==='ALL'?AT_GRP:null); }
@@ -2052,17 +2062,21 @@ function admErr(e){ var m=(e&&e.message)||String(e); return m.replace(/^.*?excep
 function loadAdm(){
   var pane=$('p-adm'); if(!pane) return Promise.resolve();
   if(!admCanUse()){ pane.innerHTML='<div class="card empty">관리 기능은 관리자 이상 직급(최고관리자·관리자)만 사용할 수 있어요.</div>'; return Promise.resolve(); }
-  return Promise.all([rpc('group_adm_pending'),rpc('group_adm_users'),rpc('group_adm_pwreq')]).then(function(r){
-    ADM.pend=Array.isArray(r[0])?r[0]:[]; ADM.users=Array.isArray(r[1])?r[1]:[]; ADM.req=Array.isArray(r[2])?r[2]:[]; renderAdm();
+  var fp=state.role==='master'?rpc('group_feat_admin_load').catch(function(){return null;}):Promise.resolve(null);
+  return Promise.all([rpc('group_adm_pending'),rpc('group_adm_users'),rpc('group_adm_pwreq'),fp]).then(function(r){
+    ADM.pend=Array.isArray(r[0])?r[0]:[]; ADM.users=Array.isArray(r[1])?r[1]:[]; ADM.req=Array.isArray(r[2])?r[2]:[];
+    if(r[3]&&r[3].roles) ADM.feat={roles:r[3].roles||{},users:r[3].users||{}};
+    renderAdm();
   });
 }
 function renderAdm(){
   var pane=$('p-adm'); if(!pane) return;
   var np=ADM.pend.length, nr=ADM.req.filter(function(x){return x.status==='pending';}).length;
   var subs=[['pend','가입 승인',np],['user','사용자',0],['pw','비번 재설정',nr],['nt','그룹 공지',0]];
+  if(state.role==='master') subs.splice(3,0,['ft','기능 권한',0]);
   var h='<div style="display:flex;gap:6px;margin:12px 0 10px">'+subs.map(function(s){var on=ADM.sub===s[0];
     return '<button data-admsub="'+s[0]+'" style="flex:1;position:relative;padding:11px 2px;border-radius:12px;border:0;font-size:13px;font-weight:800;background:'+(on?'#2B2F36':'#E6E8EC')+';color:'+(on?'#fff':'#555')+'">'+s[1]+(s[2]?'<span style="position:absolute;top:-6px;right:-3px;min-width:18px;height:18px;border-radius:9px;background:#DC2626;color:#fff;font-size:11px;line-height:18px;padding:0 4px">'+s[2]+'</span>':'')+'</button>'; }).join('')+'</div>';
-  h+=ADM.sub==='pend'?admPendHtml():(ADM.sub==='user'?admUserHtml():(ADM.sub==='pw'?admPwHtml():admNoticeHtml()));
+  h+=ADM.sub==='pend'?admPendHtml():(ADM.sub==='user'?admUserHtml():(ADM.sub==='pw'?admPwHtml():(ADM.sub==='ft'?admFeatHtml():admNoticeHtml())));
   h+='<div class="card" style="padding:12px 14px"><div style="font-size:13px;font-weight:800;margin-bottom:6px">그 밖의 관리 (사업부 앱)</div><div style="font-size:11.5px;color:#888;margin-bottom:8px">공지 수정·산업재해·데이터 다운로드·저장공간 등은 각 사업부 앱의 관리자 화면에서 처리해요.</div><div style="display:flex;gap:6px">'
    +divs.map(function(d){return '<a href="index.html?app=1&div='+encodeURIComponent(d.id)+'" style="flex:1;text-align:center;text-decoration:none;padding:9px 2px;border-radius:10px;background:'+d.soft+';color:#2b3a55;font-size:12.5px;font-weight:800">'+esc(d.short)+' ›</a>';}).join('')+'</div></div>';
   pane.innerHTML=h;
@@ -2085,6 +2099,18 @@ function admUserHtml(){
   h+=list.slice(0,150).map(function(u){ var ix=ADM.users.indexOf(u), st=u.status==='inactive'?'<span style="color:#C0485F;font-size:11px;font-weight:800">사용 중지</span>':(u.locked_at?'<span style="color:#B4531A;font-size:11px;font-weight:800">🔒 잠김</span>':'');
     return '<div data-admu="'+ix+'" class="card" style="padding:11px 13px;display:flex;align-items:center;gap:8px;cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:800">'+esc(u.name)+' '+st+'</div><div style="font-size:11.5px;color:#777;margin-top:2px">'+esc(u.email||'')+(u.team?' · '+esc(u.team):'')+'</div></div>'+admDivPill(u.division_id)+'<span style="font-size:12px;font-weight:700;color:#444;min-width:54px;text-align:right">'+admRoleName(u.role)+'</span><span style="color:#aaa">›</span></div>'; }).join('');
   return h+'</div>';
+}
+function admFeatBoxes(sel,attr,extra){ return '<div style="display:flex;flex-wrap:wrap;gap:6px">'+FEATS.map(function(f){ return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;padding:6px 10px;background:#F1F2F5;border-radius:16px"><input type="checkbox" '+attr+'="'+f[0]+'"'+(extra||'')+(sel.indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>'; }).join('')+'</div>'; }
+function admFeatDefault(role){ var v=ADM.feat.roles[role]; return Array.isArray(v)?v:[]; }
+function admFeatHtml(){
+  var h='<div class="card" style="padding:12px 14px;font-size:12px;color:#666;line-height:1.6">직급마다 쓸 수 있는 그룹앱 기능의 <b>기본값</b>을 정해요. 특정 사람만 다르게 하려면 <b>사용자</b> 탭에서 그 사람을 눌러 개별로 지정해요. 최고관리자는 항상 전체 기능을 써요.</div>';
+  FEAT_ROLES.forEach(function(r){
+    var n=Object.keys(ADM.feat.users).filter(function(id){ var u=ADM.users.filter(function(x){return x.id===id;})[0]; return u&&u.role===r[0]; }).length;
+    h+='<div class="card" style="padding:13px 14px"><div style="display:flex;align-items:center;margin-bottom:8px"><b style="font-size:14.5px">'+r[1]+'</b><span style="margin-left:8px;font-size:11px;color:#888">'+ADM.users.filter(function(u){return u.role===r[0];}).length+'명'+(n?' · 개인 지정 '+n+'명':'')+'</span></div>'
+     +admFeatBoxes(admFeatDefault(r[0]),'data-ftrole="'+r[0]+'" data-ftk')
+     +'<button data-admact="ftrole" data-r="'+r[0]+'" class="sp-btn" style="width:100%;margin-top:10px">'+r[1]+' 기본값 저장</button></div>';
+  });
+  return h;
 }
 function admPwHtml(){
   var l=ADM.req; if(!l.length) return '<div class="card empty">비밀번호 재설정 요청이 없어요.</div>';
@@ -2126,6 +2152,12 @@ function admDo(a,i){
     return rpc('group_adm_notice',{p_title:t,p_content:c,p_popup:$('admNtP').checked,p_targets:tg}).then(function(n){ alert('공지를 등록했어요 ('+(typeof n==='number'?n:divs.length)+'개 사업부)'); $('admNt').value=''; $('admNc').value=''; }).catch(function(e){ alert('등록하지 못했어요: '+admErr(e)); });
   }
 }
+function admFeatRoleSave(role){
+  var f=Array.prototype.slice.call(document.querySelectorAll('[data-ftrole="'+role+'"]:checked')).map(function(x){return x.dataset.ftk;});
+  var nm=(FEAT_ROLES.filter(function(x){return x[0]===role;})[0]||[])[1]||role;
+  if(!confirm(nm+' 직급의 기본 기능을 '+f.length+'개로 저장할까요?\n(개인 지정이 있는 사람은 그대로 유지돼요)')) return;
+  rpc('group_feat_role_set',{p_role:role,p_features:f}).then(function(){ ADM.feat.roles[role]=f; alert('저장했어요'); renderAdm(); }).catch(function(e){ alert('저장하지 못했어요: '+admErr(e)); });
+}
 function admUserOpen(ix){
   var u=ADM.users[ix]; if(!u) return;
   if(u.role==='master'){ alert('최고관리자 계정은 변경할 수 없어요'); return; }
@@ -2136,14 +2168,26 @@ function admUserOpen(ix){
    +'<label style="display:block;font-size:12px;color:#666;margin:8px 0 3px">팀</label><input data-adm-f="team" value="'+esc(u.team||'')+'" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px">'
    +'<label style="display:block;font-size:12px;color:#666;margin:8px 0 3px">상태</label><select data-adm-f="status" style="width:100%;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px"><option value="active"'+(u.status!=='inactive'?' selected':'')+'>사용 중</option><option value="inactive"'+(u.status==='inactive'?' selected':'')+'>사용 중지</option></select>'
    +(u.locked_at?'<label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-top:10px"><input type="checkbox" data-adm-f="unlock" checked> 🔒 로그인 잠금 해제</label>':'');
+  var fcan=(state.role==='master'&&FEAT_ROLES.some(function(x){return x[0]===u.role;}));
+  var fcur=ADM.feat.users[u.id], fsel=Array.isArray(fcur)?fcur:admFeatDefault(u.role);
+  if(fcan) body+='<div style="margin-top:12px;padding-top:10px;border-top:1px solid #EEE"><div style="font-size:12px;color:#666;margin-bottom:6px">그룹앱 사용 기능 '+(Array.isArray(fcur)?'<b style="color:#B4531A">· 개인 지정</b>':'<span style="color:#999">· 직급 기본값</span>')+'</div>'
+    +'<div style="display:flex;flex-wrap:wrap;gap:6px">'+FEATS.map(function(f){return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;padding:6px 10px;background:#F1F2F5;border-radius:16px"><input type="checkbox" data-adm-f="f_'+f[0]+'"'+(fsel.indexOf(f[0])>=0?' checked':'')+'>'+f[1]+'</label>';}).join('')+'</div>'
+    +'<label style="display:flex;align-items:center;gap:6px;font-size:12px;margin-top:8px;color:#666"><input type="checkbox" data-adm-f="f_reset"> 개인 지정 해제 (직급 기본값 따르기)</label></div>';
   admAsk('사용자 수정',body,'저장').then(function(v){ if(!v) return;
-    return rpc('group_adm_user_set',{p_target:u.id,p_pw:v.pw,p_role:v.role,p_div:v.div,p_team:v.team,p_status:v.status,p_unlock:!!v.unlock}).then(function(){ alert('저장했어요'); return loadAdm(); }); }).catch(function(e){ alert('저장하지 못했어요: '+admErr(e)); });
+    return rpc('group_adm_user_set',{p_target:u.id,p_pw:v.pw,p_role:v.role,p_div:v.div,p_team:v.team,p_status:v.status,p_unlock:!!v.unlock}).then(function(){
+      if(!fcan) return;
+      var nf=FEATS.map(function(f){return f[0];}).filter(function(k){return v['f_'+k];});
+      var def=admFeatDefault(v.role).slice().sort().join(','), same=(nf.slice().sort().join(',')===def);
+      var arg=(v.f_reset||(same&&!Array.isArray(fcur)))?null:(same?null:nf);
+      if(arg===null&&!Array.isArray(fcur)) return;
+      return rpc('group_feat_user_set',{p_user:u.id,p_features:arg});
+    }).then(function(){ alert('저장했어요'); return loadAdm(); }); }).catch(function(e){ alert('저장하지 못했어요: '+admErr(e)); });
 }
 document.addEventListener('click',function(e){
   var a=e.target.closest('#p-adm [data-admsub]'); if(a){ ADM.sub=a.dataset.admsub; renderAdm(); return; }
   a=e.target.closest('#p-adm [data-admdiv]'); if(a){ ADM.div=a.dataset.admdiv; renderAdm(); return; }
   a=e.target.closest('#p-adm [data-admu]'); if(a){ admUserOpen(+a.dataset.admu); return; }
-  a=e.target.closest('#p-adm [data-admact]'); if(a){ admDo(a.dataset.admact,+a.dataset.i); }
+  a=e.target.closest('#p-adm [data-admact]'); if(a){ if(a.dataset.admact==='ftrole'){ admFeatRoleSave(a.dataset.r); return; } admDo(a.dataset.admact,+a.dataset.i); }
 });
 document.addEventListener('input',function(e){ if(e.target&&e.target.id==='admQ'){ ADM.q=e.target.value; var el=$('admUList'); var pos=e.target.selectionStart; renderAdm(); var q=$('admQ'); if(q){q.focus();try{q.setSelectionRange(pos,pos);}catch(x){}} } });
 
@@ -2300,6 +2344,7 @@ function load(){
   });
 }
 function showTab(t){
+  if(t!=='adm'&&!featOk(t)) return;
   state.tab=t;
   document.querySelectorAll('.tabs button').forEach(function(b){var on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
   ['now','div','at','sp','sc','lb','vh','fc','px','stat','rep','adm'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
@@ -2317,14 +2362,17 @@ function enter(){
   }).then(function(r){
     var row=(r.data||[])[0];
     if(r.error||!row){throw new Error('계정 정보를 확인할 수 없어요.');}
-    if(row.status!=='active'||(row.role!=='master'&&row.role!=='group_viewer'&&row.role!=='admin')){
+    if(row.status!=='active'||(row.role!=='master'&&row.role!=='group_viewer'&&row.role!=='admin'&&row.role!=='group_staff')){
       // 일반 직원은 사업부 앱으로
       location.replace('index.html?app=1');return;
     }
     state.role=row.role; state.myDiv=row.division_id; state.myName=row.name; state.myId=row.id; var _ta=$('tabAdm'); if(_ta) _ta.style.display=admCanUse()?'':'none';
     $('login').classList.add('hide');$('app').classList.remove('hide');
     state.month=lastMonths(1)[0];
-    return loadDivisions().then(function(){renderGoBar();var r=load();setTimeout(gfPopup,4000);return r;});
+    return sb.rpc('group_my_features').then(function(fr){
+      // 41번 SQL 전(오류)이면: 그룹 직원은 사용 불가, 그 외 직급은 기존대로 전체
+      if(fr&&!fr.error&&Array.isArray(fr.data)) state.feats=fr.data; else state.feats=(state.role==='group_staff'?['now']:null);
+    }).catch(function(){ state.feats=(state.role==='group_staff'?['now']:null); }).then(function(){ applyFeats(); return loadDivisions(); }).then(function(){renderGoBar();var r=load();setTimeout(gfPopup,4000);return r;});
   }).catch(function(e){showLogin((e&&e.message)||'로그인 중 문제가 생겼어요.');});
 }
 function readShared(){try{var a=JSON.parse(localStorage.getItem('t1_auth')||'null');return a&&a.access_token?a:null;}catch(e){return null;}}

@@ -1029,7 +1029,7 @@ function vhLogSheet(){
    +f('목적지','<input class="sp-in" id="vlDest" value="'+esc(E.dest||'')+'">')
    +f('목적','<input class="sp-in" id="vlPur" list="vhPurL" value="'+esc(E.purpose!=null?E.purpose:(v.purpose||''))+'"><datalist id="vhPurL">'+VH_PUR.map(function(p){return '<option value="'+p+'">';}).join('')+'</datalist>')
    +f('동승자','<input class="sp-in" id="vlCo" value="'+esc(E.co_rider||'')+'">')
-   +g2(f('주유','<input class="sp-in" id="vlFuel" placeholder="예: 40L" value="'+esc(E.fuel||'')+'">'),f('세차','<input class="sp-in" id="vlWash" placeholder="예: O" value="'+esc(E.washed||'')+'">'))
+   +g2(f('주유','<input class="sp-in" id="vlFuel" placeholder="예: 40L" value="'+esc(E.fuel||'')+'">'),f('세차','<select class="sp-in" id="vlWash"><option value="">선택 안 함</option>'+['세차완료','세차안함'].concat(E.washed&&E.washed!=='세차완료'&&E.washed!=='세차안함'?[E.washed]:[]).map(function(o){return '<option value="'+esc(o)+'"'+(E.washed===o?' selected':'')+'>'+esc(o)+'</option>';}).join('')+'</select>'))
    +f('비고','<input class="sp-in" id="vlMemo" value="'+esc(E.memo||'')+'">')
    +'<div id="vhErr" style="color:#C0485F;font-size:12px;min-height:16px"></div>'
    +'<div class="at-btns"><button type="button" class="sp-btn g" data-vx="vclose">취소</button><button type="button" class="sp-btn" data-vx="lsave">저장</button></div></div></div>';

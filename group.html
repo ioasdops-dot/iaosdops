@@ -257,6 +257,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
     <button data-t="fc" role="tab">청결예보</button>
     <button data-t="px" role="tab">여객</button>
     <button data-t="rep" role="tab">리포트</button>
+    <button data-t="adm" role="tab" id="tabAdm" style="display:none">관리</button>
   </div>
 
   <div id="wxAlert"></div>
@@ -271,6 +272,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
   <section class="pane" id="p-vh"></section>
   <section class="pane" id="p-fc"></section>
   <section class="pane" id="p-px"></section>
+  <section class="pane" id="p-adm"></section>
   <section class="pane" id="p-rep"></section>
 </div>
 
@@ -2020,6 +2022,129 @@ document.addEventListener('click',function(e){
   a=e.target.closest('[data-pxe]'); if(a){pxEditAct(a.dataset.pxe);}
 });
 
+/* ---------- 관리 탭 (그룹 관리자: 전 사업부 총괄) ---------- */
+var ADM={sub:'pend',pend:[],users:[],req:[],div:'ALL',q:'',busy:false};
+var ADM_ROLES=[['admin','관리자'],['manager','팀장'],['leader','조장'],['acting_leader','액팅리더'],['work_vehicle','차량운행'],['group_viewer','그룹 조회'],['group_leader','그룹 리더'],['division_head','사업부장'],['vehicle_guest','차량 게스트'],['member','열람전용']];
+function admRoleName(r){ if(r==='master') return '최고관리자'; var f=ADM_ROLES.filter(function(x){return x[0]===r;})[0]; return f?f[1]:(r||'-'); }
+function admDivOf(id){ return divs.filter(function(d){return d.id===id;})[0]||(id==='ALL'?AT_GRP:null); }
+function admDivPill(id){ var d=admDivOf(id); var c=d?d.soft:'#EEF0F4'; return '<span style="padding:2px 8px;border-radius:9px;background:'+c+';color:#2b3a55;font-size:11px;font-weight:800">'+esc(d?d.short:(id||'-'))+'</span>'; }
+function admDivOpts(sel){ return [{id:'ALL',short:'그룹'}].concat(divs).map(function(d){return '<option value="'+d.id+'"'+(d.id===sel?' selected':'')+'>'+esc(d.short)+'</option>';}).join(''); }
+function admRoleOpts(sel){ return ADM_ROLES.map(function(r){return '<option value="'+r[0]+'"'+(r[0]===sel?' selected':'')+'>'+r[1]+'</option>';}).join(''); }
+/* 입력 창(비밀번호 확인 포함) — 값을 돌려주는 Promise */
+function admAsk(title,bodyHtml,okLabel){
+  return new Promise(function(res){
+    var m=document.createElement('div'); m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:70;display:flex;align-items:center;justify-content:center;padding:14px';
+    m.innerHTML='<div style="background:#fff;border-radius:18px;max-width:380px;width:100%;max-height:88vh;overflow-y:auto"><div style="padding:14px 16px;font-weight:800;font-size:15px;border-bottom:1px solid #EEE">'+title+'</div><div style="padding:12px 16px">'+bodyHtml
+     +'<label style="display:block;font-size:12px;color:#666;margin:10px 0 4px">내 비밀번호 확인</label><input data-adm-f="pw" type="password" autocomplete="current-password" placeholder="관리자 본인 비밀번호" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px">'
+     +'<div data-adm-err style="color:#C0485F;font-size:12px;margin-top:6px;min-height:14px"></div></div><div style="display:flex;gap:8px;padding:0 16px 16px"><button data-adm-c class="sp-btn g" style="flex:1">취소</button><button data-adm-o class="sp-btn" style="flex:1.4">'+(okLabel||'확인')+'</button></div></div>';
+    document.body.appendChild(m);
+    var done=function(v){ m.remove(); res(v); };
+    m.querySelector('[data-adm-c]').onclick=function(){ done(null); };
+    m.querySelector('[data-adm-o]').onclick=function(){
+      var v={}; m.querySelectorAll('[data-adm-f]').forEach(function(e){ v[e.dataset.admF]=(e.type==='checkbox')?e.checked:e.value; });
+      if(!v.pw){ m.querySelector('[data-adm-err]').textContent='비밀번호를 입력해 주세요'; return; }
+      done(v);
+    };
+  });
+}
+function admErr(e){ var m=(e&&e.message)||String(e); return m.replace(/^.*?exception:?\s*/i,''); }
+function loadAdm(){
+  var pane=$('p-adm'); if(!pane) return Promise.resolve();
+  if(!atCanEdit()){ pane.innerHTML='<div class="card empty">관리 기능은 그룹 소속 관리자(최고관리자·그룹 관리자)만 사용할 수 있어요.</div>'; return Promise.resolve(); }
+  return Promise.all([rpc('group_adm_pending'),rpc('group_adm_users'),rpc('group_adm_pwreq')]).then(function(r){
+    ADM.pend=Array.isArray(r[0])?r[0]:[]; ADM.users=Array.isArray(r[1])?r[1]:[]; ADM.req=Array.isArray(r[2])?r[2]:[]; renderAdm();
+  });
+}
+function renderAdm(){
+  var pane=$('p-adm'); if(!pane) return;
+  var np=ADM.pend.length, nr=ADM.req.filter(function(x){return x.status==='pending';}).length;
+  var subs=[['pend','가입 승인',np],['user','사용자',0],['pw','비번 재설정',nr],['nt','그룹 공지',0]];
+  var h='<div style="display:flex;gap:6px;margin:12px 0 10px">'+subs.map(function(s){var on=ADM.sub===s[0];
+    return '<button data-admsub="'+s[0]+'" style="flex:1;position:relative;padding:11px 2px;border-radius:12px;border:0;font-size:13px;font-weight:800;background:'+(on?'#2B2F36':'#E6E8EC')+';color:'+(on?'#fff':'#555')+'">'+s[1]+(s[2]?'<span style="position:absolute;top:-6px;right:-3px;min-width:18px;height:18px;border-radius:9px;background:#DC2626;color:#fff;font-size:11px;line-height:18px;padding:0 4px">'+s[2]+'</span>':'')+'</button>'; }).join('')+'</div>';
+  h+=ADM.sub==='pend'?admPendHtml():(ADM.sub==='user'?admUserHtml():(ADM.sub==='pw'?admPwHtml():admNoticeHtml()));
+  h+='<div class="card" style="padding:12px 14px"><div style="font-size:13px;font-weight:800;margin-bottom:6px">그 밖의 관리 (사업부 앱)</div><div style="font-size:11.5px;color:#888;margin-bottom:8px">공지 수정·산업재해·데이터 다운로드·저장공간 등은 각 사업부 앱의 관리자 화면에서 처리해요.</div><div style="display:flex;gap:6px">'
+   +divs.map(function(d){return '<a href="index.html?app=1&div='+encodeURIComponent(d.id)+'" style="flex:1;text-align:center;text-decoration:none;padding:9px 2px;border-radius:10px;background:'+d.soft+';color:#2b3a55;font-size:12.5px;font-weight:800">'+esc(d.short)+' ›</a>';}).join('')+'</div></div>';
+  pane.innerHTML=h;
+}
+function admPendHtml(){
+  if(!ADM.pend.length) return '<div class="card empty">대기 중인 가입 신청이 없어요.</div>';
+  return ADM.pend.map(function(u,i){
+    return '<div class="card" style="padding:13px 14px"><div style="display:flex;align-items:center;gap:8px"><b style="font-size:15px">'+esc(u.name)+'</b>'+admDivPill(u.division_id)+'<span style="margin-left:auto;font-size:11px;color:#999">'+esc((u.created_at||'').slice(0,10))+'</span></div>'
+     +'<div style="font-size:12px;color:#666;margin:4px 0 8px">아이디 '+esc(u.email||'-')+(u.team?' · '+esc(u.team):'')+(u.employee_id?' · 사번 '+esc(u.employee_id):'')+(u.department?' · '+esc(u.department):'')+'</div>'
+     +'<div style="display:flex;gap:6px;margin-bottom:8px"><select data-admp="role" data-i="'+i+'" style="flex:1;padding:9px;border:1.5px solid #D9DDE3;border-radius:10px">'+admRoleOpts(u.role)+'</select><select data-admp="div" data-i="'+i+'" style="flex:1;padding:9px;border:1.5px solid #D9DDE3;border-radius:10px">'+admDivOpts(u.division_id)+'</select></div>'
+     +'<div style="display:flex;gap:6px"><button data-admact="reject" data-i="'+i+'" class="sp-btn r" style="flex:1">거부</button><button data-admact="approve" data-i="'+i+'" class="sp-btn" style="flex:2">승인</button></div></div>'; }).join('');
+}
+function admUserHtml(){
+  var pills=[{id:'ALL',short:'전체'}].concat(divs,[{id:'GRP',short:'그룹'}]);
+  var h='<div style="display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap">'+pills.map(function(d){var on=ADM.div===d.id;return '<button data-admdiv="'+d.id+'" style="padding:7px 12px;border-radius:14px;border:0;font-size:12.5px;font-weight:800;background:'+(on?'#2B2F36':'#E6E8EC')+';color:'+(on?'#fff':'#555')+'">'+esc(d.short)+'</button>';}).join('')+'</div>'
+   +'<input id="admQ" value="'+esc(ADM.q)+'" placeholder="이름·아이디 검색" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px;margin-bottom:8px">';
+  var list=ADM.users.filter(function(u){ if(ADM.div==='GRP'&&u.division_id!=='ALL') return false; if(ADM.div!=='ALL'&&ADM.div!=='GRP'&&u.division_id!==ADM.div) return false;
+    var q=ADM.q.trim(); return !q||String(u.name||'').indexOf(q)>=0||String(u.email||'').indexOf(q)>=0; });
+  h+='<div style="font-size:12px;color:#888;margin:0 2px 6px">'+list.length+'명</div><div id="admUList">';
+  h+=list.slice(0,150).map(function(u){ var ix=ADM.users.indexOf(u), st=u.status==='inactive'?'<span style="color:#C0485F;font-size:11px;font-weight:800">사용 중지</span>':(u.locked_at?'<span style="color:#B4531A;font-size:11px;font-weight:800">🔒 잠김</span>':'');
+    return '<div data-admu="'+ix+'" class="card" style="padding:11px 13px;display:flex;align-items:center;gap:8px;cursor:pointer"><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:800">'+esc(u.name)+' '+st+'</div><div style="font-size:11.5px;color:#777;margin-top:2px">'+esc(u.email||'')+(u.team?' · '+esc(u.team):'')+'</div></div>'+admDivPill(u.division_id)+'<span style="font-size:12px;font-weight:700;color:#444;min-width:54px;text-align:right">'+admRoleName(u.role)+'</span><span style="color:#aaa">›</span></div>'; }).join('');
+  return h+'</div>';
+}
+function admPwHtml(){
+  var l=ADM.req; if(!l.length) return '<div class="card empty">비밀번호 재설정 요청이 없어요.</div>';
+  return l.map(function(r,i){ var pend=r.status==='pending';
+    return '<div class="card" style="padding:13px 14px"><div style="display:flex;align-items:center;gap:8px"><b style="font-size:15px">'+esc(r.name)+'</b>'+(r.division_id?admDivPill(r.division_id):'')+'<span style="margin-left:auto;font-size:11px;font-weight:800;padding:3px 9px;border-radius:12px;background:'+(pend?'#FFF1D6':'#E1F3E9')+';color:'+(pend?'#9A6A00':'#27694A')+'">'+(pend?'대기중':'처리완료')+'</span></div>'
+     +'<div style="font-size:12px;color:#666;margin:4px 0">요청 아이디 '+esc(r.claimed_id||'-')+' · '+esc(String(r.created_at||'').slice(0,16).replace('T',' '))+(r.note?'<br>메모: '+esc(r.note):'')+(r.resolved_by?'<br>처리: '+esc(r.resolved_by):'')+'</div>'
+     +(pend?(r.target_id?'<div style="display:flex;gap:6px;margin-top:6px"><input data-admpw="'+i+'" type="text" placeholder="임시 비밀번호(6자 이상)" style="flex:1;min-width:0;padding:9px;border:1.5px solid #D9DDE3;border-radius:10px"><button data-admact="pw123456" data-i="'+i+'" class="sp-btn g">123456</button><button data-admact="pwreset" data-i="'+i+'" class="sp-btn">재설정</button></div>':'<div style="font-size:12px;color:#C0485F;margin-top:6px">⚠️ 이 아이디와 일치하는 활성 계정이 없어요. 사용자 탭에서 이름으로 실제 아이디를 확인해 주세요.</div>'):'')+'</div>'; }).join('');
+}
+var ADM_NT=[['all','전체'],['manager','팀장'],['leader','조장'],['acting_leader','액팅리더'],['member','열람계정']];
+function admNoticeHtml(){
+  return '<div class="card" style="padding:14px"><div style="font-size:14px;font-weight:800;margin-bottom:4px">📢 그룹 공지 작성</div><div style="font-size:11.5px;color:#888;margin-bottom:10px">작성하면 모든 사업부(T1·T2·부대건물) 앱의 공지사항에 같은 내용이 등록돼요.</div>'
+   +'<input id="admNt" placeholder="제목" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px;margin-bottom:8px"><textarea id="admNc" rows="7" placeholder="내용" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px;font-family:inherit;resize:vertical"></textarea>'
+   +'<div style="font-size:12px;color:#666;margin:10px 0 5px">공지 대상 (선택하지 않으면 전체)</div><div id="admNtT" style="display:flex;gap:6px;flex-wrap:wrap">'+ADM_NT.map(function(t){return '<label style="display:flex;align-items:center;gap:4px;font-size:13px;padding:6px 11px;background:#F1F2F5;border-radius:16px"><input type="checkbox" class="admNtc" value="'+t[0]+'">'+t[1]+'</label>';}).join('')+'</div>'
+   +'<label style="display:flex;align-items:center;gap:6px;font-size:13px;margin:10px 0"><input type="checkbox" id="admNtP"> 접속 시 팝업으로 알림</label>'
+   +'<button data-admact="notice" class="sp-btn" style="width:100%">전 사업부에 공지 등록</button></div>';
+}
+function admDo(a,i){
+  var b;
+  if(a==='approve'||a==='reject'){
+    var u=ADM.pend[i]; if(!u) return;
+    var role=document.querySelector('[data-admp="role"][data-i="'+i+'"]').value, dv=document.querySelector('[data-admp="div"][data-i="'+i+'"]').value;
+    var txt=a==='approve'?(esc(u.name)+'님을 <b>'+admRoleName(role)+'</b> · <b>'+esc((admDivOf(dv)||{short:dv}).short)+'</b>(으)로 승인합니다.'):(esc(u.name)+'님의 가입 신청을 거부(삭제)합니다.');
+    return admAsk(a==='approve'?'가입 승인':'가입 거부','<div style="font-size:13px;line-height:1.6">'+txt+'</div>',a==='approve'?'승인':'거부').then(function(v){ if(!v) return;
+      return (a==='approve'?rpc('group_adm_approve',{p_target:u.id,p_pw:v.pw,p_role:role,p_div:dv}):rpc('group_adm_reject',{p_target:u.id,p_pw:v.pw})).then(function(){ alert(a==='approve'?'승인했어요':'거부했어요'); return loadAdm(); }); }).catch(function(e){ alert('처리하지 못했어요: '+admErr(e)); });
+  }
+  if(a==='pw123456'){ var inp=document.querySelector('[data-admpw="'+i+'"]'); if(inp) inp.value='123456'; return; }
+  if(a==='pwreset'){
+    var r=ADM.req[i], np=(document.querySelector('[data-admpw="'+i+'"]')||{}).value||'';
+    if(np.length<6){ alert('임시 비밀번호는 6자 이상 입력해 주세요'); return; }
+    return admAsk('비밀번호 재설정','<div style="font-size:13px;line-height:1.6">'+esc(r.name)+' ('+esc(r.claimed_id)+') 계정의 비밀번호를 <b>'+esc(np)+'</b>(으)로 바꿉니다.</div>','재설정').then(function(v){ if(!v) return;
+      return fetch(SUPABASE_URL+'/functions/v1/update-password',{method:'POST',headers:{'apikey':SUPABASE_ANON_KEY,'Content-Type':'application/json'},body:JSON.stringify({mode:'admin',requesterId:state.myId,requesterPassword:v.pw,targetId:r.target_id,newPassword:np})})
+       .then(function(resp){ return resp.json().catch(function(){return null;}).then(function(d){ if(!resp.ok||!d||d.ok===false) throw new Error((d&&d.error)||'재설정 실패 (비밀번호 확인)'); }); })
+       .then(function(){ return rpc('group_adm_pwreq_done',{p_id:r.id}); }).then(function(){ alert(r.name+'님 비밀번호를 재설정했어요'); return loadAdm(); }); }).catch(function(e){ alert('처리하지 못했어요: '+admErr(e)); });
+  }
+  if(a==='notice'){
+    var t=($('admNt').value||'').trim(), c=($('admNc').value||'').trim(); if(!t||!c){ alert('제목과 내용을 입력해 주세요'); return; }
+    var tg=Array.prototype.slice.call(document.querySelectorAll('.admNtc:checked')).map(function(x){return x.value;}); if(!tg.length||tg.indexOf('all')>=0) tg=['all'];
+    if(!confirm('모든 사업부에 공지를 등록할까요?')) return;
+    return rpc('group_adm_notice',{p_title:t,p_content:c,p_popup:$('admNtP').checked,p_targets:tg}).then(function(n){ alert('공지를 등록했어요 ('+(typeof n==='number'?n:divs.length)+'개 사업부)'); $('admNt').value=''; $('admNc').value=''; }).catch(function(e){ alert('등록하지 못했어요: '+admErr(e)); });
+  }
+}
+function admUserOpen(ix){
+  var u=ADM.users[ix]; if(!u) return;
+  if(u.role==='master'){ alert('최고관리자 계정은 변경할 수 없어요'); return; }
+  var body='<div style="font-size:13px;font-weight:800;margin-bottom:8px">'+esc(u.name)+' <span style="font-weight:500;color:#777">('+esc(u.email||'')+')</span></div>'
+   +'<label style="display:block;font-size:12px;color:#666;margin:6px 0 3px">직급</label><select data-adm-f="role" style="width:100%;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px">'+admRoleOpts(u.role)+'</select>'
+   +'<label style="display:block;font-size:12px;color:#666;margin:8px 0 3px">소속 사업부</label><select data-adm-f="div" style="width:100%;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px">'+admDivOpts(u.division_id)+'</select>'
+   +'<label style="display:block;font-size:12px;color:#666;margin:8px 0 3px">팀</label><input data-adm-f="team" value="'+esc(u.team||'')+'" style="width:100%;box-sizing:border-box;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px">'
+   +'<label style="display:block;font-size:12px;color:#666;margin:8px 0 3px">상태</label><select data-adm-f="status" style="width:100%;padding:10px;border:1.5px solid #D9DDE3;border-radius:10px"><option value="active"'+(u.status!=='inactive'?' selected':'')+'>사용 중</option><option value="inactive"'+(u.status==='inactive'?' selected':'')+'>사용 중지</option></select>'
+   +(u.locked_at?'<label style="display:flex;align-items:center;gap:6px;font-size:13px;margin-top:10px"><input type="checkbox" data-adm-f="unlock" checked> 🔒 로그인 잠금 해제</label>':'');
+  admAsk('사용자 수정',body,'저장').then(function(v){ if(!v) return;
+    return rpc('group_adm_user_set',{p_target:u.id,p_pw:v.pw,p_role:v.role,p_div:v.div,p_team:v.team,p_status:v.status,p_unlock:!!v.unlock}).then(function(){ alert('저장했어요'); return loadAdm(); }); }).catch(function(e){ alert('저장하지 못했어요: '+admErr(e)); });
+}
+document.addEventListener('click',function(e){
+  var a=e.target.closest('#p-adm [data-admsub]'); if(a){ ADM.sub=a.dataset.admsub; renderAdm(); return; }
+  a=e.target.closest('#p-adm [data-admdiv]'); if(a){ ADM.div=a.dataset.admdiv; renderAdm(); return; }
+  a=e.target.closest('#p-adm [data-admu]'); if(a){ admUserOpen(+a.dataset.admu); return; }
+  a=e.target.closest('#p-adm [data-admact]'); if(a){ admDo(a.dataset.admact,+a.dataset.i); }
+});
+document.addEventListener('input',function(e){ if(e.target&&e.target.id==='admQ'){ ADM.q=e.target.value; var el=$('admUList'); var pos=e.target.selectionStart; renderAdm(); var q=$('admQ'); if(q){q.focus();try{q.setSelectionRange(pos,pos);}catch(x){}} } });
+
 /* ---------- 청결예보 (그룹: 전 사업부 합산, 제1·제2여객터미널·부대건물 구분) ---------- */
 var GF_SECS=[{div:'T1',name:'제1여객터미널',ic:'🛫'},{div:'T2',name:'제2여객터미널',ic:'🛬'},{div:'BD',name:'부대건물',ic:'🏢'}];
 var GF_ZONES=[{k:'L/S|동편',zi:0},{k:'L/S|서편',zi:1},{k:'A/S|동편',zi:2},{k:'A/S|서편',zi:3}];
@@ -2166,7 +2291,7 @@ document.addEventListener('click',function(e){
 
 function load(){
   stamp(); wxLoad();
-  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : state.tab==='fc' ? loadFc() : state.tab==='px' ? loadPx() : (state.tab==='stat' ? loadStat() : loadRep()));
+  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : state.tab==='fc' ? loadFc() : state.tab==='px' ? loadPx() : state.tab==='adm' ? loadAdm() : (state.tab==='stat' ? loadStat() : loadRep()));
   return p.catch(function(e){
     var msg=(e&&e.message)||'알 수 없는 오류';
     $('p-'+state.tab).innerHTML='<div class="card empty">데이터를 불러오지 못했어요.<br>'+esc(msg)+'<br>잠시 후 새로고침을 눌러 주세요.</div>';
@@ -2175,7 +2300,7 @@ function load(){
 function showTab(t){
   state.tab=t;
   document.querySelectorAll('.tabs button').forEach(function(b){var on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
-  ['now','div','at','sp','sc','lb','vh','fc','px','stat','rep'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
+  ['now','div','at','sp','sc','lb','vh','fc','px','stat','rep','adm'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
   load();
 }
 
@@ -2186,7 +2311,7 @@ function enter(){
   return sb.auth.getUser().then(function(u){
     var uid=u&&u.data&&u.data.user&&u.data.user.id;
     if(!uid){throw new Error('계정 정보를 확인할 수 없어요.');}
-    return sb.from('users').select('role,status,division_id,name').eq('auth_uid',uid).limit(1);
+    return sb.from('users').select('id,role,status,division_id,name').eq('auth_uid',uid).limit(1);
   }).then(function(r){
     var row=(r.data||[])[0];
     if(r.error||!row){throw new Error('계정 정보를 확인할 수 없어요.');}
@@ -2194,7 +2319,7 @@ function enter(){
       // 일반 직원은 사업부 앱으로
       location.replace('index.html?app=1');return;
     }
-    state.role=row.role; state.myDiv=row.division_id; state.myName=row.name;
+    state.role=row.role; state.myDiv=row.division_id; state.myName=row.name; state.myId=row.id; var _ta=$('tabAdm'); if(_ta) _ta.style.display=atCanEdit()?'':'none';
     $('login').classList.add('hide');$('app').classList.remove('hide');
     state.month=lastMonths(1)[0];
     return loadDivisions().then(function(){renderGoBar();var r=load();setTimeout(gfPopup,4000);return r;});

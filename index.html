@@ -6893,6 +6893,8 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
     <button onclick="setMgrAtt('출장')" style="width:100%;padding:12px;margin-bottom:8px;background:#EBF0FF;color:#1B4FBE;border:1.5px solid #1B4FBE;border-radius:var(--r2);font-size:16px;font-weight:700;cursor:pointer">✈ 출장</button>
     <button onclick="setMgrAtt('교육')" style="width:100%;padding:12px;margin-bottom:8px;background:#F3EEFC;color:#6B21A8;border:1.5px solid #6B21A8;border-radius:var(--r2);font-size:16px;font-weight:700;cursor:pointer">📚 교육</button>
     <button onclick="setMgrAtt('휴무')" style="width:100%;padding:12px;margin-bottom:8px;background:#F1F5F9;color:#475569;border:1.5px solid #94A3B8;border-radius:var(--r2);font-size:16px;font-weight:700;cursor:pointer">🏠 휴무</button>
+    <button onclick="setMgrAtt('오전반차(전반)')" style="width:100%;padding:12px;margin-bottom:8px;background:#E8F5EC;color:#2E7D4F;border:1.5px solid #3E8E5A;border-radius:var(--r2);font-size:16px;font-weight:700;cursor:pointer">오전반차(전반)</button>
+    <button onclick="setMgrAtt('오후반차(후반)')" style="width:100%;padding:12px;margin-bottom:8px;background:#E8F5EC;color:#2E7D4F;border:1.5px solid #3E8E5A;border-radius:var(--r2);font-size:16px;font-weight:700;cursor:pointer">오후반차(후반)</button>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:8px">
       <button onclick="setMgrAtt('연차')" style="padding:11px 4px;background:#FEF3E2;color:#C2751A;border:1.5px solid #C2751A;border-radius:var(--r2);font-size:14.5px;font-weight:700;cursor:pointer">📝 연차</button>
       <button onclick="setMgrAtt('공가')" style="padding:11px 4px;background:#FEF3E2;color:#C2751A;border:1.5px solid #C2751A;border-radius:var(--r2);font-size:14.5px;font-weight:700;cursor:pointer">📝 공가</button>
@@ -6961,6 +6963,8 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
       <option value="출장">✈ 출장</option>
       <option value="교육">📚 교육</option>
       <option value="연차">📝 연차</option>
+      <option value="오전반차(전반)">오전반차(전반)</option>
+      <option value="오후반차(후반)">오후반차(후반)</option>
       <option value="공가">📝 공가</option>
       <option value="건강검진">📝 건강검진</option>
       <option value="병가">📝 병가</option>
@@ -7028,6 +7032,8 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
         <option value="출장">✈ 출장</option>
         <option value="교육">📚 교육</option>
         <option value="연차">📝 연차</option>
+      <option value="오전반차(전반)">오전반차(전반)</option>
+      <option value="오후반차(후반)">오후반차(후반)</option>
         <option value="공가">📝 공가</option>
         <option value="건강검진">📝 건강검진</option>
         <option value="병가">📝 병가</option>
@@ -7899,7 +7905,7 @@ async function loadExecDashboard(){
     mgrRows.forEach(function(r){
       if(!r.checked) return;
       var mgrSt2=r.status||'출근';
-      if(mgrSt2!=='출근'&&mgrSt2!=='출장'&&mgrSt2!=='교육') return;
+      if(!mgrIsPresentSt(mgrSt2)) return;
       daysSet[r.date]=1;
       shiftSum['관리자']++;
     });
@@ -9109,7 +9115,7 @@ function wlPNav(n){
 // ══ ERP 근태 신청현황 엑셀 업로드 (신규) ══
 var ERP={rows:[],eff:[],cx:[],pend:[],unm:[],dup:[],fn:'',busy:false,done:null};
 function erpReason(c){ c=String(c||''); return /년차|연차/.test(c)?'연차':/오전.*반차|전반/.test(c)?'전반':/오후.*반차|후반/.test(c)?'후반':/반차/.test(c)?'반차':/병가/.test(c)?'병가':/경조/.test(c)?'경조':/결근/.test(c)?'결근':/산재/.test(c)?'산재':'기타'; }
-function erpMgrStatus(c){ c=String(c||''); return /년차|연차/.test(c)?'연차':/반차/.test(c)?'반차':c; }
+function erpMgrStatus(c){ c=String(c||''); return /년차|연차/.test(c)?'연차':/오전.*반차|전반/.test(c)?'오전반차(전반)':/오후.*반차|후반/.test(c)?'오후반차(후반)':/반차/.test(c)?'반차':c; } // 반차는 전반/후반까지 구분해 관리자 일정과 같은 이름으로 저장(중복 등록 방지)
 function erpDate(v){
   if(typeof v==='number'&&v>20000&&v<80000){ return new Date(Math.round((v-25569)*86400)*1000).toISOString().slice(0,10); }
   if(v instanceof Date){ return new Date(v.getTime()-v.getTimezoneOffset()*60000).toISOString().slice(0,10); }
@@ -13956,7 +13962,7 @@ function updateStaff(){
   var mgrTodayCount=0;
   try{
     if(typeof mgrAttData==='object'&&mgrAttData){
-      mgrTodayCount=Object.keys(mgrAttData).filter(function(k){ var r=mgrAttData[k]; return r&&r.checked&&(r.status==='출근'||r.status==='교육'||r.status==='출장'); }).length;
+      mgrTodayCount=Object.keys(mgrAttData).filter(function(k){ var r=mgrAttData[k]; return r&&r.checked&&mgrIsPresentSt(r.status); }).length;
     }
   }catch(e){}
   // ★ 다른 조로 지원 나간 인원 — 보낸 조 층별 입력값엔 이미 빠져 있으므로 원래 출근한 총원이 되게 다시 더함
@@ -14004,7 +14010,7 @@ async function loadPrevStaff(){
     var mgrRes=await sb.from('mgr_attendance').select('checked,status').eq('date',yesterday).eq('checked',true);
     if(mgrRes.data) total+=mgrRes.data.filter(function(r){
       var st=r.status||'출근';
-      return st==='출근'||st==='출장'||st==='교육';
+      return mgrIsPresentSt(st);
     }).length;
   }catch(e){}
   // ★ 다른 조로 지원 나간 인원도 포함 — 보낸 조 층별 입력값엔 이미 빠져 있으므로 다시 더해야 실제 출근 총원이 맞음
@@ -14233,7 +14239,7 @@ async function loadTeamAvgAttendance(prefix){
     var ATT_OK_STATUS={'출근':1,'교육':1,'출장':1};
     var sumTeamMgr={}, daysTeamMgr={};
     mgrData.forEach(function(r){
-      if(!ATT_OK_STATUS[r.status]) return;
+      if(!mgrIsPresentSt(r.status)) return;
       var m=(r.name||'').match(/^([A-Z])조장$/);
       if(m){
         var tc=r.team+m[1];
@@ -14294,7 +14300,7 @@ async function loadTeamAvgAttendance(prefix){
     // 운영팀 행 (admin+master 계정 기준, 출근은 선택된 기간의 관리자출근 체크 평균 — 다른 팀과 동일하게 mgrData 기준)
     var sumOpsAtt=0, daysOpsAtt={};
     mgrData.forEach(function(r){
-      if(r.team==='운영' && ATT_OK_STATUS[r.status]){ sumOpsAtt+=1; daysOpsAtt[r.date]=1; }
+      if(r.team==='운영' && mgrIsPresentSt(r.status)){ sumOpsAtt+=1; daysOpsAtt[r.date]=1; }
     });
     var opsChecked;
     if(mode==='day'){
@@ -15424,7 +15430,7 @@ async function loadFullStatusForDate(dateStr){
     if(mgrRes&&mgrRes.data){
       mgrRes.data.forEach(function(row){
         var mgrSt3=row.status||'출근';
-        if(mgrSt3!=='출근'&&mgrSt3!=='출장'&&mgrSt3!=='교육') return;
+        if(!mgrIsPresentSt(mgrSt3)) return;
         var t=(row.team||'').trim();
         if(!t) return;
         var baseTeam3 = t==='운영' ? '운영팀' : (/팀$/.test(t) ? t : t+'팀');
@@ -17159,7 +17165,7 @@ async function jwRecalcDaySwapHeadcount(){
     });
     mgrData.forEach(function(r){
       var mgrSt4=r.status||'출근';
-      if(mgrSt4!=='출근'&&mgrSt4!=='출장'&&mgrSt4!=='교육') return;
+      if(!mgrIsPresentSt(mgrSt4)) return;
       var m=(r.name||'').match(/^([A-Z])조장$/);
       if(!m) return;
       var tc=r.team+m[1];
@@ -33667,7 +33673,7 @@ async function loadMpHistory(){
     var ATT_OK_STATUS_H={'출근':1,'교육':1,'출장':1};
     if(mgrRes.data){
       mgrRes.data.forEach(function(row){
-        if(!ATT_OK_STATUS_H[row.status||'출근']) return;
+        if(!mgrIsPresentSt(row.status||'출근')) return;
         var d=row.date;
         if(!byDate[d]) byDate[d]={total:0,ls:0,as:0,night:0};
         byDate[d].total+=1;
@@ -34777,6 +34783,10 @@ async function loadMgrAttendance(){
 // 확정시간이 지난 뒤 로그인한 "아무" 계정이든 앱을 열고 있거나(30초 주기 갱신 포함) 있으면 그 시점에 처리된다 —
 // "관리자 출근현황" 탭을 그 세션에서 한 번도 연 적이 없어도 동작하도록, 필요한 캐시가 없으면 여기서 직접 불러온다.
 var MGR_CONFIRM_TIME={'오전':'08:30','오후':'13:30','야간':'22:30','운영팀':'10:00'};
+// 팀별 근무 시작 시각 — 앱의 시간대별 인원 통계 기준(오전 07:00~16:30 · 오후 12:00~22:00 · 야간 21:30~07:00)과 총괄 시간코드 S03(08:00~17:30). 반차 예정자는 이 시각이 지나면 바로 출근 기록으로 확정
+var MGR_WORK_START={'오전':'07:00','오후':'12:00','야간':'21:30','운영팀':'08:00'};
+// 운영팀 중 사업부장·행정1·행정2(행정: 유준영·이동환·한지원)는 09:00~18:00 근무 — 총괄팀장은 08:00(S03)
+var MGR_WORK_START_SLOT={'사업부장':'09:00','행정1':'09:00','행정2':'09:00'};
 var _mgrAutoConfirmBusy=false;
 async function mgrAutoConfirmPastDue(){
   if(_mgrAutoConfirmBusy || !me) return;
@@ -34786,7 +34796,7 @@ async function mgrAutoConfirmPastDue(){
     var todayStr=nowKst.toISOString().slice(0,10);
     var nowHM=nowKst.toISOString().slice(11,16);
     // 이 시각까지 아무 팀도 확정시간이 안 지났으면 데이터 조회할 필요도 없이 바로 종료(불필요한 조회 방지)
-    var anyDue=Object.keys(MGR_CONFIRM_TIME).some(function(s){ return nowHM>=MGR_CONFIRM_TIME[s]; });
+    var anyDue=Object.keys(MGR_CONFIRM_TIME).some(function(s){ return nowHM>=MGR_CONFIRM_TIME[s]; }) || nowHM>='07:00'; // 근무 시작(07:00) 이후엔 반차 확정 대상이 있을 수 있어 실행
     if(!anyDue) return;
     // 필요한 캐시가 이 세션에서 아직 한 번도 안 불러와졌으면(= "관리자 출근현황" 탭을 연 적이 없으면) 직접 불러온다
     if(!mgrRosterOffCache){
@@ -34806,7 +34816,9 @@ async function mgrAutoConfirmPastDue(){
     try{ var _hm=await mgrAttHistFetchHolidays(todayStr,todayStr); if(_hm[todayStr]) _mgrHolDb[todayStr]=_hm[todayStr]; }catch(e){}
     var toWrite=[];
     Object.keys(MGR_STRUCTURE).forEach(function(shift){
-      var cutoff=MGR_CONFIRM_TIME[shift]; if(!cutoff || nowHM<cutoff) return;
+      var cutoff=MGR_CONFIRM_TIME[shift]; var shiftPast=!!cutoff && nowHM>=cutoff;
+      var nowMinC=parseInt(nowHM.slice(0,2),10)*60+parseInt(nowHM.slice(3,5),10);
+      var wsT=MGR_WORK_START[shift]||'', wsMin=wsT?(parseInt(wsT.slice(0,2),10)*60+parseInt(wsT.slice(3,5),10)):-1;
       var shiftData=MGR_STRUCTURE[shift];
       Object.keys(shiftData).forEach(function(team){
         shiftData[team].forEach(function(name){
@@ -34814,6 +34826,12 @@ async function mgrAutoConfirmPastDue(){
           var rec=mgrAttData[key];
           if(rec && rec.checked) return; // 이미 뭐든 확정돼 있으면 손 안 댐
           var scheduledEntry=mgrLeaveEntryFor(team, name, todayStr);
+          // 반차(예정 포함)는 연차 등과 달리 '출근하는 사람'이므로, 확정시간(오전 08:30·오후 13:30·야간 22:30)을 기다리지 않고
+          // 팀별 근무 시작 시각(MGR_WORK_START: 오전 07:00·오후 12:00·야간 21:30·운영팀 08:00)이 지나면 바로 출근 기록으로 확정 → 모든 집계 화면에 반영.
+          // 이후 본인이 앱을 열면 확정 시각 대신 실제 출근 시각으로 갱신. 그 외 상태(연차 등)는 기존대로 확정시간 이후.
+          var _isBanEntry=!!(scheduledEntry && mgrIsBancha(scheduledEntry.status));
+          if(_isBanEntry){ var _st=(shift==='운영팀' && MGR_WORK_START_SLOT[name])||''; var _m=_st?(parseInt(_st.slice(0,2),10)*60+parseInt(_st.slice(3,5),10)):wsMin; if(_m<0 || nowMinC<_m) return; }
+          else if(!shiftPast) return;
           var statusToConfirm=scheduledEntry ? scheduledEntry.status
             : ((isSlotOffToday(team, name, mgrRosterOffCache, todayStr) || mgrIsHolidayOff(team, name, todayStr)) ? '휴무' : null);
           if(!statusToConfirm) return; // 예정도 없고 휴무일도 아니면(순수 미확인) 자동확정 대상 아님 — 그대로 둠
@@ -34864,7 +34882,7 @@ async function loadMgrAttQuotaSummaryFor(dateStr, attSrc){
         // 출근/출장/교육만 "출근"으로 집계한다. 휴무·연차·공가·건강검진·병가·휴직·기타(자유입력 포함)는 전부 미출근으로 처리.
         if(k.indexOf(team+'_')!==0 || !attSrc[k] || !attSrc[k].checked) return;
         var st=attSrc[k].status||'출근';
-        if(st==='출근'||st==='출장'||st==='교육') checkedLeaders++;
+        if(mgrIsPresentSt(st)) checkedLeaders++;
       });
       var attend=checkedLeaders+staffAttend;
       out[team]={quota:quota, attend:attend, off:Math.max(0,quota-attend)};
@@ -34873,7 +34891,7 @@ async function loadMgrAttQuotaSummaryFor(dateStr, attSrc){
     Object.keys(attSrc||{}).forEach(function(k){
       if(k.indexOf('운영_')!==0 || !attSrc[k] || !attSrc[k].checked) return;
       var st=attSrc[k].status||'출근';
-      if(st==='출근'||st==='출장'||st==='교육') opsChecked++;
+      if(mgrIsPresentSt(st)) opsChecked++;
     });
     out['운영']={quota:qCounts.opsQuota, attend:opsChecked, off:Math.max(0,qCounts.opsQuota-opsChecked)};
   }catch(e){}
@@ -35284,7 +35302,7 @@ async function loadMgrAttendanceYesterday(){
     // 출근 인원 집계 기준 통일: 출근/교육/출장만 (휴무·연차 등 제외) — 홈 화면과 동일
     var checkedCount = (res.data||[]).filter(function(r){
       var st=r.status||'출근';
-      return st==='출근'||st==='출장'||st==='교육';
+      return mgrIsPresentSt(st);
     }).length;
     if(yEl) yEl.textContent = '전일 '+checkedCount+'/'+totalCount+'명';
     if(dashYEl) dashYEl.textContent = '전일 '+checkedCount+'/'+totalCount+'명';
@@ -35678,7 +35696,7 @@ async function mgrLeaveOpenEdit(id){
   roleSel.value=r.name;
   teamSel.disabled=!isFullAccess; roleSel.disabled=!isFullAccess;
   filterTeamSel.style.display=isFullAccess?'':'none';
-  var STANDARD_STATUSES=['출장','교육','연차','공가','건강검진','병가','휴직'];
+  var STANDARD_STATUSES=['출장','교육','연차','오전반차(전반)','오후반차(후반)','공가','건강검진','병가','휴직'];
   if(STANDARD_STATUSES.indexOf(r.status)!==-1){
     document.getElementById('mgrLeaveStatus').value=r.status;
     document.getElementById('mgrLeaveStatusCustom').style.display='none';
@@ -35805,6 +35823,8 @@ var MGR_LEAVE_STATUS_STYLE={
   '출장':{icon:'✈',bg:'#EBF0FF',fg:'#1B4FBE'},
   '교육':{icon:'📚',bg:'#F3EEFC',fg:'#6B21A8'},
   '연차':{icon:'📝',bg:'#FEF3E2',fg:'#C2751A'},
+  '오전반차(전반)':{icon:'',bg:'#E8F5EC',fg:'#2E7D4F'},
+  '오후반차(후반)':{icon:'',bg:'#E8F5EC',fg:'#2E7D4F'},
   '공가':{icon:'📝',bg:'#FEF3E2',fg:'#C2751A'},
   '건강검진':{icon:'📝',bg:'#FEF3E2',fg:'#C2751A'},
   '병가':{icon:'📝',bg:'#FEF3E2',fg:'#C2751A'},
@@ -35875,7 +35895,7 @@ async function mgrLeaveLoadList(){
     var days=Math.round((new Date(r.end_date+'T00:00:00')-new Date(r.start_date+'T00:00:00'))/86400000)+1;
     statCounts[r.status]=(statCounts[r.status]||0)+days;
   });
-  var STAT_ORDER=['연차','공가','건강검진','병가','휴직','교육','출장'];
+  var STAT_ORDER=['연차','오전반차(전반)','오후반차(후반)','공가','건강검진','병가','휴직','교육','출장'];
   var statHtml='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">';
   STAT_ORDER.forEach(function(s){
     if(!statCounts[s]) return;
@@ -35968,7 +35988,7 @@ function renderMgrAttendance(){
         var rec=dataSrc[team+'_'+name];
         if(!rec||!rec.checked) return false;
         var st=rec.status||'출근';
-        return st==='출근'||st==='출장'||st==='교육';
+        return mgrIsPresentSt(st);
       }).length;
       totalCount += members.length;
       checkedCount += teamChecked;
@@ -36002,7 +36022,8 @@ function renderMgrAttendance(){
         var isHolOff = !isChecked && !scheduledStatus && mgrIsHolidayOff(team, name, offCheckDate);
         var isAutoOff = !isChecked && !scheduledStatus && (isSlotOffToday(team, name, mgrRosterOffCache, offCheckDate) || isHolOff);
         var effStatus = status || scheduledStatus; // 아이콘/색상 판정용
-        var isLeaveType = effStatus && effStatus!=='출장' && effStatus!=='교육' && effStatus!=='휴무' && effStatus!=='출근'; // 연차/공가/건강검진/병가/휴직/기타(및 자유입력) 통칭
+        var isBan = !!effStatus && mgrIsBancha(effStatus);
+        var isLeaveType = effStatus && !isBan && effStatus!=='출장' && effStatus!=='교육' && effStatus!=='휴무' && effStatus!=='출근'; // 연차/공가/건강검진/병가/휴직/기타(및 자유입력) 통칭
         var isPlainOff = effStatus==='휴무'; // "휴무"는 자동감지된 근무계획 휴무와 동일한 스타일로 통일
         var offLikeStyle = isPlainOff || isAutoOff;
         // 연차/공가 · 건강검진/병가 · 휴직/기타(자유입력 포함) 세 그룹을 서로 다른 색으로 구분
@@ -36019,8 +36040,9 @@ function renderMgrAttendance(){
         var slotOwner = mgrRosterOffCache && mgrRosterOffCache.roster && mgrRosterOffCache.roster[team+'_'+name];
         var isSubstitute = isChecked && checkedBy && checkedBy!=='자동확정' && slotOwner && slotOwner.name && slotOwner.name!==checkedBy;
 
-        var statusIcon = effStatus==='출장' ? '✈' : effStatus==='교육' ? '📚' : isLeaveType ? '📝' : offLikeStyle ? '🏠' : isChecked ? '✔' : '';
-        var bg = effStatus==='출장' ? 'background:#EBF0FF;border-color:#1B4FBE;color:#1B4FBE'
+        var statusIcon = isBan ? '' : effStatus==='출장' ? '✈' : effStatus==='교육' ? '📚' : isLeaveType ? '📝' : offLikeStyle ? '🏠' : isChecked ? '✔' : '';
+        var bg = isBan ? 'background:#E8F5EC;border-color:#3E8E5A;color:#2E7D4F'
+               : effStatus==='출장' ? 'background:#EBF0FF;border-color:#1B4FBE;color:#1B4FBE'
                : effStatus==='교육' ? 'background:#F3EEFC;border-color:#6B21A8;color:#6B21A8'
                : isLeaveType ? 'background:'+leaveColor.bg+';border-color:'+leaveColor.bd+';color:'+leaveColor.bd
                : offLikeStyle ? 'background:#F1F5F9;border-color:#94A3B8;color:#475569'
@@ -36032,11 +36054,11 @@ function renderMgrAttendance(){
         h += '<div '+onclick+' style="padding:6px 10px;border-radius:var(--r2);border:1.5px solid;font-size:13px;font-weight:600;'+bg+';'+cursor+';min-width:60px;text-align:center">';
         h += '<div>'+(statusIcon?statusIcon+' ':'')+name+(isSubstitute?' <span style="color:#c2410c;font-weight:800" title="원래 담당자 '+eeEsc(slotOwner.name)+' 대신 '+eeEsc(checkedBy)+'이(가) 출근 처리함">代</span>':'')+'</div>';
         if(isChecked && checkedBy==='자동확정'){
-          h += '<div style="font-size:10px;color:inherit;margin-top:1px;opacity:.85">'+(status||'')+'</div>';
+          h += '<div style="font-size:10px;color:inherit;margin-top:1px;opacity:.85">'+mgrBanShort(status||'')+'</div>';
         }else if(isChecked && checkedTime){
-          h += '<div style="font-size:10px;color:inherit;margin-top:1px;opacity:.85">'+(status&&status!=='출근'?status+' · ':'')+checkedTime+(checkedBy&&checkedBy!==me.name?' ('+checkedBy+')':'')+'</div>';
+          h += '<div style="font-size:10px;color:inherit;margin-top:1px;opacity:.85">'+(status&&status!=='출근'?mgrBanShort(status)+' · ':'')+checkedTime+(checkedBy&&checkedBy!==me.name?' ('+checkedBy+')':'')+'</div>';
         }else if(scheduledStatus){
-          h += '<div style="font-size:10px;color:inherit;margin-top:1px;opacity:.85">'+scheduledStatus+' (예정)</div>';
+          h += '<div style="font-size:10px;color:inherit;margin-top:1px;opacity:.85">'+mgrBanShort(scheduledStatus)+' (예정)</div>';
         }else if(isAutoOff){
           h += '<div style="font-size:10px;color:inherit;margin-top:1px;opacity:.85">'+((isHolOff && !isSlotOffToday(team, name, mgrRosterOffCache, offCheckDate))?'공휴일 휴무':'근무계획 휴무')+'</div>';
         }
@@ -36080,7 +36102,7 @@ function updateDashMgrAtt(){
       var c=members.filter(function(n){
         var rec=mgrAttData[team+'_'+n]; if(!rec||!rec.checked) return false;
         var st=rec.status||'출근';
-        return st==='출근'||st==='출장'||st==='교육';
+        return mgrIsPresentSt(st);
       }).length;
       total+=members.length;
       checked+=c;
@@ -36093,6 +36115,32 @@ function updateDashMgrAtt(){
     var color=t.checked===t.total?'var(--teal2)':t.checked>0?'var(--warn)':'var(--g3)';
     return '<span style="color:'+color+';font-weight:600">'+t.team+' '+t.checked+'/'+t.total+'</span>';
   }).join('<span style="color:var(--g2)"> · </span>');
+  // PC 전용: 팀별로 출근한 사람 이름 표시 (폰은 위 요약 한 줄 그대로)
+  var cols=document.getElementById('dashMgrAttCols');
+  if(cols){
+    if(!mgrRosterOffCache && !window._mgrRosterDashLoading){
+      window._mgrRosterDashLoading=true;
+      try{ fetchMgrRosterWithOff().then(function(r){ mgrRosterOffCache=r; window._mgrRosterDashLoading=false; updateDashMgrAtt(); }).catch(function(){ window._mgrRosterDashLoading=false; }); }catch(e){ window._mgrRosterDashLoading=false; }
+    }
+    var ros=(mgrRosterOffCache&&mgrRosterOffCache.roster)||{};
+    var ch='';
+    ['오전','오후','야간','운영팀'].forEach(function(shift){
+      var sd=MGR_STRUCTURE[shift];
+      Object.keys(sd).forEach(function(team){
+        var names=[];
+        sd[team].forEach(function(n){
+          var rec=mgrAttData[team+'_'+n]; if(!rec||!rec.checked) return;
+          var st=rec.status||'출근'; if(!mgrIsPresentSt(st)) return;
+          var own=ros[team+'_'+n]; var nm=(own&&own.name)?own.name:((rec.checked_by&&rec.checked_by!=='자동확정')?rec.checked_by:n);
+          var tag=mgrIsBancha(st)?mgrBanShort(st):(st==='출장'||st==='교육')?st:'';
+          names.push('<div class="mac-n">'+eeEsc(nm)+(tag?' <small>'+tag+'</small>':'')+'</div>');
+        });
+        var tot=sd[team].length, cls=names.length===tot?'on':(names.length>0?'part':'');
+        ch+='<div class="mac-col '+(names.length?'on ':'')+cls+'"><div class="mac-h">'+team+' '+names.length+'/'+tot+'</div>'+(names.length?names.join(''):'<div class="mac-none">—</div>')+'</div>';
+      });
+    });
+    cols.innerHTML=ch;
+  }
 }
 
 var mgrAttPickTarget = null;
@@ -36385,12 +36433,15 @@ var CHECKIN_WINDOWS={
   '야간':[20*60, 23*60+30],
   '운영팀':[5*60, 10*60+30]
 };
-function isWithinCheckinWindow(shift){
+function isWithinCheckinWindow(shift, banKind){
   var w=CHECKIN_WINDOWS[shift];
   if(!w) return false;
   var n=new Date(Date.now()+9*3600000);
   var nowMin=n.getUTCHours()*60+n.getUTCMinutes();
-  return nowMin>=w[0] && nowMin<=w[1];
+  var a=w[0], b=w[1];
+  if(banKind==='F'){ a+=270; b+=270; } // 오전반차(전반): 평소 출근 시각 + 4.5시간 뒤 출근
+  if(a>=1440){ a-=1440; b-=1440; }
+  return nowMin>=a && nowMin<=b;
 }
 // 4개 근무조(오전/오후/야간/운영팀) 출근 시간대 중 하나라도 지금 해당하면 true
 function isAnyCheckinWindowNow(){
@@ -36403,34 +36454,44 @@ async function tryAutoCheckin(){
   var slot=myMgrAttSlot();
   if(!slot) return; // 팀장/조장 아니면 대상 아님
   var shift=myShiftForCheckin();
-  if(!shift || !isWithinCheckinWindow(shift)) return; // 출근 허용 시간대가 아니면 시도 자체를 안 함
+  if(!shift) return;
+  var kst=new Date(Date.now()+9*3600000);
+  var dStr=kst.toISOString().slice(0,10);
+  // 야간팀은 자정 이후에도 전날 밤 근무 기준 날짜로 기록 (06시 이전 — 앱의 야간 기준과 동일)
+  if(shift==='야간' && kst.getUTCHours()<6) dStr=new Date(kst.getTime()-86400000).toISOString().slice(0,10);
+  var banSt=null, banStamp=false;
   try{
     // 오늘 이미 출근 등 상태가 있으면 자동출근 불필요
     if(typeof loadMgrAttendance==='function' && (!mgrAttData||!Object.keys(mgrAttData).length)){
       await loadMgrAttendance();
     }
+    if(!mgrLeaveScheduleCache||!mgrLeaveScheduleCache.length){ try{ var ls0=await sb.from('mgr_leave_schedule').select('*'); mgrLeaveScheduleCache=ls0.data||[]; }catch(e){} }
     var key=slot.team+'_'+slot.name;
-    if(mgrAttData && mgrAttData[key] && mgrAttData[key].checked) return; // 이미 처리됨(출근/출장/교육 등)
+    var rec=mgrAttData&&mgrAttData[key];
+    var sch=mgrLeaveEntryFor(slot.team, slot.name, dStr);
+    if(rec&&rec.checked&&mgrIsBancha(rec.status)){ banSt=rec.status; banStamp=(rec.checked_by==='자동확정'||!rec.checked_at); if(!banStamp) return; } // 반차: 이미 실제 출근 시각이 찍혔으면 종료
+    else if(rec&&rec.checked) return; // 이미 처리됨(출근/출장/교육 등)
+    else if(sch&&mgrIsBancha(sch.status)){ banSt=sch.status; banStamp=true; }
   }catch(e){}
+  if(!banSt && !isWithinCheckinWindow(shift)) return; // 일반 출근은 허용 시간대에만 시도 — 반차자는 위치(터미널 반경)만으로 판단, 시간 제한 없음
+  var doStamp=function(){
+    mgrAttPickTarget={team:slot.team, name:slot.name}; // 날짜 미지정 → setMgrAtt가 야간 기준 날짜(자정~06시는 전날)로 저장
+    return setMgrAtt(banSt||'출근').then(function(){
+      toast(banSt?('📍 제1여객터미널 도착 확인 — '+banSt+' 출근 시각이 기록되었습니다'):'📍 제1여객터미널 도착 확인 — 자동 출근 처리되었습니다');
+      try{ sb.rpc('self_update_prefs', {p_last_active: new Date().toISOString()}); }catch(e){}
+    });
+  };
   navigator.geolocation.getCurrentPosition(function(pos){
     var dist=haversineM(pos.coords.latitude,pos.coords.longitude,T1_LAT,T1_LNG);
     if(dist<=AUTO_CHECKIN_RADIUS_M){
-      mgrAttPickTarget=slot;
-      setMgrAtt('출근').then(function(){
-        toast('📍 제1여객터미널 도착 확인 — 자동 출근 처리되었습니다');
-        try{ sb.rpc('self_update_prefs', {p_last_active: new Date().toISOString()}); }catch(e){}
-      });
+      doStamp();
     }
   }, function(err){
     // 고정밀 GPS 실패(실내 등) 시 네트워크 기반 위치로 재시도
     navigator.geolocation.getCurrentPosition(function(pos2){
       var dist2=haversineM(pos2.coords.latitude,pos2.coords.longitude,T1_LAT,T1_LNG);
       if(dist2<=AUTO_CHECKIN_RADIUS_M){
-        mgrAttPickTarget=slot;
-        setMgrAtt('출근').then(function(){
-          toast('📍 제1여객터미널 도착 확인 — 자동 출근 처리되었습니다');
-          try{ sb.rpc('self_update_prefs', {p_last_active: new Date().toISOString()}); }catch(e){}
-        });
+        doStamp();
       }
     }, function(err2){
       toast('⚠️ 위치를 확인하지 못했습니다. 관리자 출근 화면에서 수동으로 체크해주세요');
@@ -36527,6 +36588,8 @@ function mgrAttHistStatusStyle(status){
     '출장':{bg:'#EBF0FF',fg:'#1B4FBE',icon:'✈',short:'출장'},
     '교육':{bg:'#F3EEFC',fg:'#6B21A8',icon:'📚',short:'교육'},
     '연차':{bg:'#FEF3E2',fg:'#C2751A',icon:'📝',short:'연차'},
+    '오전반차(전반)':{bg:'#E8F5EC',fg:'#2E7D4F',icon:'',short:'전반'},
+    '오후반차(후반)':{bg:'#E8F5EC',fg:'#2E7D4F',icon:'',short:'후반'},
     '공가':{bg:'#FEF3E2',fg:'#C2751A',icon:'📝',short:'공가'},
     '건강검진':{bg:'#FEF3E2',fg:'#C2751A',icon:'📝',short:'검진'},
     '병가':{bg:'#FEF3E2',fg:'#C2751A',icon:'📝',short:'병가'},
@@ -36699,7 +36762,7 @@ function mgrAttHistRenderYear(body, y, rows){
     var c=monthCounts[mm];
     var ok=c['출근']||0, off=c['휴무']||0, unchecked=c['미확인']||0;
     var etcCnt=0;
-    Object.keys(c).forEach(function(k){ if(k!=='출근'&&k!=='휴무'&&k!=='미확인') etcCnt+=c[k]; });
+    Object.keys(c).forEach(function(k){ if(mgrIsBancha(k)) ok+=c[k]; else if(k!=='출근'&&k!=='휴무'&&k!=='미확인') etcCnt+=c[k]; }); // 반차는 출근으로 집계
     var monthTotal=ok+off+etcCnt+unchecked;
     if(monthTotal===0) continue;
     totalOk+=ok; totalAll+=(ok+off+etcCnt);
@@ -36753,10 +36816,34 @@ function setMgrAttOther(){
   if(!v){ toast('⚠️ 상태명을 입력해주세요'); return; }
   setMgrAtt(v);
 }
+var mgrBanKeepTarget=null;
+function mgrBanKeepAsk(team,name,date,ban){
+  mgrBanKeepTarget={team:team,name:name,date:date,ban:ban};
+  var who=name+(mgrRosterOffCache&&mgrRosterOffCache.roster&&mgrRosterOffCache.roster[team+'_'+name]?'('+mgrRosterOffCache.roster[team+'_'+name].name+')':'');
+  document.getElementById('mgrBanKeepTitle').textContent=who+' · '+mgrBanShort(ban)+' 반차';
+  document.getElementById('mgrBanKeepDesc').innerHTML='이 자리는 <b style="color:#2E7D4F">'+mgrBanShort(ban)+' 반차</b>로 등록되어 있습니다.<br>출근 시각만 기록하면 <b>반차 표시는 그대로 유지</b>되고, 출근 인원·작업일지에도 같은 기준으로 반영됩니다.';
+  document.getElementById('mgrBanKeepYesBtn').textContent='✔ '+mgrBanShort(ban)+' 반차 유지 · 도착 시각만 기록';
+  closeMgrAttPick();
+  showM('mgrBanKeepModal');
+}
+function mgrBanKeepYes(){
+  var t=mgrBanKeepTarget; if(!t) return; hideM('mgrBanKeepModal');
+  mgrAttPickTarget={team:t.team,name:t.name,date:t.date};
+  setMgrAtt(t.ban);
+}
+function mgrBanKeepCancel(){
+  var t=mgrBanKeepTarget; if(!t) return; hideM('mgrBanKeepModal');
+  mgrAttPickTarget={team:t.team,name:t.name,date:t.date};
+  window._mgrBanForce=true;
+  setMgrAtt('출근');
+}
 async function setMgrAtt(status){
   if(!mgrAttPickTarget) return;
   var team = mgrAttPickTarget.team, name = mgrAttPickTarget.name;
-  var realToday = new Date(Date.now()+9*3600000).toISOString().slice(0,10);
+  var _nk = new Date(Date.now()+9*3600000);
+  var realToday = _nk.toISOString().slice(0,10);
+  // 야간팀(5팀·10팀)은 자정~06시에도 전날 밤 근무 기준 날짜로 저장 (loadMgrAttendance의 조회 기준과 동일)
+  if((team==='5팀'||team==='10팀') && _nk.getUTCHours()<6) realToday = new Date(_nk.getTime()-86400000).toISOString().slice(0,10);
   // 조회 중인 날짜에 저장 (과거 날짜 수정 시 오늘로 잘못 저장되던 문제 방지)
   var today = mgrAttPickTarget.date || mgrAttCurrentDateStr || realToday;
   var isPast = today!==realToday;
@@ -36765,6 +36852,14 @@ async function setMgrAtt(status){
   var checked = !!status;
   var oldEntry = isPast ? (((mgrAttDateCache[today]||{}).data||{})[key]) : mgrAttData[key];
   var oldLabel = oldEntry&&oldEntry.checked ? (oldEntry.status||'출근') : '미확인';
+  // ★ 반차(전반/후반)로 등록·확정된 사람이 '출근'을 누르면 반차가 일반 출근으로 덮어써지고 일정까지 지워지던 문제 방지(2026-10-09 김충섭 사례)
+  //   → 반차 유지(도착 시각만 기록) / 반차 취소 중 직접 고르게 함
+  if(status==='출근' && !isPast && !window._mgrBanForce){
+    var _banNow = (oldEntry&&oldEntry.checked&&mgrIsBancha(oldEntry.status)) ? oldEntry.status : '';
+    if(!_banNow){ var _se=mgrLeaveEntryFor(team,name,today); if(_se&&mgrIsBancha(_se.status)) _banNow=_se.status; }
+    if(_banNow){ mgrBanKeepAsk(team,name,today,_banNow); return; }
+  }
+  window._mgrBanForce=false;
   // 순수 UTC로 저장 (KST 보정은 표시 시점 toKSTTime에서만 수행)
   var nowISO = new Date().toISOString();
   var checkerName = me ? me.name : '';
@@ -38646,7 +38741,7 @@ async function wfSpFetchActuals(){
     (mgrRes.data||[]).forEach(function(r){
       var m=r.team && String(r.team).match(/^(\d+)팀$/);
       if(!m || !actuals[r.date]) return;
-      if(r.status && !WF_SP_WORKING_STATUS[r.status]) return; // 휴무/연차/병가 등은 실적에서 제외
+      if(r.status && !mgrIsPresentSt(r.status)) return; // 휴무/연차/병가 등은 실적에서 제외
       var code=m[1]+'팀';
       if(!actuals[r.date][code]) actuals[r.date][code]={leader:null, subs:[], staff:0};
       if(r.role==='팀장') actuals[r.date][code].leader=r.checked_by||null;
@@ -38695,7 +38790,7 @@ async function wfSpFetchActuals(){
     var WF_SP_HQ_NAMES={'총괄1팀장':1,'총괄2팀장':1};
     (opsRes.data||[]).forEach(function(r){
       if(!actuals[r.date]) return;
-      if(r.status && !WF_SP_WORKING_STATUS[r.status]) return;
+      if(r.status && !mgrIsPresentSt(r.status)) return;
       var code2 = WF_SP_ADMIN_NAMES[r.name] ? 'ADMIN' : (WF_SP_HQ_NAMES[r.name] ? 'HQ' : null);
       if(!code2) return;
       if(!actuals[r.date][code2]) actuals[r.date][code2]={leader:null, subs:[], staff:0, names:[]};
@@ -41736,7 +41831,7 @@ function msCalc(q, key){
     if(!r.checked) return;
     // 출근 인원 집계 기준 통일: 출근/교육/출장만 (휴무·연차 등 제외) — 홈 화면·관리자출근탭과 동일
     var mgrSt=r.status||'출근';
-    if(mgrSt!=='출근'&&mgrSt!=='출장'&&mgrSt!=='교육') return;
+    if(!mgrIsPresentSt(mgrSt)) return;
     s.mgr.days[r.date]=(s.mgr.days[r.date]||0)+1;
     if(r.status==='출장') s.mgr.trip++;
     if(r.status==='교육') s.mgr.edu++;

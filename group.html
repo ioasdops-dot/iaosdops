@@ -456,8 +456,11 @@ function renderNow(rows){
 /* ---------- 관리자 근태 (그룹 + 사업부 전체, 계정 기반 명단) ---------- */
 var MGR={board:null,date:'',canEdit:false};
 var AT={view:'board',date:'',open:{},pick:null,hp:null,hm:{y:0,m:0,mode:'month'},hist:null,leaves:[],lt:'in',lf:{y:'',m:'',q:'',sc:'',st:'',ing:'ing'},lall:[],llog:[],ledit:null};
-var AT_ST=['출근','교육','출장','연차','반차','휴무','경조','건강검진','기타'];
-var AT_LV=['연차','반차','교육','출장','경조','건강검진','휴무','기타'];
+var AT_ST=['출근','교육','출장','연차','오전반차(전반)','오후반차(후반)','휴무','경조','건강검진','기타'];
+var AT_LV=['연차','오전반차(전반)','오후반차(후반)','교육','출장','경조','건강검진','휴무','기타'];
+/* 반차: 전반=앞 절반 휴무(4.5시간 뒤 출근) / 후반=평소 출근·일찍 퇴근 — 출근 인원으로 집계 (기존 '반차' 기록도 반차로 봄) */
+function atIsBan(s){ s=String(s||''); return /반차/.test(s)||s==='전반'||s==='후반'; }
+function atBanShort(s){ s=String(s||''); return /전반/.test(s)?'전반':(/후반/.test(s)?'후반':s); }
 var AT_OPS={'유준영':'사업부장','양민석':'총괄1팀장','조준희':'총괄2팀장','이동환':'행정1','한지원':'행정2'};
 var AT_GRP={id:'ALL',short:'그룹',name:'그룹 소속 관리자',color:'#6B7280',soft:'#EEF0F4'};
 function admCanUse(){return state.role==='master'||state.role==='admin';}
@@ -515,7 +518,7 @@ function atBuild(B,ds){
   });
   return res;
 }
-function atIsWork(e){return !!e&&(e.st==='출근'||e.st==='출장'||e.st==='교육');}
+function atIsWork(e){return !!e&&(e.st==='출근'||e.st==='출장'||e.st==='교육'||atIsBan(e.st));}
 function atStyle(e){
   if(!e) return {bg:'#F4F6F9',bd:'#E1E5EC',fg:'#8A93A3',ic:''};
   var s=e.st;
@@ -523,13 +526,14 @@ function atStyle(e){
   if(s==='교육') return {bg:'#F3EEFC',bd:'#6B21A8',fg:'#6B21A8',ic:'📚'};
   if(s==='출근') return {bg:'#E6F6F3',bd:'#2A9D8F',fg:'#1F7A70',ic:'✔'};
   if(s==='휴무') return {bg:'#F1F5F9',bd:'#94A3B8',fg:'#475569',ic:'🏠'};
-  if(s==='연차'||s==='반차'||s==='공가') return {bg:'#FEF3E2',bd:'#C2751A',fg:'#C2751A',ic:'📝'};
+  if(atIsBan(s)) return {bg:'#E8F5EC',bd:'#3E8E5A',fg:'#2E7D4F',ic:'🌗'};
+  if(s==='연차'||s==='공가') return {bg:'#FEF3E2',bd:'#C2751A',fg:'#C2751A',ic:'📝'};
   if(s==='건강검진'||s==='병가') return {bg:'#FDECEC',bd:'#C0392B',fg:'#C0392B',ic:'📝'};
   return {bg:'#F3EFE7',bd:'#8A6A3B',fg:'#8A6A3B',ic:'📝'};
 }
 function atChip(it){
   var st=atStyle(it.eff), label=it.person&&it.key!==it.person?it.key:(it.person||it.key), sub=it.person&&it.key!==it.person?it.person:'';
-  var line=it.eff?(it.eff.st+(it.eff.src==='plan'?' (예정)':it.eff.src==='off'?' (휴무계획)':'')):'미체크';
+  var line=it.eff?(atBanShort(it.eff.st)+(it.eff.src==='plan'?' (예정)':it.eff.src==='off'?' (휴무계획)':'')):'미체크';
   var tm=it.att&&it.att.checked&&it.att.checked_at?new Date(new Date(it.att.checked_at).getTime()+9*3600000).toISOString().slice(11,16):'';
   return '<button type="button" class="at-chip" data-atpick="'+esc(it.div+'|'+it.team+'|'+it.key)+'" style="background:'+st.bg+';border-color:'+st.bd+';color:'+st.fg+'">'
     +'<b>'+(st.ic?st.ic+' ':'')+esc(label)+'</b>'+(sub?'<span>'+esc(sub)+'</span>':'')+'<em>'+esc(line)+(tm?' · '+tm:'')+'</em></button>';
@@ -554,7 +558,7 @@ function atBoard(){
     });
     h+='</div>';
   });
-  return h+'<div class="note">출근·교육·출장만 출근으로 집계해요. 이름을 누르면'+(atCanEdit()?' 상태 변경과':'')+' 개인 이력을 볼 수 있어요.</div>';
+  return h+'<div class="note">출근·교육·출장·반차(전반/후반)를 출근으로 집계해요. 이름을 누르면'+(atCanEdit()?' 상태 변경과':'')+' 개인 이력을 볼 수 있어요.</div>';
 }
 function atMine(){
   if(!atIsGroupMe()||!MGR.board) return null;
@@ -564,7 +568,7 @@ function atMine(){
 function atMineCard(it){
   var e=it.eff, st=e?e.st:'미체크';
   return '<div class="card" style="border:2px solid #2B2F36"><h3>🙋 내 출근 <small>'+esc(it.key)+' · '+esc(st)+'</small></h3>'
-   +'<div class="at-btns">'+['출근','교육','출장','연차','휴무'].map(function(s){return '<button type="button" class="sp-btn'+(e&&e.st===s?'':' g')+'" data-atme="'+s+'">'+s+'</button>';}).join('')+'<button type="button" class="sp-btn g" data-atme="">취소</button></div></div>';
+   +'<div class="at-btns">'+['출근','교육','출장','연차','오전반차(전반)','오후반차(후반)','휴무'].map(function(s){return '<button type="button" class="sp-btn'+(e&&e.st===s?'':' g')+'" data-atme="'+s+'">'+atBanShort(s)+'</button>';}).join('')+'<button type="button" class="sp-btn g" data-atme="">취소</button></div></div>';
 }
 function atPicker(){
   var P=AT.pick; if(!P) return '';
@@ -586,7 +590,7 @@ function atDayStatus(ds){
   var o=(D.off||[])[0]; if(o&&(!o.apply_from||String(o.apply_from).slice(0,10)<=ds)){var wd=new Date(ds+'T00:00:00Z').getUTCDay(); if(o.off_day1===wd||o.off_day2===wd) return '휴무';}
   return null;
 }
-function atKind(st){return !st?'x':st==='출근'?'w':(st==='교육'||st==='출장')?'e':'o';}
+function atKind(st){return !st?'x':(st==='출근'||atIsBan(st))?'w':(st==='교육'||st==='출장')?'e':'o';}
 function atHist(){
   var P=AT.hp||{}, H=AT.hm; atHRange();
   var h='<div style="margin-bottom:8px"><button type="button" class="sp-btn g" data-atback="1">← 근태 현황</button></div><div class="card"><h3>🕘 '+esc(P.label||'')+' 근태 이력 <small>'+esc(P.sub||'')+'</small></h3>'

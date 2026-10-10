@@ -1753,6 +1753,43 @@ PX.load=async function(fetchAll){
   }catch(e){ PX.data={T1:{},T2:{}}; }
   PX.loaded=true;
 };
+PX.month={T1:{},T2:{}};
+PX.loadMonth=async function(fetchAll){
+  var m={T1:{},T2:{}};
+  try{
+    var r=await fetchAll();
+    if(!r.error) (r.data||[]).forEach(function(x){ var t=(x.terminal==='T2')?'T2':'T1', o=m[t][x.ym]||(m[t][x.ym]={days:Number(x.days)||30,v:[]}); o.v[x.hour]=[Number(x.dep)||0,Number(x.arr)||0]; });
+    Object.keys(m).forEach(function(t){ Object.keys(m[t]).forEach(function(ym){ for(var i=0;i<24;i++) if(!m[t][ym].v[i]) m[t][ym].v[i]=[0,0]; }); });
+  }catch(e){ m={T1:{},T2:{}}; }
+  PX.month=m;
+};
+// 월 자료 → 하루 평균(구간별·하루 합계). 합산(SUM)은 T1·T2 둘 다 있을 때만
+PX.monthDaily=function(t,ym){
+  var one=function(tt){ var o=PX.month[tt]&&PX.month[tt][ym]; if(!o) return null;
+    var bl=PX_BLOCKS.map(function(b){ var s=0; for(var k=b.a;k<b.b;k++){ var x=o.v[k]; if(x) s+=x[0]+x[1]; } return s/o.days; });
+    var tot=0; for(var k=0;k<24;k++){ var y=o.v[k]; if(y) tot+=y[0]+y[1]; }
+    return {blocks:bl,total:tot/o.days}; };
+  if(t==='T1'||t==='T2') return one(t);
+  var a=one('T1'), b=one('T2'); if(!a||!b) return null;
+  return {blocks:a.blocks.map(function(x,i){ return x+b.blocks[i]; }),total:a.total+b.total};
+};
+PX.monthList=function(t){
+  var ks=(t==='T1'||t==='T2')?Object.keys(PX.month[t]||{}):Object.keys(PX.month.T1||{}).filter(function(y){ return PX.month.T2&&PX.month.T2[y]; });
+  return ks.sort();
+};
+// 기준선(평소 수준): ①같은 달 월 자료 ②올린 날짜 3일 이상 평균 ③가장 가까운 이전 달 월 자료
+PX.base=function(t,d,S,ds){
+  var ym=d.slice(0,7), mm=PX.monthDaily(t,ym);
+  if(mm) return {blocks:mm.blocks,total:mm.total,label:(+ym.slice(5))+'월 일평균'};
+  if(ds.length>=3){
+    var bl=[0,0,0,0], tt=0;
+    ds.forEach(function(x){ PX.blockTotals(S,x).forEach(function(v,i){ bl[i]+=v; }); tt+=PX.dayTotal(S,x); });
+    return {blocks:bl.map(function(v){ return v/ds.length; }),total:tt/ds.length,label:'등록 '+ds.length+'일 평균'};
+  }
+  var yms=PX.monthList(t); if(yms.length){ var pick=null; yms.forEach(function(y){ if(y<ym) pick=y; }); if(!pick) pick=yms[0];
+    mm=PX.monthDaily(t,pick); if(mm) return {blocks:mm.blocks,total:mm.total,label:(+pick.slice(5))+'월 일평균(최근 자료)'}; }
+  return null;
+};
 PX.series=function(t){
   if(t==='T1'||t==='T2') return PX.data[t];
   var a=PX.data.T1,b=PX.data.T2,o={};
@@ -1764,19 +1801,19 @@ PX.blockTotals=function(S,d){ var v=S[d]||[]; return PX_BLOCKS.map(function(b){ 
 PX.dayTotal=function(S,d){ var t=0; (S[d]||[]).forEach(function(x){ if(x) t+=x[0]+x[1]; }); return t; };
 // 청결예보 보정계수: 해당 요일의 가장 가까운 등록 일자 여객 ÷ 등록 일자 평균 (0.7~1.5배)
 PX.factors=function(t,w){
-  var S=PX.series(t), ds=Object.keys(S).sort(); if(ds.length<3) return null;
+  var S=PX.series(t), ds=Object.keys(S).sort(); if(!ds.length) return null;
   var today=PX.kst(new Date().toISOString()).ds, tgt=null;
   for(var i=0;i<ds.length;i++){ if(ds[i]>=today&&PX.wd(ds[i])===w){ tgt=ds[i]; break; } }
   if(!tgt) return null;
-  var base=[0,0,0,0]; ds.forEach(function(d){ PX.blockTotals(S,d).forEach(function(x,i){ base[i]+=x; }); }); base=base.map(function(x){ return x/ds.length; });
+  var bs=PX.base(t,tgt,S,ds); if(!bs) return null;
   var tot=PX.blockTotals(S,tgt);
-  return {date:tgt,term:t,f:tot.map(function(x,i){ var r=base[i]>0?x/base[i]:1; return Math.max(0.7,Math.min(1.5,r)); }),tot:tot,n:ds.length};
+  return {date:tgt,term:t,f:tot.map(function(x,i){ var r=bs.blocks[i]>0?x/bs.blocks[i]:1; return Math.max(0.7,Math.min(1.5,r)); }),tot:tot,n:ds.length,label:bs.label};
 };
 PX.label=function(f){ return f>=1.12?['많음','#B4531A']:(f<=0.88?['적음','#4C8566']:['보통','#51708C']); };
 PX.cardHtml=function(fx){
   if(!fx) return '';
   var cells=PX_BLOCKS.map(function(b,i){ var L=PX.label(fx.f[i]); return '<div style="flex:1;text-align:center;padding:8px 0;border-radius:11px;background:#F4F8FB"><div style="font-size:10.5px;color:#999;font-weight:600">'+b.a+'~'+b.b+'시</div><div style="font-size:13px;font-weight:800;color:'+L[1]+';margin-top:2px">'+L[0]+'</div><div style="font-size:10.5px;color:#666;margin-top:1px">'+(fx.tot[i]/10000).toFixed(1)+'만명</div></div>'; }).join('');
-  return '<div style="background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(15,40,60,.08);padding:11px 12px;margin-bottom:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:800;color:#333">✈️ '+PX.md(fx.date)+' '+PX_NAME[fx.term]+' 여객 반영</span><span style="font-size:10.5px;color:#999">출국+입국 · 평균 대비</span></div><div style="display:flex;gap:6px">'+cells+'</div></div>';
+  return '<div style="background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(15,40,60,.08);padding:11px 12px;margin-bottom:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:800;color:#333">✈️ '+PX.md(fx.date)+' '+PX_NAME[fx.term]+' 여객 반영</span><span style="font-size:10.5px;color:#999">출국+입국 · '+(fx.label||'평균')+' 대비</span></div><div style="display:flex;gap:6px">'+cells+'</div></div>';
 };
 PX.pills=function(view,own){
   var items=[['cmp','T1·T2 비교'],['T1','제1여객터미널'],['T2','제2여객터미널']];
@@ -1843,8 +1880,17 @@ PX.renderView=function(el,view,sub,own){
   if(!el) return;
   var tmp=document.createElement('div'), body=document.createElement('div'); tmp.innerHTML='';
   if(view==='cmp') PX.compare(body,sub); else pxRenderTerm(body,view,sub);
-  el.innerHTML=PX.pills(view,own)+body.innerHTML;
+  el.innerHTML=PX.pills(view,own)+body.innerHTML+PX.monthCard(view);
 };
+PX.monthCard=function(t){
+  if(t!=='T1'&&t!=='T2') return '';
+  var ym=PX.monthList(t).slice().reverse(); if(!ym.length) return '';
+  return '<div style="background:#fff;border-radius:22px;box-shadow:0 2px 12px rgba(15,40,60,.09);padding:16px 14px;margin-bottom:16px"><div style="font-size:19px;font-weight:900;color:#1B2A38;padding:0 4px">월별 자료 <span style="font-size:13px;color:#4A5F72;font-weight:700">하루 평균 · 출국+입국</span></div>'
+   +'<div style="font-size:13.5px;color:#4A5F72;line-height:1.55;margin:3px 4px 8px">청결예보의 \'평소 수준\' 기준선으로 쓰입니다.</div>'
+   +ym.slice(0,12).map(function(y){ var m=PX.monthDaily(t,y); var d=PX.month[t][y].days;
+      return '<div style="display:flex;align-items:center;gap:8px;padding:10px 6px;border-top:1px solid #EEF1F4;font-size:15px"><b style="flex:1;color:#1B2A38">'+y.slice(0,4)+'년 '+(+y.slice(5))+'월</b><span style="color:#4A5F72;font-size:12.5px">'+d+'일</span><b style="color:'+PX_COL[t]+'">'+Math.round(m.total).toLocaleString()+'명</b></div>'; }).join('')+'</div>';
+};
+
 
 function paxFmt(n){ return Math.round(n).toLocaleString(); }
 function paxPol(cx,cy,r,deg){ var a=deg*Math.PI/180; return [cx+r*Math.cos(a),cy-r*Math.sin(a)]; }
@@ -1863,6 +1909,7 @@ function pxRenderTerm(el,t,sub){
   var card='background:#fff;border-radius:22px;box-shadow:0 2px 12px rgba(15,40,60,.09);padding:18px 14px 16px;margin-bottom:16px';
   var ttl='font-size:19px;font-weight:900;color:#1B2A38;padding:0 4px', cap='font-size:14px;color:#4A5F72;line-height:1.55;margin:3px 4px 8px';
   var lv=function(r){ return r>=1.1?{k:2,t:'평균 대비 높음',c:MANY,bg:'#FDEBDD',fg:'#9A4413'}:(r<=0.9?{k:0,t:'평균 대비 낮음',c:FEW,bg:'#E1F3E9',fg:'#27694A'}:{k:1,t:'평균 수준',c:MID,bg:'#E3EEF8',fg:'#2A5B84'}); };
+  var bsM=PX.base(t,tg.d,S,ds), bsL='등록 일자 평균'; if(bsM&&bsM.total>0){ avg=bsM.total; bsL=bsM.label; }
   var r0=tg.t/avg, L=lv(r0), pos=Math.max(0,Math.min(1,(r0-0.7)/0.6)), ang=180-pos*180;
   var wl=(tg.d===today?'오늘':(tg.d>today?'예정':'최근'))+' '+PX.md(tg.d)+' 예상 여객';
   // ① 게이지
@@ -1878,7 +1925,7 @@ function pxRenderTerm(el,t,sub){
     +'<text x="'+(cx-R)+'" y="'+(cy+26)+'" text-anchor="middle" font-size="12.5" font-weight="800" fill="#27694A">낮음</text><text x="'+(cx+R)+'" y="'+(cy+26)+'" text-anchor="middle" font-size="12.5" font-weight="800" fill="#9A4413">높음</text></svg>';
   var mid=(tg.dep+tg.arr)||1, dp=tg.dep/mid;
   var donut='<svg viewBox="0 0 44 44" style="width:92px;flex:none"><circle cx="22" cy="22" r="15.9" fill="none" stroke="'+ARR+'" stroke-width="7"/><circle cx="22" cy="22" r="15.9" fill="none" stroke="'+DEP+'" stroke-width="7" stroke-dasharray="'+(dp*100).toFixed(1)+' '+(100-dp*100).toFixed(1)+'" stroke-dashoffset="25"/><text x="22" y="24.5" text-anchor="middle" font-size="7" font-weight="900" fill="#1B2A38">'+Math.round(dp*100)+'%</text></svg>';
-  var h='<div style="'+card+';padding-bottom:18px"><div style="'+ttl+'">✈️ '+wl+'</div><div style="font-size:14px;color:#4A5F72;margin:3px 4px 0">등록 일자 평균 '+paxKor(avg)+' 대비</div>'+g
+  var h='<div style="'+card+';padding-bottom:18px"><div style="'+ttl+'">✈️ '+wl+'</div><div style="font-size:14px;color:#4A5F72;margin:3px 4px 0">'+bsL+' '+paxKor(avg)+' 대비</div>'+g
     +'<div style="text-align:center;margin-top:2px"><span style="display:inline-block;padding:9px 18px;border-radius:16px;background:'+L.bg+';color:'+L.fg+';font-size:18px;font-weight:900">'+L.t+'</span></div>'
     +'<div style="display:flex;align-items:center;gap:14px;margin-top:16px;padding:12px 14px;background:#F3F7FA;border-radius:16px">'+donut
     +'<div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:800;color:#33475A">출국 · 입국 구성</div>'
@@ -1931,20 +1978,21 @@ function pxRenderTerm(el,t,sub){
       h+='<div style="background:'+bg+';border-radius:12px;padding:6px 0 5px;'+ring+'"><div style="font-size:11px;font-weight:800;color:#33475A">'+(dn===1?(dt.getUTCMonth()+1)+'월':'')+'&nbsp;</div><div style="font-size:19px;font-weight:900;color:#1B2A38;line-height:1.05">'+dn+'</div><div style="font-size:12px;font-weight:800;color:#1B2A38;margin-top:2px">'+(x.t/10000).toFixed(1)+'</div></div>'; }
     else h+='<div style="border-radius:12px;padding:6px 0 5px;background:#F1F5F8;'+ring+'"><div style="font-size:11px">&nbsp;</div><div style="font-size:17px;font-weight:700;color:#A4B3C0;line-height:1.1">'+dn+'</div><div style="font-size:12px">&nbsp;</div></div>'; }
   h+='</div><div style="display:flex;flex-wrap:wrap;gap:8px 16px;margin-top:12px;font-size:13.5px;font-weight:700;color:#33475A"><span><i style="display:inline-block;width:14px;height:14px;border-radius:5px;background:#F4B98B;margin-right:5px;vertical-align:-2px"></i>평균 대비 높음</span><span><i style="display:inline-block;width:14px;height:14px;border-radius:5px;background:#C9DFF1;margin-right:5px;vertical-align:-2px"></i>평균 수준</span><span><i style="display:inline-block;width:14px;height:14px;border-radius:5px;background:#BFE5D0;margin-right:5px;vertical-align:-2px"></i>낮음</span></div><div style="font-size:12.5px;color:#4A5F72;margin-top:6px">칸 안 숫자는 일 여객 (단위: 만 명)</div></div>';
-  h+='<div style="padding:13px 14px;background:#EEF3F7;border-radius:14px;font-size:14px;line-height:1.7;color:#33475A;margin-bottom:6px">※ 인천공항 <b>공항 예상 혼잡도</b>('+PX_NAME[t]+') 예상 인원 기준이며 실제와 다를 수 있음. 3일 이상 등록 시 해당 터미널 <b>청결예보</b>에 자동 반영.</div>';
+  h+='<div style="padding:13px 14px;background:#EEF3F7;border-radius:14px;font-size:14px;line-height:1.7;color:#33475A;margin-bottom:6px">※ 인천공항 <b>공항 예상 혼잡도</b>('+PX_NAME[t]+') 예상 인원 기준이며 실제와 다를 수 있음. 월 자료 또는 3일 이상 등록 시 해당 터미널 <b>청결예보</b>에 자동 반영.</div>';
   el.innerHTML=h;
 }
 
 
 /* ---------- 여객 탭 (T1·T2 비교 + 엑셀 올리기: 그룹 소속 관리자만) ---------- */
-var PXG={view:'cmp',up:{term:'T1',files:[],busy:false},ed:null};
+var PXG={view:'cmp',up:{term:'T1',mode:'d',files:[],busy:false},ed:null};
 function gpxFetchAll(){
   var all=[],from=0,PAGE=1000;
   function next(){ return sb.from('fc_pax').select('terminal,pax_date,hour,dep,arr').order('pax_date',{ascending:true}).order('hour',{ascending:true}).range(from,from+PAGE-1).then(function(r){
     if(r.error) return {error:r.error,data:null}; all=all.concat(r.data||[]); if((r.data||[]).length<PAGE) return {data:all,error:null}; from+=PAGE; return next(); }); }
   return next();
 }
-function gpxReload(){ return PX.load(gpxFetchAll); }
+function gpxMonthFetchAll(){ return sb.from('fc_pax_month').select('terminal,ym,hour,dep,arr,days').order('ym',{ascending:true}).limit(5000).then(function(r){ return r.error?{error:r.error,data:null}:{data:r.data||[],error:null}; }); }
+function gpxReload(){ return PX.load(gpxFetchAll).then(function(){ return PX.loadMonth(gpxMonthFetchAll); }); }
 function loadPx(){
   var p=PX.loaded?Promise.resolve():gpxReload();
   return p.then(function(){ renderPx(); });
@@ -1961,17 +2009,25 @@ function pxMgrRender(){
   var el=$('pxMgr'); if(!el) return;
   var u=PXG.up, btn='border:0;border-radius:11px;padding:11px;font-size:13.5px;font-weight:800;cursor:pointer;';
   var h='<div class="card" style="padding:14px"><div style="font-size:14px;font-weight:800;margin-bottom:8px">📂 엑셀 올리기 · 수정</div>'
-   +'<div style="font-size:11.5px;color:#666;line-height:1.55;background:#F3F4F6;border-radius:10px;padding:9px 11px;margin-bottom:10px">인천공항 홈페이지 <b>공항 예상 혼잡도</b>에서 받은 <b>E2026MMDD.xls</b> 파일을 터미널별로 올려 주세요. 여러 날짜를 한 번에 선택할 수 있어요. 같은 날짜는 덮어씁니다.</div>'
+   +'<div style="display:flex;gap:6px;margin-bottom:8px">'+[['d','일별 자료'],['m','월별 자료']].map(function(x){var on=(u.mode||'d')===x[0];return '<button data-pxup="mode" data-v="'+x[0]+'" style="flex:1;'+btn+'background:'+(on?'#2B2F36':'#E8ECF0')+';color:'+(on?'#fff':'#667')+'">'+x[1]+'</button>';}).join('')+'</div>'
+   +(u.mode==='m'?'<div style="font-size:11.5px;color:#666;line-height:1.55;background:#F3F4F6;border-radius:10px;padding:9px 11px;margin-bottom:10px">인천공항 통계의 <b>월 합계 파일(By_Time_YYYYMM_YYYYMM.xls)</b>을 터미널별로 올려 주세요. 한 달 단위 파일만 되고, 같은 달은 덮어씁니다. 청결예보의 <b>\'평소 수준\'(기준선)</b>이 이 월 자료로 잡힙니다.</div>':'<div style="font-size:11.5px;color:#666;line-height:1.55;background:#F3F4F6;border-radius:10px;padding:9px 11px;margin-bottom:10px">인천공항 홈페이지 <b>공항 예상 혼잡도</b>에서 받은 <b>E2026MMDD.xls</b> 파일을 터미널별로 올려 주세요. 여러 날짜를 한 번에 선택할 수 있어요. 같은 날짜는 덮어씁니다.</div>')
    +'<div style="display:flex;gap:6px;margin-bottom:8px">'+['T1','T2'].map(function(t){var on=u.term===t;return '<button data-pxup="term" data-v="'+t+'" style="flex:1;'+btn+'background:'+(on?PX_COL[t]:'#E8ECF0')+';color:'+(on?'#fff':'#667')+'">'+PX_NAME[t]+'</button>';}).join('')+'</div>'
-   +'<button data-pxup="pick" style="width:100%;'+btn+'background:#2B2F36;color:#fff">📂 '+PX_NAME[u.term]+' 엑셀 선택</button><input id="pxFile" type="file" accept=".xls,.xlsx" multiple style="display:none">';
+   +'<button data-pxup="pick" style="width:100%;'+btn+'background:#2B2F36;color:#fff">📂 '+PX_NAME[u.term]+' 엑셀 선택'+(u.mode==='m'?' (월 합계)':'')+'</button><input id="pxFile" type="file" accept=".xls,.xlsx" multiple style="display:none">';
   if(u.files.length){
     h+='<div style="margin-top:12px;font-size:12.5px;font-weight:800">올릴 파일 확인</div>';
     u.files.forEach(function(f){ if(!f.ok){h+='<div style="padding:9px 11px;margin-top:6px;background:#FDECEC;border-radius:10px;font-size:12px;color:#B03A3A"><b>'+esc(f.name)+'</b><br>'+esc(f.err)+'</div>';return;}
-      h+='<div style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-top:6px;background:#F3F7FA;border-radius:10px;font-size:12.5px"><b style="flex:1">'+PX.md(f.date)+'</b><span>출국 '+f.dep.toLocaleString()+' · 입국 '+f.arr.toLocaleString()+'</span></div>'; });
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-top:6px;background:#F3F7FA;border-radius:10px;font-size:12.5px"><b style="flex:1">'+(f.ym?(f.ym.slice(0,4)+'년 '+(+f.ym.slice(5))+'월 · '+f.days+'일'):PX.md(f.date))+'</b><span>출국 '+f.dep.toLocaleString()+' · 입국 '+f.arr.toLocaleString()+'</span></div>'; });
     var ok=u.files.filter(function(f){return f.ok;}).length;
-    h+='<div style="display:flex;gap:6px;margin-top:10px"><button data-pxup="cancel" style="flex:1;'+btn+'background:#E6E8EC;color:#333">취소</button><button data-pxup="save" '+((ok&&!u.busy)?'':'disabled ')+'style="flex:2;'+btn+'background:'+PX_COL[u.term]+';color:#fff;opacity:'+((ok&&!u.busy)?1:.5)+'">'+(u.busy?'저장 중…':PX_NAME[u.term]+' '+ok+'일 저장')+'</button></div>';
+    h+='<div style="display:flex;gap:6px;margin-top:10px"><button data-pxup="cancel" style="flex:1;'+btn+'background:#E6E8EC;color:#333">취소</button><button data-pxup="save" '+((ok&&!u.busy)?'':'disabled ')+'style="flex:2;'+btn+'background:'+PX_COL[u.term]+';color:#fff;opacity:'+((ok&&!u.busy)?1:.5)+'">'+(u.busy?'저장 중…':PX_NAME[u.term]+' '+ok+(u.mode==='m'?'개월':'일')+' 저장')+'</button></div>';
   }
   h+='</div>';
+  if(u.mode==='m'){ ['T1','T2'].forEach(function(t){
+    var ym=Object.keys(PX.month[t]||{}).sort().reverse();
+    h+='<div class="card" style="padding:14px"><div style="font-size:14px;font-weight:800;margin-bottom:8px;color:'+PX_COL[t]+'">'+PX_NAME[t]+' 저장된 월 ('+ym.length+')</div>';
+    if(!ym.length) h+='<div style="text-align:center;padding:14px;color:#999;font-size:12.5px">아직 저장된 월 자료가 없어요</div>';
+    ym.forEach(function(y){ var m=PX.monthDaily(t,y);
+      h+='<div data-pxmd="'+t+'|'+y+'" style="display:flex;align-items:center;gap:8px;padding:10px 11px;margin-bottom:5px;background:#fff;border:1px solid #E6E8EC;border-radius:10px;cursor:pointer;font-size:13px"><b style="flex:1">'+y.slice(0,4)+'년 '+(+y.slice(5))+'월</b><span style="color:#555">하루 평균 '+Math.round(m.total).toLocaleString()+'명</span><span style="color:#C0504D">삭제 ›</span></div>'; });
+    h+='</div>'; }); el.innerHTML=h; var f0=$('pxFile'); if(f0) f0.onchange=function(){ pxPick(f0); }; return; }
   ['T1','T2'].forEach(function(t){
     var ds=Object.keys(PX.data[t]).sort().reverse();
     h+='<div class="card" style="padding:14px"><div style="font-size:14px;font-weight:800;margin-bottom:8px;color:'+PX_COL[t]+'">'+PX_NAME[t]+' 저장된 날짜 ('+ds.length+')</div>';
@@ -2001,19 +2057,33 @@ function pxParse(file){
     return {ok:true,name:file.name,date:date,v:v,dep:sd,arr:sa,term:pxDetect(ro)||pxDetect(ri)};
   });
 }
+function pxParseM(file){
+  return Promise.resolve().then(function(){
+    var mm=String(file.name).match(/By_Time_(\d{4})(\d{2})_(\d{4})(\d{2})/);
+    if(!mm) throw new Error('월 합계 파일(By_Time_YYYYMM_YYYYMM.xls)만 올릴 수 있습니다');
+    if(mm[1]!==mm[3]||mm[2]!==mm[4]) throw new Error('한 달 단위 파일만 올릴 수 있습니다 (예: By_Time_202608_202608.xls)');
+    return file.arrayBuffer().then(function(buf){
+      var wb=XLSX.read(buf,{type:'array'}), ws=wb.Sheets[wb.SheetNames[0]], rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''}), v=[], dep=0, arr=0;
+      var num=function(x){ return Number(String(x).replace(/[,\s]/g,''))||0; };
+      rows.forEach(function(r){ var m=String(r[0]).match(/^\s*(\d{1,2}):00\s*~/); if(m&&+m[1]<24&&v[+m[1]]===undefined){ v[+m[1]]=[num(r[5]),num(r[4])]; } });
+      for(var i=0;i<24;i++){ if(!v[i]) throw new Error('시간대별 표(0~23시)를 찾지 못했습니다'); dep+=v[i][0]; arr+=v[i][1]; }
+      return {ok:true,name:file.name,ym:mm[1]+'-'+mm[2],days:new Date(+mm[1],+mm[2],0).getDate(),v:v,dep:dep,arr:arr};
+    });
+  });
+}
 function pxPick(inp){
   var fs=Array.prototype.slice.call(inp.files||[]); if(!fs.length) return;
-  Promise.all(fs.map(function(f){ return pxParse(f).catch(function(e){return {ok:false,name:f.name,err:e.message||String(e)};}); })).then(function(out){
-    out.sort(function(a,b){return String(a.date||'z').localeCompare(String(b.date||'z'));});
-    var det=out.filter(function(f){return f.ok&&f.term;}); if(det.length&&det.every(function(f){return f.term===det[0].term;})) PXG.up.term=det[0].term;
+  Promise.all(fs.map(function(f){ return (PXG.up.mode==='m'?pxParseM(f):pxParse(f)).catch(function(e){return {ok:false,name:f.name,err:e.message||String(e)};}); })).then(function(out){
+    out.sort(function(a,b){return String(a.date||a.ym||'z').localeCompare(String(b.date||b.ym||'z'));});
+    var det=PXG.up.mode==='m'?[]:out.filter(function(f){return f.ok&&f.term;}); if(det.length&&det.every(function(f){return f.term===det[0].term;})) PXG.up.term=det[0].term;
     PXG.up.files=out; pxMgrRender();
   });
 }
 function pxSave(){
   var u=PXG.up; if(u.busy) return; u.busy=true; pxMgrRender();
   var list=u.files.filter(function(f){return f.ok;}), n=0;
-  list.reduce(function(p,f){ return p.then(function(){ return rpc('group_fc_pax_save',{p_terminal:u.term,p_date:f.date,p_vals:f.v}).then(function(){n++;}); }); },Promise.resolve())
-   .then(function(){ u.busy=false; u.files=[]; return gpxReload(); }).then(function(){ GF.ready=false; alert(n+'일치 저장했어요'); renderPx(); })
+  list.reduce(function(p,f){ return p.then(function(){ return (f.ym?rpc('group_fc_pax_month_save',{p_terminal:u.term,p_ym:f.ym,p_days:f.days,p_vals:f.v}):rpc('group_fc_pax_save',{p_terminal:u.term,p_date:f.date,p_vals:f.v})).then(function(){n++;}); }); },Promise.resolve())
+   .then(function(){ u.busy=false; u.files=[]; return gpxReload(); }).then(function(){ GF.ready=false; alert(n+(u.mode==='m'?'개월치':'일치')+' 저장했어요'); renderPx(); })
    .catch(function(e){ u.busy=false; pxMgrRender(); alert('저장하지 못했어요: '+((e&&e.message)||e)); });
 }
 function pxEditOpen(t,d){
@@ -2035,7 +2105,9 @@ function pxEditAct(a){
 document.addEventListener('click',function(e){
   var a=e.target.closest('#p-px [data-pxv]'); if(a){PXG.view=a.dataset.pxv;renderPx();return;}
   a=e.target.closest('[data-pxup]'); if(a){ var k=a.dataset.pxup, u=PXG.up;
-    if(k==='term'){u.term=a.dataset.v;pxMgrRender();} else if(k==='pick'){var f=$('pxFile');if(f){f.value='';f.click();}} else if(k==='cancel'){u.files=[];pxMgrRender();} else if(k==='save'&&!a.disabled){pxSave();} return; }
+    if(k==='term'){u.term=a.dataset.v;pxMgrRender();} else if(k==='mode'){u.mode=a.dataset.v;u.files=[];pxMgrRender();} else if(k==='pick'){var f=$('pxFile');if(f){f.value='';f.click();}} else if(k==='cancel'){u.files=[];pxMgrRender();} else if(k==='save'&&!a.disabled){pxSave();} return; }
+  a=e.target.closest('[data-pxmd]'); if(a){var q=a.dataset.pxmd.split('|'); if(!confirm(q[1].slice(0,4)+'년 '+(+q[1].slice(5))+'월 '+PX_NAME[q[0]]+' 월 자료를 삭제할까요?')) return;
+    rpc('group_fc_pax_month_delete',{p_terminal:q[0],p_ym:q[1]}).then(gpxReload).then(function(){GF.ready=false;renderPx();}).catch(function(x){alert('삭제하지 못했어요: '+((x&&x.message)||x));}); return; }
   a=e.target.closest('[data-pxed]'); if(a){var p=a.dataset.pxed.split('|');pxEditOpen(p[0],p[1]);return;}
   a=e.target.closest('[data-pxe]'); if(a){pxEditAct(a.dataset.pxe);}
 });

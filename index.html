@@ -1055,7 +1055,7 @@ html{overflow-x:hidden}
     <input type="password" id="rPw" class="ri" placeholder="6자 이상">
     <div style="font-size:13px;font-weight:700;color:var(--g4);margin-bottom:5px">비밀번호 확인 *</div>
     <input type="password" id="rPw2" class="ri" placeholder="재입력">
-    <div style="font-size:13px;font-weight:700;color:var(--g4);margin-bottom:6px">소속 팀 *</div>
+    <div id="regTeamLbl" style="font-size:13px;font-weight:700;color:var(--g4);margin-bottom:6px">소속 팀 *</div>
     <div id="regTeamGrid" class="t-grid5" style="margin-bottom:10px"></div>
     <!-- 조 선택 (팀장/조장일 때 표시) -->
     <div id="regChoWrap" style="display:none;margin-bottom:4px">
@@ -1064,7 +1064,7 @@ html{overflow-x:hidden}
     </div>
     <div style="height:10px"></div>
     <div style="font-size:13px;font-weight:700;color:var(--g4);margin-bottom:6px">직급 *</div>
-    <div class="role-row" style="flex-wrap:wrap"><div class="r-btn" onclick="pickR(this)">팀장</div><div class="r-btn" onclick="pickR(this)">조장</div><div class="r-btn" onclick="pickR(this)">액팅리더</div><div class="r-btn" onclick="pickR(this)">기타</div><div class="r-btn" onclick="pickR(this)">차량운행</div><div class="r-btn" onclick="pickR(this)">열람전용</div></div>
+    <div id="regRoleRow" class="role-row" style="flex-wrap:wrap"><div class="r-btn" onclick="pickR(this)">팀장</div><div class="r-btn" onclick="pickR(this)">조장</div><div class="r-btn" onclick="pickR(this)">액팅리더</div><div class="r-btn" onclick="pickR(this)">기타</div><div class="r-btn" onclick="pickR(this)">차량운행</div><div class="r-btn" onclick="pickR(this)">열람전용</div></div>
     <div class="err" id="rErr"></div>
     <button class="btn-prim" onclick="subReg()">가입 신청 제출</button>
     <p style="text-align:center;font-size:13px;color:var(--g3);margin-top:11px">승인 후 로그인 가능합니다</p>
@@ -11441,15 +11441,21 @@ async function iaosLoadRegDivisions(){
   var box=document.getElementById('regDivChips'); if(!box) return;
   try{ await iaosFetchDivisions(); }catch(e){}
   if(!IAOS_DIVS.length){ box.innerHTML='<div style="grid-column:1/-1;font-size:13px;color:var(--danger)">사업부 목록을 불러오지 못했습니다. 새로고침 해주세요</div>'; return; }
-  box.style.gridTemplateColumns='repeat('+Math.min(IAOS_DIVS.length,3)+',minmax(0,1fr))';
-  box.innerHTML=IAOS_DIVS.map(function(d){return '<div class="t-btn" data-id="'+d.id+'" onclick="iaosPickRegDiv(this)" style="padding:10px 4px;font-size:13px">'+d.name.replace('환경미화사업부','').replace('환경미화','')+(d.name.indexOf('부대')===0?'':'<br><span style="font-size:11px;opacity:.7">환경미화</span>')+'</div>';}).join('');
+  box.style.gridTemplateColumns='repeat('+Math.min(IAOS_DIVS.length+1,4)+',minmax(0,1fr))';
+  box.innerHTML=IAOS_DIVS.map(function(d){return '<div class="t-btn" data-id="'+d.id+'" onclick="iaosPickRegDiv(this)" style="padding:10px 4px;font-size:13px">'+d.name.replace('환경미화사업부','').replace('환경미화','')+'<br><span style="font-size:11px;opacity:.7">환경미화</span>'+'</div>';}).join('')+'<div class="t-btn" data-id="ALL" onclick="iaosPickRegDiv(this)" style="padding:10px 4px;font-size:13px">그룹</div>';
 }
 function iaosPickRegDiv(el){
   document.querySelectorAll('#regDivChips .t-btn').forEach(function(b){b.classList.remove('on');});
   el.classList.add('on');
   document.getElementById('regDept').value=el.getAttribute('data-id');
 }
+function iaosRegGroupMode(on){
+  ['regTeamLbl','regTeamGrid','regChoWrap'].forEach(function(id){ var e=document.getElementById(id); if(e) e.style.display=on?'none':(id==='regChoWrap'?'none':''); });
+  var row=document.getElementById('regRoleRow'); if(!row) return;
+  [].forEach.call(row.children,function(b){ var v=b.textContent.trim(); b.style.display=(on&&v!=='열람전용')?'none':''; b.classList.remove('on'); if(on&&v==='열람전용') b.classList.add('on'); });
+}
 async function iaosLoadRegTeams(divId){
+  if(divId==='ALL'){ IAOS_REG.teams=[]; IAOS_REG.groups=[]; var g0=document.getElementById('regTeamGrid'); if(g0) g0.innerHTML=''; return; }
   var grid=document.getElementById('regTeamGrid'); if(!grid) return;
   grid.innerHTML='<div style="grid-column:1/-1;font-size:13px;color:var(--g3)">팀 불러오는 중...</div>';
   var tr=await sb.from('teams').select('id,name,sort_order').eq('division_id',divId).order('sort_order',{ascending:true});
@@ -22095,8 +22101,9 @@ async function checkRegGate(){
       return;
     }
     regGatePassedEmpNo=v;
-    var deptVal=iaosDivName(document.getElementById('regDept').value);
+    var deptVal=(document.getElementById('regDept').value==='ALL')?'그룹 (통합)':iaosDivName(document.getElementById('regDept').value);
     iaosLoadRegTeams(document.getElementById('regDept').value);
+    iaosRegGroupMode(document.getElementById('regDept').value==='ALL');
     document.getElementById('regGateStep').style.display='none';
     document.getElementById('regFormBody').style.display='block';
     document.getElementById('regConfirmedEmpNo').textContent=v;
@@ -22131,7 +22138,7 @@ async function subReg(){
   if(!/^[a-zA-Z0-9_]{4,20}$/.test(em)){err.textContent='⚠️ 아이디는 영문·숫자·_(밑줄) 4~20자만 가능합니다';err.style.display='block';return;}
   if(pw.length<6){err.textContent='⚠️ 비밀번호는 6자 이상';err.style.display='block';return;}
   if(pw!==pw2){err.textContent='⚠️ 비밀번호가 일치하지 않습니다';err.style.display='block';return;}
-  if(!team){err.textContent='⚠️ 소속 팀을 선택해주세요';err.style.display='block';return;}
+  if(!team&&divId!=='ALL'){err.textContent='⚠️ 소속 팀을 선택해주세요';err.style.display='block';return;}
   if(!roleVal){err.textContent='⚠️ 직급을 선택해주세요';err.style.display='block';return;}
   var needsJo=(roleVal==='조장'||roleVal==='액팅리더'||roleVal==='차량운행');
   var _hasGrp=(IAOS_REG.groups||[]).some(function(g){return g.team_id===teamId;});
@@ -22145,7 +22152,7 @@ async function subReg(){
   }
 
   var roleMap={'팀장':'manager','조장':'leader','액팅리더':'acting_leader','기타':'member','차량운행':'work_vehicle','열람전용':'member'};
-  var finalRole = roleMap[roleVal]||'member';
+  var finalRole = (divId==='ALL')?'group_viewer':(roleMap[roleVal]||'member');
 
   try{
     err.textContent='처리 중...';
@@ -22157,7 +22164,7 @@ async function subReg(){
     var resp=await fetch(SUPABASE_URL+'/functions/v1/signup', {
       method:'POST',
       headers:{'apikey':SUPABASE_KEY,'Content-Type':'application/json'},
-      body: JSON.stringify({name:nm, loginId:em, password:pw, divisionId:divId, teamId:teamId, teamGroupId:joId||null, role:finalRole, employeeId:regGatePassedEmpNo})
+      body: JSON.stringify({name:nm, loginId:em, password:pw, divisionId:divId, teamId:teamId||null, teamGroupId:joId||null, role:finalRole, employeeId:regGatePassedEmpNo})
     });
     var regData=null;
     try{ regData=await resp.json(); }catch(e){}

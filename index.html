@@ -34831,13 +34831,23 @@ PX.compare=function(el,sub){
   h+='<div style="'+card+'"><div style="'+ttl+'">✈️ 예상 여객 비교</div><div style="'+cap+'">출국+입국 · 날짜는 오늘 또는 가장 가까운 등록일</div><div style="display:flex;gap:10px">'+big(i1)+big(i2)+'</div>'
     +'<div style="margin-top:12px;padding:10px 12px;background:#F3F7FA;border-radius:14px;font-size:13.5px;color:#33475A;line-height:1.6">제2터미널은 제1터미널의 약 <b style="font-size:16px;color:#1B2A38">'+Math.round(ratio*100)+'%</b> 수준 · 일평균 제1 '+paxKor(a1)+' / 제2 '+paxKor(a2)+'</div></div>';
   // ② 시간대별 한눈 요약 + 한 줄 흐름 (제1·제2 나란히)
-  var C1=PX_COL.T1,C2=PX_COL.T2,mx2=Math.max.apply(null,i1.hr.slice(6,22).concat(i2.hr.slice(6,22)))||1,f1=function(v){ return Math.round(v/100)/10; };
-  var pbox=function(c,t,i){ return '<div style="flex:1;min-width:0;background:'+c+'18;border:2px solid '+c+'55;border-radius:16px;padding:12px 6px;text-align:center"><div style="font-size:13px;font-weight:800;color:'+c+'">'+t+' 최대</div><div style="font-size:25px;font-weight:900;color:#1B2A38;line-height:1.25">'+i.pk+'~'+(i.pk+1)+'시</div><div style="font-size:14px;font-weight:800;color:'+c+'">'+f1(i.hr[i.pk])+'천 명</div></div>'; };
-  var sv='<div style="display:flex;gap:10px;margin-bottom:14px">'+pbox(C1,'제1터미널',i1)+pbox(C2,'제2터미널',i2)+'</div><div style="display:flex;align-items:flex-end;gap:5px;height:150px">';
-  for(var hh=6;hh<22;hh++){ sv+='<div style="flex:1;min-width:0;display:flex;align-items:flex-end;gap:1px;height:100%"><div style="flex:1;height:'+Math.max(4,Math.round(i1.hr[hh]/mx2*140))+'px;background:'+C1+';border-radius:4px 4px 1px 1px"></div><div style="flex:1;height:'+Math.max(4,Math.round(i2.hr[hh]/mx2*140))+'px;background:'+C2+';border-radius:4px 4px 1px 1px"></div></div>'; }
-  sv+='</div><div style="display:flex;justify-content:space-between;font-size:12.5px;font-weight:700;color:#4A5F72;margin-top:4px;padding:0 2px"><span>6시</span><span>10시</span><span>14시</span><span>18시</span><span>22시</span></div>';
-  var lg='<div style="display:flex;gap:16px;font-size:13.5px;color:#33475A;font-weight:700;margin:10px 4px 0"><span><i style="display:inline-block;width:14px;height:14px;border-radius:4px;background:'+C1+';margin-right:5px;vertical-align:-2px"></i>제1터미널</span><span><i style="display:inline-block;width:14px;height:14px;border-radius:4px;background:'+C2+';margin-right:5px;vertical-align:-2px"></i>제2터미널</span></div>';
-  h+='<div style="'+card+'"><div style="'+ttl+'">시간대별 여객 비교</div><div style="'+cap+'">근무 시간(6~22시) 1시간 단위 일평균 (출국+입국) · 막대가 길수록 손님이 많음</div>'+sv+lg+'</div>';
+  var C1=PX_COL.T1,C2=PX_COL.T2,mx2=Math.max.apply(null,i1.hr.slice(6,22).concat(i2.hr.slice(6,22)))||1,f1=function(v){ return (Math.round(v/100)/10).toFixed(1); };
+   var sv='';
+   [6,14].forEach(function(s0,bi){
+     sv+='<div style="font-size:14.5px;font-weight:900;color:#33475A;margin:'+(bi?'16px':'0')+' 0 6px">'+(bi?'오후·저녁 (14~22시)':'오전·낮 (6~14시)')+'</div><div style="display:grid;grid-template-columns:40px repeat(8,1fr);gap:4px;align-items:center"><div></div>';
+     for(var hh=s0;hh<s0+8;hh++) sv+='<div style="text-align:center;font-size:13px;font-weight:900;color:#33475A">'+hh+'시</div>';
+     [['제1',i1,C1,[226,245,242],[18,165,148]],['제2',i2,C2,[232,240,252],[47,125,225]]].forEach(function(r){
+       sv+='<div style="font-size:14px;font-weight:900;color:'+r[2]+'">'+r[0]+'</div>';
+       for(var hh=s0;hh<s0+8;hh++){ var v=r[1].hr[hh], q=v/mx2, k=[0,1,2].map(function(z){ return Math.round(r[3][z]+(r[4][z]-r[3][z])*q); });
+         sv+='<div style="text-align:center;padding:10px 0;border-radius:10px;background:rgb('+k.join(',')+');color:'+(q>0.55?'#fff':'#1B2A38')+';font-size:15px;font-weight:900">'+f1(v)+'</div>'; }
+     });
+     sv+='<div style="font-size:13px;font-weight:900;color:#33475A">차이</div>';
+     for(var hh=s0;hh<s0+8;hh++){ var d=i1.hr[hh]-i2.hr[hh]; sv+='<div style="text-align:center;font-size:12.5px;font-weight:900;line-height:1.3;color:'+(d>=0?C1:C2)+'">'+(d>=0?'제1':'제2')+'<br>+'+f1(Math.abs(d))+'</div>'; }
+     sv+='</div>';
+   });
+   var pk1=0,pk2=0; for(var hh=6;hh<22;hh++){ if(i1.hr[hh]>i1.hr[pk1||6]) pk1=hh; if(i2.hr[hh]>i2.hr[pk2||6]) pk2=hh; } pk1=pk1||6; pk2=pk2||6;
+   var lg='<div style="display:flex;gap:14px;flex-wrap:wrap;margin:12px 2px 0;font-size:14px;font-weight:800;color:#33475A"><span style="color:'+C1+'">제1 가장 붐비는 시간 '+pk1+'~'+(pk1+1)+'시 ('+f1(i1.hr[pk1])+')</span><span style="color:'+C2+'">제2 가장 붐비는 시간 '+pk2+'~'+(pk2+1)+'시 ('+f1(i2.hr[pk2])+')</span></div>';
+   h+='<div style="'+card+'"><div style="'+ttl+'">시간대별 여객 비교</div><div style="'+cap+'">근무 시간(6~22시) 1시간 단위 일평균 (단위: 천 명) · 색이 진할수록 많음 · 아래 줄은 어느 터미널이 얼마나 더 많은지</div>'+sv+lg+'</div>';
   // ③ 시간대 4구간 비교
   var bl=function(S,ds){ return PX_BLOCKS.map(function(b){ var t=0; ds.forEach(function(d){ for(var k=b.a;k<b.b;k++) t+=S[d][k][0]+S[d][k][1]; }); return t/ds.length; }); };
   var b1=bl(S1,d1),b2=bl(S2,d2),bm=Math.max.apply(null,b1.concat(b2))||1;
@@ -34859,24 +34869,76 @@ PX.compare=function(el,sub){
   el.innerHTML=h;
 };
 /* ── 보기 전환: 비교 / 제1 / 제2 ── */
+PX.tab='d';
+PX.tabsHtml=function(){
+  var on='background:#2F7FB8;color:#fff;box-shadow:0 3px 10px rgba(47,127,184,.35)', off='background:transparent;color:#33475A';
+  var bt=function(k,l){ return '<button onclick="paxTab(\''+k+'\')" style="flex:1;padding:13px 6px;border:none;border-radius:14px;font-size:17px;font-weight:900;cursor:pointer;'+(PX.tab===k?on:off)+'">'+l+'</button>'; };
+  return '<div style="display:flex;gap:4px;padding:4px;margin:0 0 14px;background:#E4ECF3;border-radius:18px;max-width:760px">'+bt('d','일별 현황')+bt('m','월별 통계')+'</div>';
+};
 PX.renderView=function(el,view,sub,own){
   if(!el) return;
+  if(PX.tab==='m'){
+    var mb=PX.monthBody(view);
+    if(sub){ var nm=0; ['T1','T2'].forEach(function(t){ nm=Math.max(nm,Object.keys(PX.month[t]||{}).length); }); sub.textContent=nm?('월 자료 '+nm+'개월'):'월 자료 없음'; }
+    el.innerHTML='<div class="pax-wide">'+PX.pills(view,own)+PX.tabsHtml()+'</div>'+mb;
+    el.className='pax-m'; return;
+  }
   var body=document.createElement('div');
   if(view==='cmp') PX.compare(body,sub); else pxRenderTerm(body,view,sub);
-  var head='<div class="pax-wide">'+PX.pills(view,own), f=body.firstElementChild;
+  var head='<div class="pax-wide">'+PX.pills(view,own)+PX.tabsHtml(), f=body.firstElementChild;
   if(view!=='cmp'&&f&&f.querySelector&&f.querySelector('[onclick^="paxStep"]')){ head+=f.outerHTML; body.removeChild(f); }
   head+='</div>';
-  el.innerHTML=head+body.innerHTML+(PX.monthCard?PX.monthCard(view):'');
+  el.innerHTML=head+body.innerHTML;
   el.className=(view==='cmp')?'pax-m':'pax-d';
 };
 
-PX.monthCard=function(t){
-  if(t!=='T1'&&t!=='T2') return '';
-  var ym=PX.monthList(t).slice().reverse(); if(!ym.length) return '';
-  return '<div class="pax-wide" style="background:#fff;border-radius:22px;box-shadow:0 2px 12px rgba(15,40,60,.09);padding:16px 14px;margin-bottom:16px"><div style="font-size:19px;font-weight:900;color:#1B2A38;padding:0 4px">월별 자료 <span style="font-size:13px;color:#4A5F72;font-weight:700">하루 평균 · 출국+입국</span></div>'
-   +'<div style="font-size:13.5px;color:#4A5F72;line-height:1.55;margin:3px 4px 8px">청결예보의 \'평소 수준\' 기준선으로 쓰입니다.</div>'
-   +ym.slice(0,12).map(function(y){ var m=PX.monthDaily(t,y); var d=PX.month[t][y].days;
-      return '<div style="display:flex;align-items:center;gap:8px;padding:10px 6px;border-top:1px solid #EEF1F4;font-size:15px"><b style="flex:1;color:#1B2A38">'+y.slice(0,4)+'년 '+(+y.slice(5))+'월</b><span style="color:#4A5F72;font-size:12.5px">'+d+'일</span><b style="color:'+PX_COL[t]+'">'+Math.round(m.total).toLocaleString()+'명</b></div>'; }).join('')+'</div>';
+PX.monthBody=function(view){
+  var terms=(view==='cmp')?['T1','T2']:[view];
+  var card='background:#fff;border-radius:22px;box-shadow:0 2px 12px rgba(15,40,60,.09);padding:18px 14px 16px;margin-bottom:16px';
+  var ttl='font-size:19px;font-weight:900;color:#1B2A38;padding:0 4px', cap='font-size:14px;color:#4A5F72;line-height:1.55;margin:3px 4px 8px';
+  var any=terms.some(function(t){ return Object.keys(PX.month[t]||{}).length; });
+  if(!any) return '<div class="pax-wide" style="background:#fff;border-radius:20px;box-shadow:0 2px 12px rgba(15,40,60,.1);padding:34px 18px;text-align:center"><div style="font-size:46px">📊</div><div style="font-size:19px;font-weight:800;color:#1B2A38;margin-top:8px">등록된 월 자료가 없습니다</div><div style="font-size:15px;color:#3D5163;margin-top:10px;line-height:1.7">그룹 앱 여객 화면의 <b>월별 자료</b>에서<br>월 합계 파일(By_Time_YYYYMM_YYYYMM.xls)을<br>등록해 주세요.</div></div>';
+  var md={}; terms.forEach(function(t){ md[t]=Object.keys(PX.month[t]||{}).sort().slice(-12).map(function(y){ var d=PX.monthDaily(t,y); return {y:y,m:+y.slice(5),t:d.total,b:d.blocks}; }); });
+  var f1=function(v){ return (v/10000).toFixed(1); };
+  var ext=function(a){ var mx=a[0],mn=a[0]; a.forEach(function(x){ if(x.t>mx.t) mx=x; if(x.t<mn.t) mn=x; }); return {mx:mx,mn:mn}; };
+  var box=function(bg,fg,lbl,v){ return '<div style="flex:1;min-width:0;background:'+bg+';border-radius:14px;padding:10px 12px"><div style="font-size:13px;font-weight:800;color:'+fg+'">'+lbl+'</div><div style="font-size:18px;font-weight:900;color:#1B2A38;margin-top:2px">'+v+'</div></div>'; };
+  var out='';
+  if(view!=='cmp'){
+    var a=md[view], e=ext(a), avg=a.reduce(function(s,x){ return s+x.t; },0)/a.length;
+    var W=340,H=210,PB=34,PT=34,n=a.length,cw=Math.min(34,(W-20)/n-8),gap=(W-20-cw*n)/Math.max(1,n-1);
+    var Y=function(v){ return H-PB-(H-PB-PT)*v/(e.mx.t*1.04); };
+    var s='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block" role="img" aria-label="월별 일평균 여객"><line x1="6" x2="'+(W-6)+'" y1="'+Y(avg).toFixed(1)+'" y2="'+Y(avg).toFixed(1)+'" stroke="#7C8E9E" stroke-width="1.6" stroke-dasharray="5 5"/>';
+    a.forEach(function(x,i){ var bx=10+i*(cw+gap), top=x===e.mx, low=x===e.mn;
+      s+='<rect x="'+bx.toFixed(1)+'" y="'+Y(x.t).toFixed(1)+'" width="'+cw.toFixed(1)+'" height="'+(H-PB-Y(x.t)).toFixed(1)+'" rx="9" fill="'+(top?'#E08A4F':(low?'#5DB38A':'#8FBBDC'))+'"/><text x="'+(bx+cw/2).toFixed(1)+'" y="'+(Y(x.t)-7).toFixed(1)+'" text-anchor="middle" font-size="12" font-weight="900" fill="#1B2A38">'+f1(x.t)+'</text><text x="'+(bx+cw/2).toFixed(1)+'" y="'+(H-12)+'" text-anchor="middle" font-size="15" font-weight="900" fill="#1B2A38">'+x.m+'월</text>'; });
+    s+='</svg>';
+    out+='<div style="'+card+'"><div style="'+ttl+'">월별 여객 추이</div><div style="'+cap+'">월 합계를 일수로 나눈 일평균 (단위: 만 명) · 점선은 평균</div>'+s
+      +'<div style="display:flex;gap:8px;margin-top:10px">'+box('#FDEBDD','#9A4413','최대 · '+e.mx.m+'월',f1(e.mx.t)+'만 명')+box('#E1F3E9','#27694A','최소 · '+e.mn.m+'월',f1(e.mn.t)+'만 명')+'</div></div>';
+  } else {
+    var all={}; terms.forEach(function(t){ md[t].forEach(function(x){ all[x.y]=1; }); });
+    var yl=Object.keys(all).sort(), n2=yl.length, mxv=1;
+    terms.forEach(function(t){ md[t].forEach(function(x){ if(x.t>mxv) mxv=x.t; }); });
+    var ex={}; terms.forEach(function(t){ if(md[t].length) ex[t]=ext(md[t]); });
+    var mxv2=1; terms.forEach(function(t){ md[t].forEach(function(x){ if(x.t>mxv2) mxv2=x.t; }); });
+    var bf='<div style="display:flex;justify-content:space-between;font-size:15px;font-weight:900;margin:2px 2px 8px"><span style="color:'+PX_COL.T1+'">◀ 제1터미널</span><span style="color:#33475A">합계</span><span style="color:'+PX_COL.T2+'">제2터미널 ▶</span></div>';
+    yl.forEach(function(y){ var g=function(t){ var x=md[t].filter(function(q){ return q.y===y; })[0]; return x?x.t:null; }, a1=g('T1'), b1=g('T2');
+      bf+='<div style="display:grid;grid-template-columns:1fr 54px 1fr 60px;align-items:center;gap:6px;margin:6px 0"><div style="display:flex;justify-content:flex-end;align-items:center;gap:6px;min-width:0">'+(a1==null?'<span style="color:#9AA8B5;font-weight:700;font-size:13px">자료 없음</span>':'<b style="font-size:15px">'+f1(a1)+'</b><div style="width:'+Math.max(3,a1/mxv2*74)+'%;height:26px;background:'+PX_COL.T1+';border-radius:9px 3px 3px 9px"></div>')+'</div>'
+        +'<div style="text-align:center;font-size:14.5px;font-weight:900;background:#EEF3F7;border-radius:8px;padding:4px 0">'+(+y.slice(5))+'월</div>'
+        +'<div style="display:flex;align-items:center;gap:6px;min-width:0">'+(b1==null?'<span style="color:#9AA8B5;font-weight:700;font-size:13px">자료 없음</span>':'<div style="width:'+Math.max(3,b1/mxv2*74)+'%;height:26px;background:'+PX_COL.T2+';border-radius:3px 9px 9px 3px"></div><b style="font-size:15px">'+f1(b1)+'</b>')+'</div>'
+        +'<div style="text-align:right;font-size:15.5px;font-weight:900;color:#1B2A38">'+((a1!=null&&b1!=null)?f1(a1+b1):'-')+'</div></div>'; });
+    var bx=terms.filter(function(t){ return ex[t]; }).map(function(t){ return '<div style="display:flex;gap:8px;margin-top:8px"><div style="width:62px;align-self:center;font-size:14px;font-weight:900;color:'+PX_COL[t]+'">'+t+'</div>'+box('#FDEBDD','#9A4413','최대 · '+ex[t].mx.m+'월',f1(ex[t].mx.t)+'만 명')+box('#E1F3E9','#27694A','최소 · '+ex[t].mn.m+'월',f1(ex[t].mn.t)+'만 명')+'</div>'; }).join('');
+    out+='<div class="pax-wide" style="'+card+'"><div style="'+ttl+'">월별 여객 비교 (T1·T2)</div><div style="'+cap+'">월 합계를 일수로 나눈 일평균 (단위: 만 명) · 합계는 T1·T2 자료가 모두 있는 달만 표시</div>'+bf+bx+'</div>';
+  }
+  var allv=[]; terms.forEach(function(t){ md[t].forEach(function(x){ x.b.forEach(function(v){ allv.push(v); }); }); });
+  var lo=Math.min.apply(null,allv), hi=Math.max.apply(null,allv);
+  var col=function(v){ var q=(v-lo)/((hi-lo)||1); var r=Math.round(228-q*(228-47)), g=Math.round(238-q*(238-127)), b=Math.round(247-q*(247-184)); return {bg:'rgb('+r+','+g+','+b+')',fg:q>0.55?'#fff':'#1B2A38'}; };
+  terms.forEach(function(t){
+    var hm='<div style="display:grid;grid-template-columns:44px repeat(4,1fr);gap:5px;align-items:center"><div></div>'+PX_BLOCKS.map(function(b){ return '<div style="text-align:center;font-size:13px;font-weight:900;color:#33475A">'+b.a+'~'+b.b+'시</div>'; }).join('');
+    md[t].forEach(function(x){ var rm=Math.max.apply(null,x.b); hm+='<div style="font-size:15px;font-weight:900;color:#1B2A38">'+x.m+'월</div>'+x.b.map(function(v){ var c=col(v); return '<div style="text-align:center;padding:9px 0;border-radius:11px;background:'+c.bg+';color:'+c.fg+';font-size:15px;font-weight:'+(v===rm?'900':'700')+(v===rm?';box-shadow:inset 0 0 0 2.5px #1B2A38':'')+'">'+f1(v)+'</div>'; }).join(''); });
+    hm+='</div>';
+    out+='<div style="'+card+'"><div style="'+ttl+'">'+(view==='cmp'?PX_NAME[t]+' · ':'')+'월별 시간대별 여객</div><div style="'+cap+'">근무 시간대별 일평균 (단위: 만 명) · 색이 진할수록 많고, 테두리는 그 달의 최대 시간대</div>'+(md[t].length?hm:'<div style="padding:22px;text-align:center;color:#8896A4;font-size:15px;font-weight:700">월 자료 없음</div>')+'</div>';
+  });
+  out+='<div class="pax-wide" style="padding:13px 14px;background:#EEF3F7;border-radius:14px;font-size:14px;line-height:1.7;color:#33475A;margin-bottom:6px">※ 인천공항 월별 시간대별 여객 합계(출국+입국)를 일수로 나눈 값. 월 자료는 오늘 여객 비교 기준(평균)과 청결예보 보정에도 사용됨.</div>';
+  return out;
 };
 
 
@@ -35009,6 +35071,7 @@ async function paxEnter(){
 function paxPick(d){ PX.sel=d; paxRender(); try{ window.scrollTo(0,0); }catch(e){} }
 function paxStep(dir){ var v=_pxView||fcPaxOwn(); if(v==='cmp') return; var ds=Object.keys(PX.series(v)).sort(); if(!ds.length) return; var today=PX.kst(new Date().toISOString()).ds; var cur=PX.sel||(ds.indexOf(today)>=0?today:ds[ds.length-1]); var i=ds.indexOf(cur); if(i<0) i=0; i=Math.max(0,Math.min(ds.length-1,i+dir)); PX.sel=ds[i]; paxRender(); }
 function paxPickToday(){ PX.sel=null; paxRender(); }
+function paxTab(k){ PX.tab=k; paxRender(); try{ window.scrollTo(0,0); }catch(e){} }
 function paxRender(){ PX.renderView(document.getElementById('paxStats'),_pxView||fcPaxOwn(),document.getElementById('paxSub'),fcPaxOwn()); }
 document.addEventListener('click',function(e){ var b=e.target.closest&&e.target.closest('#sPax [data-pxv]'); if(b){ _pxView=b.dataset.pxv; paxRender(); } });
 

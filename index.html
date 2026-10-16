@@ -11498,7 +11498,8 @@ async function iaosLoadRegTeams(divId){
   IAOS_REG.groups=[];
   if(ids.length){ var gr=await sb.from('team_groups').select('id,team_id,name,sort_order').in('team_id',ids).order('sort_order',{ascending:true}); IAOS_REG.groups=(gr&&gr.data)||[]; }
   if(!IAOS_REG.teams.length){ grid.innerHTML='<div style="grid-column:1/-1;font-size:13px;color:var(--danger)">이 사업부에 등록된 팀이 없습니다. 관리자에게 문의해주세요</div>'; return; }
-  grid.innerHTML=IAOS_REG.teams.map(function(t){return '<div class="t-btn" data-id="'+t.id+'" onclick="pickT(this)">'+t.name+'</div>';}).join('');
+  grid.innerHTML=IAOS_REG.teams.map(function(t){var _tl=iaosTeamInfoLine(divId,t.name); return '<div class="t-btn" data-id="'+t.id+'" onclick="pickT(this)">'+t.name+(_tl?'<div style="font-size:10.5px;font-weight:600;opacity:.8;line-height:1.3;margin-top:2px">'+_tl+'</div>':'')+'</div>';}).join('');
+  grid.style.gridTemplateColumns=IAOS_REG.teams.some(function(t){return iaosTeamInfo(divId,t.name);})?'repeat(3,1fr)':'';
   var jw=document.getElementById('regChoWrap'); if(jw) jw.style.display='none';
 }
 var IAOS_TEAMMAP=null;
@@ -11750,7 +11751,7 @@ function dmRender(){
    +'<div style="display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:6px">';
   DM.teams.forEach(function(t){
     var on=t.id===DM.selTeam, n=DM.groups.filter(function(g){return g.team_id===t.id;}).length;
-    h+='<div onclick="dmSelTeam(\''+t.id+'\')" style="padding:8px 2px;text-align:center;border-radius:10px;font-size:13px;font-weight:'+(on?'800':'600')+';cursor:pointer;border:1.5px solid '+(on?'var(--teal)':'var(--g2)')+';background:'+(on?'var(--teal-bg)':'#fff')+';color:'+(t.active===false?'var(--g3)':(on?'var(--teal2)':'var(--g6)'))+'">'+dmEsc(t.name)+'<div style="font-size:10px;font-weight:600;color:var(--g4)">'+n+'개 조</div></div>';
+    h+='<div onclick="dmSelTeam(\''+t.id+'\')" style="padding:8px 2px;text-align:center;border-radius:10px;font-size:13px;font-weight:'+(on?'800':'600')+';cursor:pointer;border:1.5px solid '+(on?'var(--teal)':'var(--g2)')+';background:'+(on?'var(--teal-bg)':'#fff')+';color:'+(t.active===false?'var(--g3)':(on?'var(--teal2)':'var(--g6)'))+'">'+dmEsc(t.name)+'<div style="font-size:10px;font-weight:600;color:var(--g4)">'+n+'개 조</div>'+((iaosTeamInfo(DM.div,t.name)||{}).t?'<div style="font-size:9.5px;font-weight:600;color:var(--g4)">'+iaosTeamInfo(DM.div,t.name).t.replace('익일 ','')+'</div>':'')+'</div>';
   });
   h+='<div onclick="dmAddTeam()" style="padding:8px 2px;text-align:center;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;border:1.5px dashed var(--g3);color:var(--g4)">＋ 팀</div></div>';
   var st=DM.teams.filter(function(x){return x.id===DM.selTeam;})[0];
@@ -37794,6 +37795,54 @@ function msKstHourBucket(iso){
 }
 // ── 오전팀/오후팀/야간팀 3구간 비교용 헬퍼 ──
 var MS_TEAM_SHIFT_MAP={1:'오전',2:'오전',3:'오전',4:'오전',5:'야간',6:'오후',7:'오후',8:'오후',9:'오후',10:'야간'};
+/* ═══ 사업부별 팀 구성 (근무시간·구분·담당) — 사업부 앱 공통. 조별 업무는 별도 ═══
+   shift: 오전/오후/야간/일근 · kind: L/S(랜드)·A/S(에어) · 근무시간은 표시용(조 구분·출근확정 기준은 shift·start) */
+var IAOS_TEAM_INFO={
+  T1:{},
+  T2:{
+    1:{t:'07:00~16:30',k:'L/S',a:'2,3,4,5층(동,서)',s:'오전'},
+    2:{t:'07:00~16:30',k:'L/S',a:'B1, 1층(동,서), T2교통센터',s:'오전'},
+    3:{t:'07:00~16:30',k:'A/S',a:'B2~4층 동편',s:'오전'},
+    4:{t:'07:00~16:30',k:'A/S',a:'B2~4층 서편',s:'오전'},
+    5:{t:'08:00~17:30',k:'',a:'집하장',s:'일근'},
+    6:{t:'12:30~22:00',k:'L/S',a:'2,3,4,5층(동,서)',s:'오후'},
+    7:{t:'12:30~22:00',k:'L/S',a:'B1, 1층(동,서), T2교통센터',s:'오후'},
+    8:{t:'12:30~22:00',k:'A/S',a:'B2~4층 동편',s:'오후'},
+    9:{t:'12:30~22:00',k:'A/S',a:'B2~4층 서편',s:'오후'},
+    10:{t:'21:30~익일 07:30',k:'L/S·A/S',a:'카페트, 왁스 (T2 전체)',s:'야간'},
+    11:{t:'21:30~익일 07:30',k:'L/S·A/S',a:'석재, 다용도 (T2 전체)',s:'야간'}
+  },
+  BD:{
+    1:{t:'07:00~16:30',k:'A/S',a:'탑승동 오전',s:'오전'},
+    2:{t:'12:30~22:00',k:'A/S',a:'탑승동 오후',s:'오후'},
+    3:{t:'07:00~16:30',k:'L/S',a:'교통센터 오전',s:'오전'},
+    4:{t:'12:30~22:00',k:'L/S',a:'교통센터 오후',s:'오후'},
+    5:{t:'08:00~17:30',k:'L/S',a:'집하장, 장기주차장',s:'일근'},
+    6:{t:'07:00~16:30',k:'L/S',a:'제2합동청사 외',s:'오전'},
+    7:{t:'07:00~16:30',k:'L/S',a:'공항청사 외',s:'오전'},
+    8:{t:'07:30~17:00',k:'A/S·L/S',a:'AICC 외',s:'일근'},
+    9:{t:'07:30~17:00',k:'L/S',a:'인재개발원 외',s:'일근'},
+    10:{t:'08:30~18:00',k:'A/S·L/S',a:'교통센터, T1 고소유리세척',s:'일근'},
+    11:{t:'08:30~18:00',k:'A/S·L/S',a:'탑승동, T2 고소유리세척',s:'일근'},
+    12:{t:'21:30~익일 07:00',k:'A/S',a:'탑승동 야간',s:'야간'}
+  }
+};
+// 팀 이름('5팀' 등)과 사업부 id → 팀 정보. T1(또는 정보 없음)이면 null
+function iaosTeamInfo(div,name){
+  var m=String(name||'').match(/(\d+)\s*팀/); if(!m) return null;
+  var d=IAOS_TEAM_INFO[div]; return (d&&d[parseInt(m[1],10)])||null;
+}
+function iaosTeamInfoLine(div,name){
+  var i=iaosTeamInfo(div,name); if(!i) return '';
+  return i.t+(i.k?' · '+i.k:'')+' · '+i.a;
+}
+// 팀 번호 → 근무조. T1은 기존 규칙 그대로, T2·부대건물은 위 표 기준
+function iaosShiftOfTeam(div,teamStr){
+  var i=iaosTeamInfo(div,teamStr); if(i&&i.s) return i.s;
+  var m=String(teamStr||'').match(/(\d+)/); if(!m) return null;
+  return MS_TEAM_SHIFT_MAP[parseInt(m[1],10)]||null;
+}
+
 function msExtractShift3(str){
   if(!str) return null;
   if(str.indexOf('오전')>=0) return '오전';
@@ -37803,9 +37852,7 @@ function msExtractShift3(str){
 }
 function msTeamNumShift(teamStr){
   if(!teamStr) return null;
-  var m=teamStr.match(/(\d+)/);
-  if(!m) return null;
-  return MS_TEAM_SHIFT_MAP[parseInt(m[1],10)]||null;
+  return iaosShiftOfTeam(iaosDID(),teamStr);
 }
 // 팀/조 정보가 없는 데이터(습득물·민원)는 접수 시각으로 근사 추정 (06~14=오전,14~22=오후,22~06=야간)
 function msHourShift3(iso){
@@ -38897,7 +38944,7 @@ function wfEmpUpload(inputEl){
         else if(pos.indexOf('총괄')!==-1 || hq.indexOf('총괄')!==-1 || team.indexOf('총괄')!==-1) shift='일근';
         else{
           var teamNumMatch=team.match(/(\d+)/);
-          if(teamNumMatch && TEAM_SHIFT_MAP[teamNumMatch[1]]) shift=TEAM_SHIFT_MAP[teamNumMatch[1]];
+          var _shT=iaosShiftOfTeam(iaosDID(),team); if(teamNumMatch && _shT) shift=_shT;
         }
         empPayload.push({
           emp_no:empNo, name:name, position:pos, hq_team:hq||null, team:team||null, group_name:grp||null,

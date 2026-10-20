@@ -2138,7 +2138,7 @@ function pxMgrRender(){
   if(u.files.length){
     h+='<div style="margin-top:12px;font-size:12.5px;font-weight:800">올릴 파일 확인</div>';
     u.files.forEach(function(f){ if(!f.ok){h+='<div style="padding:9px 11px;margin-top:6px;background:#FDECEC;border-radius:10px;font-size:12px;color:#B03A3A"><b>'+esc(f.name)+'</b><br>'+esc(f.err)+'</div>';return;}
-      h+='<div style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-top:6px;background:#F3F7FA;border-radius:10px;font-size:12.5px"><b style="flex:1">'+(f.ym?(f.ym.slice(0,4)+'년 '+(+f.ym.slice(5))+'월 · '+f.days+'일'):PX.md(f.date))+'</b><span>출국 '+f.dep.toLocaleString()+' · 입국 '+f.arr.toLocaleString()+'</span></div>'; });
+      h+='<div style="display:flex;align-items:center;gap:8px;padding:9px 11px;margin-top:6px;background:#F3F7FA;border-radius:10px;font-size:12.5px"><b style="flex:1">'+(f.ym?(f.ym.slice(0,4)+'년 '+(+f.ym.slice(5))+'월 · '+f.days+'일'):PX.md(f.date))+'</b><span>출국 '+f.dep.toLocaleString()+' · 입국 '+f.arr.toLocaleString()+(f.x&&u.term==='T1'?' · <b style="color:#1F6B47">동·서편'+(f.ver==='F'?'·셔틀':'')+' 포함</b>':'')+'</span></div>'; });
     var ok=u.files.filter(function(f){return f.ok;}).length;
     h+='<div style="display:flex;gap:6px;margin-top:10px"><button data-pxup="cancel" style="flex:1;'+btn+'background:#E6E8EC;color:#333">취소</button><button data-pxup="save" '+((ok&&!u.busy)?'':'disabled ')+'style="flex:2;'+btn+'background:'+PX_COL[u.term]+';color:#fff;opacity:'+((ok&&!u.busy)?1:.5)+'">'+(u.busy?'저장 중…':PX_NAME[u.term]+' '+ok+(u.mode==='m'?'개월':'일')+' 저장')+'</button></div>';
   }
@@ -2176,7 +2176,24 @@ function pxParse(file){
       var out=[]; rows.slice(hi+1).forEach(function(r){ var m=String(r[0]).match(/^\s*(\d+)\s*~\s*(\d+)\s*시/); if(m&&+m[2]===+m[1]+1&&out[+m[1]]===undefined) out[+m[1]]=Number(r[ci])||0; });
       for(var i=0;i<24;i++) if(out[i]===undefined) throw new Error(i+'~'+(i+1)+'시 행이 없습니다'); return out; };
     var dep=grab(ro), arr=grab(ri), v=[], sd=0, sa=0; for(var i=0;i<24;i++){v[i]=[dep[i],arr[i]];sd+=dep[i];sa+=arr[i];}
-    return {ok:true,name:file.name,date:date,v:v,dep:sd,arr:sa,term:pxDetect(ro)||pxDetect(ri)};
+    var term=pxDetect(ro)||pxDetect(ri), x=null, ver=null;
+    if(term!=='T2'){ try{ // 동·서편 구분(T1): 출국장1~3=동편 · 4~6=서편 / 입국장 A~C=동편 · D~F=서편, 셔틀(에어 지하2층)
+      var byCol=function(rows,test){
+        var h0=rows.findIndex(function(r){return /^\s*0\s*~\s*1\s*시/.test(String(r[0]));}), hi=-1; for(var k=h0-1;k>=0;k--){ if(String(rows[k][0]).trim()==='항목'){hi=k;break;} }
+        var cols=[]; rows[hi].forEach(function(c,ci){ var nm=String(c).replace(/\s/g,''); if(nm&&nm!=='항목'&&nm!=='계'&&test(nm)) cols.push(ci); });
+        var o=[]; for(var h=0;h<24;h++){ var t=0; cols.forEach(function(ci){ t+=Number(String(rows[h0+h][ci]).replace(/,/g,''))||0; }); o[h]=t; } return {v:o,n:cols.length}; };
+      var dE=byCol(ro,function(n){return /^출국장[1-3]/.test(n);}), dW=byCol(ro,function(n){return /^출국장[4-6]/.test(n);});
+      var aE=byCol(ri,function(n){return /^[ABC]/.test(n);}), aW=byCol(ri,function(n){return /^[DEF]/.test(n);});
+      if(dE.n&&dW.n&&aE.n&&aW.n){
+        var shRows=function(kw){ var nm=wb.SheetNames.find(function(n){return n.replace(/\s/g,'').indexOf(kw)===0&&n.indexOf('셔틀')>=0;}); return nm?XLSX.utils.sheet_to_json(wb.Sheets[nm],{header:1,defval:''}):null; };
+        var shCol=function(rows,hdr){ var o=[]; for(var h=0;h<24;h++) o[h]=0; if(!rows) return o; var hi=rows.findIndex(function(r){return String(r[0]).trim()==='항목';}); if(hi<0) return o;
+          var ci=hdr?rows[hi].findIndex(function(c){return String(c).replace(/\s/g,'')===hdr;}):(function(){ var q=-1; rows[hi].forEach(function(c,i){ if(String(c).trim()) q=i; }); return q; })(); if(ci<0) return o;
+          rows.slice(hi+1).forEach(function(r){ var m=String(r[0]).match(/^\s*(\d+)\s*~\s*(\d+)\s*시/); if(m&&+m[2]===+m[1]+1&&+m[1]<24) o[+m[1]]=Number(String(r[ci]).replace(/,/g,''))||0; }); return o; };
+        var sOut=shRows('출국'), sIn=shRows('입국'), sD=shCol(sOut,null), sE=shCol(sIn,'동편'), sW=shCol(sIn,'서편'), shSum=0; for(var q=0;q<24;q++) shSum+=sD[q]+sE[q]+sW[q];
+        x={dE:dE.v,dW:dW.v,aE:aE.v,aW:aW.v,sD:sD,sAE:sE,sAW:sW}; ver=shSum>1000?'F':'E';
+      }
+    }catch(e){ x=null; ver=null; } }
+    return {ok:true,name:file.name,date:date,v:v,dep:sd,arr:sa,term:term,x:x,ver:ver};
   });
 }
 function pxParseM(file){
@@ -2204,7 +2221,7 @@ function pxPick(inp){
 function pxSave(){
   var u=PXG.up; if(u.busy) return; u.busy=true; pxMgrRender();
   var list=u.files.filter(function(f){return f.ok;}), n=0;
-  list.reduce(function(p,f){ return p.then(function(){ return (f.ym?rpc('group_fc_pax_month_save',{p_terminal:u.term,p_ym:f.ym,p_days:f.days,p_vals:f.v}):rpc('group_fc_pax_save',{p_terminal:u.term,p_date:f.date,p_vals:f.v})).then(function(){n++;}); }); },Promise.resolve())
+  list.reduce(function(p,f){ return p.then(function(){ return (f.ym?rpc('group_fc_pax_month_save',{p_terminal:u.term,p_ym:f.ym,p_days:f.days,p_vals:f.v}):((f.x&&u.term==='T1')?rpc('group_fc_pax_save_x',{p_terminal:u.term,p_date:f.date,p_vals:f.v,p_x:f.x,p_ver:f.ver}).catch(function(e){ if(/group_fc_pax_save_x|does not exist|find the function/i.test((e&&e.message)||'')) return rpc('group_fc_pax_save',{p_terminal:u.term,p_date:f.date,p_vals:f.v}); throw e; }):rpc('group_fc_pax_save',{p_terminal:u.term,p_date:f.date,p_vals:f.v}))).then(function(){n++;}); }); },Promise.resolve())
    .then(function(){ u.busy=false; u.files=[]; return gpxReload(); }).then(function(){ GF.ready=false; alert(n+(u.mode==='m'?'개월치':'일치')+' 저장했어요'); renderPx(); })
    .catch(function(e){ u.busy=false; pxMgrRender(); alert('저장하지 못했어요: '+((e&&e.message)||e)); });
 }

@@ -972,7 +972,7 @@ html{overflow-x:hidden}
         return obj;
       }
 
-      var RPC_DIV={admin_add_signup_empno:1,admin_add_signup_empnos_bulk:1,admin_move_team:1,set_temp_pass_balance:1,increment_temp_pass_balance:1,admin_set_temp_pass_responsible:1};
+      var RPC_DIV={wl_erp_punch_upload:1,admin_add_signup_empno:1,admin_add_signup_empnos_bulk:1,admin_move_team:1,set_temp_pass_balance:1,increment_temp_pass_balance:1,admin_set_temp_pass_responsible:1};
       async function runRpc(fnName, params){
         try{
           if(RPC_DIV[fnName] && params && params.p_division_id===undefined){
@@ -3766,6 +3766,8 @@ textarea.rpt-edit{resize:vertical;min-height:36px}
     </div>
     <div class="mtg-formcard" style="padding:12px">
       <div style="font-size:12.5px;font-weight:700;color:var(--g5);margin-bottom:8px">✏️ 항목 (구획·내용·상태·담당자·기한)</div>
+      <button onclick="mtgWWImportPrev()" style="width:100%;margin-bottom:6px;padding:12px;background:var(--navy);color:#fff;border:none;border-radius:var(--r2);font-size:14px;font-weight:800;cursor:pointer">📋 전주자료 가져오기</button>
+      <div style="font-size:11.5px;color:var(--g4);margin:0 0 8px;line-height:1.5">회의 일자보다 앞선 가장 가까운 회의의 항목을 불러옵니다. 상태·진행률·담당·기한은 그대로 유지됩니다.</div>
       <div id="mtgWWItemsList"></div>
       <button onclick="mtgWeekAddItem()" style="width:100%;margin-top:4px;padding:9px;background:var(--g1);border:1.5px dashed var(--g3);border-radius:var(--r2);font-size:13px;font-weight:700;color:var(--g5);cursor:pointer">+ 항목 추가</button>
     </div>
@@ -8314,7 +8316,8 @@ function wlCanRead(){ return !!(me&&['leader','manager','admin','master','group_
 function wlIsAdm(){ return !!(me&&(me.role==='admin'||me.role==='master')); }
 function wlCanGender(){ return !!(me&&(wlIsAdm()||(me.role==='manager'&&me.team===WL.team))); } // 성별 설정: master·admin 전체, 팀장은 자기 팀만
 function wlSeeWf(){ return !!(me&&['leader','manager','admin','master'].indexOf(me.role)>=0); } // group_leader는 wf_* 조회 불가 → 저장된 스냅샷만
-function wlCanWrite(){ return !!(me&&((wlIsAdm()&&!(WL.adminRO&&!WL.editOn))||(me.role==='manager'&&me.team===WL.team))); }
+function wlMyTeamNo(){ var m=String((me&&me.team)||'').match(/^(\d+)팀/); return m?m[1]+'팀':''; }
+function wlCanWrite(){ return !!(me&&((wlIsAdm()&&!(WL.adminRO&&!WL.editOn))||(me.role==='manager'&&me.team===WL.team)||(me.role==='leader'&&wlMyTeamNo()&&wlMyTeamNo()===WL.team))); }   // 조장: 본인 팀(번호 기준) 일지 작성·수정 (DB RLS도 동일)
 function wlShift(d,n){ var p=d.split('-').map(Number); var t=new Date(Date.UTC(p[0],p[1]-1,p[2]+n)); return t.toISOString().slice(0,10); }
 function wlDow(d){ var p=d.split('-').map(Number); return WL_DOW[new Date(Date.UTC(p[0],p[1]-1,p[2])).getUTCDay()]; }
 function wlQuarter(d){ var p=d.split('-').map(Number); return p[0]+'-Q'+(Math.floor((p[1]-1)/3)+1); }
@@ -8457,20 +8460,21 @@ async function wlLoad(){
     WL.safety=Object.assign({'1':true,'2':true,'3':true,'4':true,'5':true,'6':true,'7':true},daily&&daily.safety||{});
     WL.note=daily?(daily.special_note||''):'안전사고 0건, 특이사항 없음';
     await wlJwLoad();
-    WL.reports=(rr.data||[]).map(function(r){ return {category:r.category,reporter:r.reporter,time:r.report_time,place:r.place_content,to:r.report_to,receiver:r.receiver}; });
-    WL.mgrAct={}; WL.absMap={}; WL.auto={}; WL.erp={}; WL.staff={}; WL.emps=[]; WL.gender={}; WL.absList=[]; WL.assignOut={};
+    WL.reports=wlDedupRep((rr.data||[]).map(function(r){ return {category:r.category,reporter:r.reporter,time:r.report_time,place:r.place_content,to:r.report_to,receiver:r.receiver}; }));
+    WL.mgrAct={}; WL.absMap={}; WL.auto={}; WL.erp={}; WL.punch={}; WL.punchN=0; WL.staff={}; WL.emps=[]; WL.gender={}; WL.absList=[]; WL.assignOut={};
     savedAbs.forEach(function(r){ if(!r.auto) WL.absMap[r.emp_no]=r.reason; });
+    try{ var rp=await msFetchAll(function(){ return sb.from('ab_erp_punch').select('emp_no,in_time').eq('work_date',D); }); (rp.data||[]).forEach(function(r){ WL.punch[r.emp_no]=r.in_time||'✔'; }); WL.punchN=(rp.data||[]).length; }catch(e){}
     WL.sup={}; WL.openZone=null;
-    savedStaff.forEach(function(r){ var k=r.zone_id||0; if(r.is_support){ (WL.sup[k]=WL.sup[k]||[]).push(r.emp_no); } else { (WL.staff[k]=WL.staff[k]||[]).push(r.emp_no); } });
+    savedStaff.forEach(function(r){ if(!r.zone_id) return; var k=r.zone_id; if(r.is_support){ (WL.sup[k]=WL.sup[k]||[]).push(r.emp_no); } else { (WL.staff[k]=WL.staff[k]||[]).push(r.emp_no); } });
     if(seeWf){
-      var home=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,group_name,team').eq('team',T); });
-      var emps=(home.data||[]);
+      var home=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,group_name,team,resign_date').eq('team',T); });
+      var emps=(home.data||[]).filter(function(e){ return wfActiveOn(e,D); });
       var asg=await sb.from('worklog_assign').select('*');
       var act=(asg.data||[]).filter(function(a){ return a.from_date<=D&&(!a.to_date||a.to_date>=D); });
       var outIds={}; act.forEach(function(a){ if(a.work_team!==T) outIds[a.emp_no]=a.work_team; });
       emps=emps.filter(function(e){ if(outIds[e.emp_no]){ WL.assignOut[e.emp_no]=outIds[e.emp_no]; return false; } return true; });
       var inIds=act.filter(function(a){ return a.work_team===T; }).map(function(a){ return a.emp_no; }).filter(function(id){ return !emps.some(function(e){return e.emp_no===id;}); });
-      if(inIds.length){ var inn=await sb.from('wf_employees').select('emp_no,name,position,group_name,team').in('emp_no',inIds); emps=emps.concat(inn.data||[]); }
+      if(inIds.length){ var inn=await sb.from('wf_employees').select('emp_no,name,position,group_name,team,resign_date').in('emp_no',inIds); emps=emps.concat((inn.data||[]).filter(function(e){ return wfActiveOn(e,D); })); }
       WL.emps=emps;
       var ids=emps.map(function(e){return e.emp_no;});
       if(ids.length){
@@ -8539,6 +8543,8 @@ async function wlApplyMgrActual(T,D,ids){
     else if(r.checked_by===s.name){ delete WL.auto[s.empNo]; delete WL.erp[s.empNo]; } // 본인이 직접 출근 체크 → ERP·휴무계획보다 실제 출근이 우선(대리 체크는 제외)
   });
 }
+function wlRepKey(x){ return [x.category,String(x.time||'').slice(0,5),x.reporter,x.place,x.to,x.receiver].map(function(v){ return String(v==null?'':v).trim(); }).join('|'); }
+function wlDedupRep(arr){ var seen={}; return (arr||[]).filter(function(x){ var k=wlRepKey(x); if(seen[k]) return false; seen[k]=1; return true; }); }
 async function wlLoadLost(manual){
   try{
     var names={}, ids={}; WL.emps.forEach(function(e){ names[e.name]=1; ids[e.emp_no]=1; });
@@ -8562,7 +8568,12 @@ async function wlLoadLost(manual){
       var t=new Date(new Date(x.found_date).getTime()+9*3600000).toISOString().slice(11,16);
       return {category:'습득물/유실물',reporter:x.finder_name||'',time:t,place:[x.location,x.item].filter(Boolean).join(' / '),to:x.handover_to||x.receipt_route||'',receiver:x.receiver_name||'',auto:true};
     }));
-    if(manual){ WL.reports=WL.reports.filter(function(x){return !x.auto;}).concat(add); WL.dirty=true; toast(add.length?('시설물·습득물 '+add.length+'건 불러옴'):'해당 날짜 신고 내역이 없습니다'); }
+    if(manual){
+      var keepR=WL.reports.filter(function(x){return !x.auto;}), haveR={}; keepR.forEach(function(x){ haveR[wlRepKey(x)]=1; });
+      var freshR=wlDedupRep(add).filter(function(x){ return !haveR[wlRepKey(x)]; });
+      WL.reports=wlDedupRep(keepR.concat(freshR)); WL.dirty=true;
+      toast(freshR.length?('새 신고 '+freshR.length+'건을 추가했습니다'):(add.length?'새로 추가할 신고가 없습니다 (이미 모두 반영됨)':'해당 날짜 신고 내역이 없습니다'));
+    }
     else{ WL.reports=add; if(add.length) WL.dirty=true; }
   }catch(e){ if(manual) toast('습득물 불러오기 실패'); }
 }
@@ -8589,7 +8600,10 @@ function wlCalc(){
   ['m','f','x'].forEach(function(g){ cur[g]=R['총원'][g]-s[g]; });
   R['소계']=s; R['현원']=cur; return R;
 }
-function wlAssignedElsewhere(emp,zid){ for(var k in WL.staff){ if(String(k)!==String(zid)&&WL.staff[k].indexOf(emp)>=0) return true; } return false; }
+// 현재 일지에 실제로 보이는 구역(wlTplR)에 배치된 경우만 '배치됨'으로 본다 (삭제·비활성 구역, 구역 값이 빈 기록은 미배치)
+function wlVisZoneIds(){ return wlTplR().map(function(z){ return String(z.id); }); }
+function wlAssignedElsewhere(emp,zid){ var vis=wlVisZoneIds(); for(var k in WL.staff){ if(vis.indexOf(String(k))<0) continue; if(String(k)!==String(zid)&&WL.staff[k].indexOf(emp)>=0) return true; } return false; }
+function wlUnassignedList(){ return (WL.emps||[]).filter(function(e){ return (!wlEff(e)||wlHalf(wlEff(e)))&&!wlAssignedAny(e.emp_no); }).sort(wlKo); }
 // ─ 기타작업(휴무대체·문구2·문구3): 체크한 날에만 일반 작업구역 줄처럼 추가 ─
 function wlOptText(n){ var r=(WL.optRows||{})[n]; if(String(n)==='1') return '휴무대체'; var t=(WL.optTxt&&WL.optTxt[n]!=null)?WL.optTxt[n]:(r?r.zone_text:''); return t||''; }
 function wlOptActive(){ var out=[]; Object.keys(WL.optRows||{}).sort(function(x,y){return x-y;}).forEach(function(n){ var r=WL.optRows[n]; if(!(WL.opts&&WL.opts[n])) return; var t=wlOptText(n); if(!t.trim()) return; out.push({id:r.id,section:'',zone_text:t,opt:n}); }); return out; }
@@ -8603,7 +8617,7 @@ function wlRender(){
   var sub=document.getElementById('wlSub');
   var v=WL.view;
   if(sub) sub.textContent=({main:'팀별 일일 작업일지 (자동 초안 → 확인·저장)',report:'일일 보고서 미리보기',period:'주간·월간 집계',erp:'ERP 근태 업로드',abs:'휴가·결근 입력',staff:'근무자 선택',tpl:'작업내용 수정',gender:'성별 설정',rep:'신고 추가',board:'팀 현황판 (관리자)',an:'주간·월간 분석 리포트',xl:'주간 엑셀 업로드'})[v]||'';
-  el.innerHTML = v==='board'?wlViewBoard():v==='an'?wlViewAn():v==='erp'?wlViewErp():v==='xl'?wlViewXl():v==='period'?wlViewPeriod():v==='report'?wlViewReport():v==='abs'?wlViewAbs():v==='staff'?wlViewStaff():v==='tpl'?wlViewTpl():v==='gender'?wlViewGender():v==='rep'?wlViewRep():wlViewMain();
+  el.innerHTML = v==='board'?wlViewBoard():v==='an'?wlViewAn():v==='erp'?wlViewErp():v==='punch'?wlViewPunch():v==='xl'?wlViewXl():v==='period'?wlViewPeriod():v==='report'?wlViewReport():v==='abs'?wlViewAbs():v==='staff'?wlViewStaff():v==='tpl'?wlViewTpl():v==='gender'?wlViewGender():v==='rep'?wlViewRep():wlViewMain();
   if(v==='main'&&WL.restoreY!=null){ var _y=WL.restoreY, _z=WL.restoreZone; WL.restoreY=null; WL.restoreZone=null; wlRestorePos(_y,_z); }
   else window.scrollTo(0,0);
 }
@@ -8640,11 +8654,13 @@ function wlViewMain(){
   if(WL.snapshot&&!WL.status) return h+'<div class="wl-sec" style="text-align:center;color:var(--g4);padding:28px">이 날짜에 저장된 일지가 없습니다.</div>';
   if(!WL.snapshot&&WL.tot.x>0) h+='<div class="wl-warn">⚠ 성별이 지정되지 않은 직원이 '+WL.tot.x+'명 있어 남·여 인원이 정확하지 않습니다.'+(wlCanGender()?' <a href="javascript:wlGenderOpen()" style="color:#b45309;text-decoration:underline">성별 설정하기</a>':' (관리자에게 요청)')+'</div>';
   h+=wlCmpBanner();
+  h+=wlUnassignedBanner();
   if(!WL.snapshot&&!WL.emps.length) h+='<div class="wl-warn">이 팀의 직원 정보를 찾을 수 없습니다. (근무계획 직원정보 확인)</div>';
   if(!(WL.snapshot&&!WL.status)) h+='<div style="margin:10px 13px 0;display:flex;gap:8px"><button class="wl-btn pri" style="flex:1" onclick="wlView(\'report\')">📄 일일 보고서·엑셀</button><button class="wl-btn pri" style="flex:1" onclick="wlPOpen()">📅 주간·월간 집계</button></div>';
   else h+='<div style="margin:10px 13px 0"><button class="wl-btn pri" style="width:100%" onclick="wlPOpen()">📅 주간·월간 집계</button></div>';
   if(w&&!WL.snapshot) h+='<div style="margin:8px 13px 0"><button class="wl-btn" style="width:100%" onclick="xlOpen()">📅 주간 엑셀 업로드 (미리 작성)</button></div>';
   if(wlIsAdm()) h+='<div style="margin:8px 13px 0"><button class="wl-btn" style="width:100%" onclick="erpOpen()">📥 ERP 근태 업로드 (관리자)</button></div>';
+  if(wlIsAdm()) h+='<div style="margin:8px 13px 0"><button class="wl-btn" style="width:100%" onclick="wlPunchOpen(false)">📥 ERP 출퇴근 엑셀 올리기 (관리자)</button></div>';
   // 1. 인원현황
   var hasX=C['총원'].x>0||C['소계'].x>0||C['휴무'].x>0||C['연차'].x>0||C['기타'].x>0;
   var rows=['총원','휴무','연차','반차','산재/휴직','기타','소계','현원'];
@@ -8664,6 +8680,7 @@ function wlViewMain(){
   var _ma=Object.keys(WL.mgrAct||{}).filter(function(id){ return !WL.absMap[id]; }).map(function(id){ var e=WL.emps.filter(function(x){return x.emp_no===id;})[0]; return e?wlEsc(e.name)+' '+WL.mgrAct[id]:''; }).filter(Boolean);
   if(_ma.length) h+='<div style="margin-top:6px;font-size:12px;color:var(--g4)">· 관리자 출근 현황 입력 반영: '+_ma.join(' · ')+'</div>';
   h+='</div></div>';
+  h+=wlPunchSummary();
   // 2. 금일 작업내용
   h+='<div class="wl-sec"><h3><span>2. 금일 작업내용</span><span style="display:flex;gap:5px">'
     +(w&&!WL.snapshot?'<button class="wl-btn sm" onclick="wlCopyPrev()">어제 근무자 불러오기</button><button class="wl-btn sm" onclick="wlOpenTpl()">작업내용 수정</button>':'')+'</span></h3>';
@@ -8672,13 +8689,13 @@ function wlViewMain(){
   wlTplR().forEach(function(z){
     if(z.section!==lastSec){ lastSec=z.section; if(z.section) h+='<div class="wl-zh">■ '+wlEsc(z.section)+'</div>'; }
     var ids=WL.staff[z.id]||[];
-    var nm=ids.map(function(id){ var e=WL.emps.filter(function(x){return x.emp_no===id;})[0]; return wlEsc(e?e.name:(WL.snapNames&&WL.snapNames[id])||id)+((WL.jwMap&&WL.jwMap[id])?'<span title="공동작업 참여" style="font-size:11px">🤝</span>':''); });
+    var nm=ids.map(function(id){ var e=WL.emps.filter(function(x){return x.emp_no===id;})[0]; return wlPunchMark(id,wlEsc(e?e.name:(WL.snapNames&&WL.snapNames[id])||id))+((WL.jwMap&&WL.jwMap[id])?'<span title="공동작업 참여" style="font-size:11px">🤝</span>':''); });
     var opn=(w&&!WL.snapshot&&WL.openZone===z.id), supb=wlSupIds(z.id).map(function(id){ var e=WL.emps.filter(function(x){return x.emp_no===id;})[0]; return '<span class="wl-supb">'+wlEsc(e?e.name:(WL.snapNames&&WL.snapNames[id])||id)+'(겸)</span>'; }).join('');
     h+='<div class="wl-zone'+(opn?' openz':'')+'" data-zid="'+z.id+'"'+(w&&!WL.snapshot?' onclick="wlZoneToggle('+z.id+')"':'')+'><div class="wl-zt">'+wlEsc(z.zone_text)+'</div><div class="wl-zn'+(nm.length?'':' empty')+'">'+(nm.length?nm.join(' · ')+' <small style="color:var(--g4)">('+nm.length+')</small>':(w?'＋ 근무자 선택':'-'))+supb+'</div>'+(w&&!WL.snapshot?'<span style="color:var(--teal2);font-size:12px;font-weight:800;align-self:center">'+(opn?'▲':'▼')+'</span>':'')+'</div>';
     if(opn) h+=wlZonePanel(z);
   });
   if(!WL.snapshot){
-    var un=WL.emps.filter(function(e){ return (!wlEff(e)||wlHalf(wlEff(e)))&&!wlAssignedAny(e.emp_no); }).sort(wlKo);
+    var un=wlUnassignedList();
     if(wlTplR().length) h+='<div style="margin-top:10px;font-size:12.5px;color:'+(un.length?'#b45309':'#15803d')+';font-weight:700">'+(un.length?'⚠ 근무자인데 아직 구역에 배치되지 않은 인원 '+un.length+'명: '+un.map(function(e){return wlEsc(e.name);}).join(' '):'✔ 근무 인원 전원 배치 완료')+'</div>';
   }
   h+='</div>';
@@ -8732,7 +8749,7 @@ function wlViewAbs(){
   Object.keys(gs).sort(function(a,b){ return wlGrpKey(a)-wlGrpKey(b); }).forEach(function(g){
     h+='<div class="wl-gh">'+g+' · '+gs[g].length+'명</div><div class="wl-grid">';
     gs[g].forEach(function(e){ var on=WL.absMap[e.emp_no]===WL.absReason; var tag=e.position==='조장'?'조장':e.position==='팀장'?'팀장':(WL.auto[e.emp_no]&&!WL.absMap[e.emp_no]?WL.auto[e.emp_no]:'');
-      h+='<div class="wl-card g'+({남:'m',여:'f'}[wlGen(e.emp_no)]||'x')+(on?' on':'')+'" onclick="wlAbsTap(\''+e.emp_no+'\')">'+wlEsc(e.name)+'<i>'+tag+'</i></div>'; });
+      h+='<div class="wl-card g'+({남:'m',여:'f'}[wlGen(e.emp_no)]||'x')+(on?' on':'')+'" onclick="wlAbsTap(\''+e.emp_no+'\')">'+wlEsc(e.name)+'<i>'+tag+'</i>'+wlPunchTime(e.emp_no)+'</div>'; });
     h+='</div>'; });
   h+='<div style="margin-top:12px;font-size:12px;color:var(--g4);line-height:1.6">· 고정휴무·휴직은 자동 반영됩니다. 그날 실제로 다른 사유(예: 경조)면 사유를 고르고 눌러 덮어쓰세요.<br>· 다시 누르면 선택이 해제됩니다. · 한 사유로 선택한 사람은 다른 사유 화면에서 사라집니다.</div></div>';
   return h;
@@ -8749,7 +8766,7 @@ function wlAbsTap(emp){
 // ─ 한 줄씩 펼쳐서 배정 + 겸무 ─
 function wlSupIds(zid){ return (WL.sup[zid]||[]).filter(function(id){ return wlAssignedAny(id)&&(WL.staff[zid]||[]).indexOf(id)<0; }); }
 function wlZoneShort(zid){ var z=wlTplR().filter(function(x){return String(x.id)===String(zid);})[0]; if(!z) return ''; var t=String(z.zone_text||''); var i=t.indexOf(')'); return (i>0&&i<12)?t.slice(0,i):t.slice(0,6); }
-function wlZoneOf(emp,zid){ for(var k in WL.staff){ if(String(k)!==String(zid)&&WL.staff[k].indexOf(emp)>=0) return k; } return null; }
+function wlZoneOf(emp,zid){ var vis=wlVisZoneIds(); for(var k in WL.staff){ if(vis.indexOf(String(k))<0) continue; if(String(k)!==String(zid)&&WL.staff[k].indexOf(emp)>=0) return k; } return null; }
 function wlZoneToggle(zid){
   WL.openZone=(WL.openZone===zid)?null:zid;
   var y=window.scrollY; wlRender();
@@ -8763,7 +8780,7 @@ function wlZonePanel(z){
   Object.keys(gs).sort(function(a,b){ return wlGrpKey(a)-wlGrpKey(b); }).forEach(function(g){
     h+='<div class="wl-gh">'+g+' · '+gs[g].length+'명</div><div class="wl-grid">';
     gs[g].forEach(function(e){ var on=sel.indexOf(e.emp_no)>=0; var tag=e.position==='조장'?'조장':e.position==='팀장'?'팀장':(wlHalf(wlEff(e))?wlEff(e):'');
-      h+='<div class="wl-card g'+({남:'m',여:'f'}[wlGen(e.emp_no)]||'x')+(on?' on':'')+'" onclick="event.stopPropagation();wlStaffTap('+z.id+',\''+e.emp_no+'\')">'+wlEsc(e.name)+'<i>'+tag+'</i></div>'; });
+      h+='<div class="wl-card g'+({남:'m',여:'f'}[wlGen(e.emp_no)]||'x')+(on?' on':'')+'" onclick="event.stopPropagation();wlStaffTap('+z.id+',\''+e.emp_no+'\')">'+wlEsc(e.name)+'<i>'+tag+'</i>'+wlPunchTime(e.emp_no)+'</div>'; });
     h+='</div>'; });
   if(!list.length) h+='<div style="font-size:12px;color:var(--g4);padding:6px 0">배정 가능한 인원이 없습니다 (이미 모두 다른 작업에 배정됨)</div>';
   // 겸무: 이미 다른 작업에 배정된 사람이 이 작업도 함께 볼 때 (인원수 미포함)
@@ -8864,6 +8881,11 @@ async function wlCmpLoad(){
   WL.cmp={rows:rows.length+nsv.n, sum:sum, mgr:mg, mp:(rows.length+nsv.n)?sum+mg:null};
 }
 async function wlCmpReload(){ try{ await wlCmpLoad(); }catch(e){ WL.cmp=null; } wlRender(); toast('인력현황을 다시 불러왔습니다'); }
+function wlUnassignedBanner(){
+  if(WL.snapshot||!wlTplR().length) return '';
+  var un=wlUnassignedList(); if(!un.length) return '';
+  return '<div class="wl-warn" style="background:#fff1f2;color:#9f1239;border:1.5px solid #fda4af;font-weight:800;line-height:1.55">⚠ 구역에 배치되지 않은 근무자 '+un.length+'명<br><span style="font-weight:700">'+un.map(function(e){ return wlPunchMark(e.emp_no,wlEsc(e.name))+(e.position?'<small style="font-weight:600">('+wlEsc(e.position)+')</small>':''); }).join(' · ')+'</span><br><small style="font-weight:600">작업내용 구역을 눌러 근무자를 선택해 배치하세요</small></div>';
+}
 function wlCmpBanner(){
   if(WL.snapshot||!wlCanWrite()||!WL.cmp) return '';
   var c=WL.cmp, as=wlAssignedCount(), t=' onclick="wlCmpReload()" style="cursor:pointer"';
@@ -8883,7 +8905,7 @@ async function wlSave(status){
 }
 function wlCmpPopup(c,as){
   var o=document.getElementById('wlCmpOv'); if(o) o.remove();
-  var un=(WL.emps||[]).filter(function(e){ return (!wlEff(e)||wlHalf(wlEff(e)))&&!wlAssignedAny(e.emp_no); }).sort(wlKo).map(function(e){ return wlEsc(e.name); });
+  var un=wlUnassignedList().map(function(e){ return wlEsc(e.name); });
   var d=c.mp-as;
   var h='<div id="wlCmpOv" style="position:fixed;inset:0;z-index:500;background:rgba(15,36,72,.45);display:flex;align-items:center;justify-content:center;padding:18px"><div style="background:#fff;border-radius:16px;padding:16px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
    +'<div style="font-weight:800;font-size:16px;color:#b91c1c">⚠ 인력현황과 작업일지 인원이 맞지 않습니다</div>'
@@ -9596,7 +9618,7 @@ function wlEditOn(){ WL.editOn=true; wlLoad(); }
 function wlViewBoard(){
   var h='<div class="wl-bar"><button class="wl-nav" onclick="wlBoardDate(-1)">◀</button><input type="date" value="'+WL.date+'" onchange="wlBoardSet(this.value)"><button class="wl-nav" onclick="wlBoardDate(1)">▶</button>'
    +'<span style="font-size:13px;font-weight:800;color:var(--g6)">('+wlDow(WL.date)+')</span><button class="wl-btn sm" onclick="wlBoardDate(0)">오늘</button><button class="wl-btn sm" onclick="wlBoardLoad()">새로고침</button></div>';
-  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 13px 0"><button class="wl-btn pri" style="flex:1;min-width:120px" onclick="WP.fromBoard=true;wlPOpen()">📅 주간·월간 집계</button><button class="wl-btn pri" style="flex:1;min-width:120px" onclick="wlAnOpen()">📊 분석 리포트</button><button class="wl-btn" style="flex:1;min-width:120px" onclick="ERP.fromBoard=true;erpOpen()">📥 ERP 근태 업로드</button></div>';
+  h+='<div style="display:flex;gap:6px;flex-wrap:wrap;margin:10px 13px 0"><button class="wl-btn pri" style="flex:1;min-width:120px" onclick="WP.fromBoard=true;wlPOpen()">📅 주간·월간 집계</button><button class="wl-btn pri" style="flex:1;min-width:120px" onclick="wlPunchOpen(true)">📥 ERP 출퇴근 올리기</button><button class="wl-btn pri" style="flex:1;min-width:120px" onclick="wlAnOpen()">📊 분석 리포트</button><button class="wl-btn" style="flex:1;min-width:120px" onclick="ERP.fromBoard=true;erpOpen()">📥 ERP 근태 업로드</button></div>';
   if(BD.loading) return h+'<div style="text-align:center;padding:40px;color:var(--g3)">불러오는 중...</div>';
   if(BD.err) return h+'<div class="wl-warn">⚠️ '+wlEsc(BD.err)+'</div>';
   var cf=0, dr=0, no=0; BD.rows.forEach(function(r){ if(r.status==='confirmed') cf++; else if(r.status==='draft') dr++; else no++; });
@@ -9626,6 +9648,58 @@ function wlViewBoard(){
 function erpRefresh(){
   var w=document.getElementById('mgrLeaveErpWrap'); if(w) w.innerHTML=wlViewErpBody();   // 일정 관리 > ERP 탭
   if(WL.view==='erp') wlRender();                                                       // 현장작업일지 쪽 ERP 화면
+}
+
+/* ===== ERP 출퇴근(안면인식) 엑셀 업로드 · 작업일지 출근 표시 (ab_erp_punch 공유: 비정상상황 앱과 같은 표) ===== */
+var PU={fromBoard:false,step:'pick',fn:'',date:'',ins:[],outOnly:0,none:[],people:0,err:'',busy:false,done:null};
+function wlPunchMark(id,nm){ var t=WL.punch&&WL.punch[id]; if(!t) return (WL.punchN>0&&!WL.snapshot)?'<span style="color:#C0392B">'+nm+'</span>':nm; return '<span style="color:#15803d">✔'+nm+(t!=='✔'?' <i style="font-style:normal;font-size:11px;color:var(--g5);font-weight:700">'+wlEsc(String(t).slice(0,5))+'</i>':'')+'</span>'; }
+function wlPunchTime(id){ if(WL.snapshot||!WL.punchN) return ''; var t=WL.punch&&WL.punch[id]; return t?'<span style="display:block;font-size:11.5px;font-weight:800;color:#15803d;line-height:1.2;margin-top:1px">✔ '+wlEsc(t==='✔'?'':String(t).slice(0,5))+'</span>':'<span style="display:block;font-size:11px;font-weight:700;color:#C0392B;line-height:1.2;margin-top:1px">미확인</span>'; }
+function wlPunchSummary(){
+  if(WL.snapshot||!WL.punchN) return '';
+  var work=(WL.emps||[]).filter(function(e){ return !wlEff(e)||wlHalf(wlEff(e)); }); if(!work.length) return '';
+  var ok=work.filter(function(e){ return WL.punch[e.emp_no]; }), no=work.filter(function(e){ return !WL.punch[e.emp_no]; }).sort(wlKo);
+  return '<div class="wl-sec" style="padding:10px 13px"><div style="background:#E8F6EC;border:1px solid #BFE3CA;border-radius:10px;padding:9px 11px;font-size:13.5px;font-weight:800;color:#15803d">✔ ERP 출근 확인 '+ok.length+'/'+work.length+'명 <span style="font-weight:600;font-size:12px">(근무자 기준 · 구역 배치 전에도 확인됨)</span>'+(no.length?'<div style="color:#B45309;margin-top:3px;font-weight:700">미확인 '+no.length+'명: '+no.map(function(e){return wlEsc(e.name);}).join(' ')+'</div>':'')+'</div></div>';
+}
+function wlPunchOpen(fb){ if(!wlIsAdm()){ toast('⚠️ 관리자만 가능합니다'); return; } PU.fromBoard=!!fb; PU.step='pick'; PU.fn=''; PU.err=''; PU.ins=[]; PU.done=null; PU.busy=false; WL.view='punch'; wlRender(); }
+function wlViewPunch(){
+  var h='<div class="wl-bar"><button class="wl-btn" onclick="'+(PU.fromBoard?'wlBoardOpen()':'WL.view=\'main\';wlLoad()')+'">'+(PU.fromBoard?'← 팀 현황판':'← 작업일지')+'</button></div>';
+  h+='<div class="wl-sec"><h3><span>📥 ERP 출퇴근 엑셀 올리기</span></h3>';
+  if(PU.done) return h+'<div style="background:#E8F6EC;border-radius:10px;padding:12px;font-weight:800;color:#15803d">✅ '+PU.done.date+' 출근 '+PU.done.n+'명을 반영했습니다.<div style="font-size:12.5px;font-weight:600;margin-top:4px">작업일지 각 팀 인력에 ✔ 표시가 나옵니다. (비정상상황 앱과 같은 표를 사용)</div></div><button class="wl-btn pri" style="width:100%;margin-top:10px" onclick="wlPunchOpen('+PU.fromBoard+')">다른 파일 올리기</button></div>';
+  if(PU.step==='pick'){
+    h+='<div style="font-size:13px;color:var(--g5);line-height:1.6;margin-bottom:10px">ERP에서 받은 안면인식 출퇴근 엑셀(.xlsx)을 선택하세요. <b>사원번호·근태·근무시간·근태일</b> 열을 사용합니다.<br>"출근" 기록이 있으면 출근 확인, "퇴근"만 있으면(야간 퇴근) 제외합니다.</div>'
+     +(PU.err?'<div class="wl-warn">⚠ '+wlEsc(PU.err)+'</div>':'')
+     +'<label class="wl-btn pri" style="display:block;text-align:center;padding:14px;cursor:pointer">📄 엑셀 파일 선택<input type="file" accept=".xlsx,.xls" style="display:none" onchange="wlPunchRead(this.files[0]);this.value=\'\'"></label>';
+  } else {
+    h+='<div style="font-size:13px;color:var(--g5);margin-bottom:8px">'+wlEsc(PU.fn)+'<br>파일 날짜 <b>'+PU.date+'</b></div>'
+     +'<table class="wl-tbl"><tr><th>출근 확인(반영)</th><td><b>'+PU.ins.length+'명</b></td></tr><tr><th>야간 퇴근(제외)</th><td>'+PU.outOnly+'명</td></tr><tr><th>명단에 없는 사번</th><td>'+PU.none.length+'명</td></tr></table>'
+     +(PU.none.length?'<div style="font-size:12px;color:var(--g5);margin-top:6px">명단 외: '+wlEsc(PU.none.slice(0,20).join(', '))+(PU.none.length>20?' …':'')+'</div>':'')
+     +'<div style="display:flex;gap:8px;margin-top:12px"><button class="wl-btn" style="flex:1" onclick="wlPunchOpen('+PU.fromBoard+')">취소</button><button class="wl-btn pri" style="flex:2" '+(PU.busy||!PU.ins.length?'disabled':'')+' onclick="wlPunchApply()">'+(PU.busy?'저장 중...':'출근 '+PU.ins.length+'명 반영')+'</button></div>';
+  }
+  return h+'</div>';
+}
+function wlPunchDate(v){ if(v==null||v==='') return ''; if(typeof v==='number') return new Date(Math.round((v-25569)*86400000)).toISOString().slice(0,10); var m=String(v).match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/); return m?m[1]+'-'+('0'+m[2]).slice(-2)+'-'+('0'+m[3]).slice(-2):''; }
+async function wlPunchRead(f){
+  if(!f) return;
+  try{
+    if(typeof XLSX==='undefined') throw new Error('엑셀 라이브러리를 불러오지 못했습니다');
+    var wb=XLSX.read(await f.arrayBuffer(),{type:'array'}), ws=wb.Sheets[wb.SheetNames[0]], rows=XLSX.utils.sheet_to_json(ws,{defval:null,raw:true});
+    if(!rows.length||rows[0]['사원번호']===undefined||rows[0]['근태']===undefined) throw new Error('ERP 출퇴근 엑셀 형식이 아닙니다 (사원번호·근태 열 필요)');
+    var dates={}, by={};
+    rows.forEach(function(r){ var d=wlPunchDate(r['근태일']); if(d) dates[d]=1; var id=String(r['사원번호']||'').trim(); if(!id) return; var o=by[id]=by[id]||{name:r['성명'],inT:null,out:false};
+      if(r['근태']==='출근'){ var t=String(r['근무시간']||''); if(!o.inT||t<o.inT) o.inT=t; } else if(r['근태']==='퇴근') o.out=true; });
+    var ds=Object.keys(dates); if(ds.length!==1) throw new Error('파일에 날짜가 '+(ds.length||0)+'개 있습니다. 하루치 파일만 올려 주세요.');
+    var ids=Object.keys(by), ins=[], none=[], outOnly=0;
+    var known={}; for(var j=0;j<ids.length;j+=200){ var part=ids.slice(j,j+200); var q=await sb.from('wf_employees').select('emp_no').in('emp_no',part); (q.data||[]).forEach(function(r){ known[r.emp_no]=1; }); }
+    ids.forEach(function(id){ var o=by[id]; if(o.inT){ if(!known[id]) none.push((o.name||'')+'('+id+')'); else ins.push({emp_no:id,in_time:o.inT}); } else if(o.out) outOnly++; });
+    PU.step='sum'; PU.fn=f.name; PU.date=ds[0]; PU.ins=ins; PU.none=none; PU.outOnly=outOnly; PU.err=''; wlRender();
+  }catch(e){ PU.step='pick'; PU.err=e.message; wlRender(); }
+}
+async function wlPunchApply(){
+  if(PU.busy||!PU.ins.length) return; PU.busy=true; wlRender();
+  try{
+    var n=0; for(var i=0;i<PU.ins.length;i+=500){ var r=await sb.rpc('wl_erp_punch_upload',{p_date:PU.date,p_rows:PU.ins.slice(i,i+500)}); if(r.error) throw r.error; n+=(r.data||0); }
+    PU.done={date:PU.date,n:n}; PU.busy=false; WL.date=PU.date; wlRender();
+  }catch(e){ PU.busy=false; toast('⚠️ 저장 실패: '+(e.message||e)); wlRender(); }
 }
 function wlViewErp(){
   var h='<div class="wl-bar"><button class="wl-btn" onclick="'+(ERP.fromBoard?'wlBoardOpen()':'WL.view=\'main\';wlLoad()')+'">'+(ERP.fromBoard?'← 팀 현황판':'← 작업일지')+'</button></div>';
@@ -27159,6 +27233,30 @@ function mtgRenderWeekReview(){
   el.innerHTML=h || '<div style="color:var(--g3);font-size:13px;text-align:center;padding:14px">자동으로 나눈 항목이 없습니다. 아래 "+ 항목 추가"로 직접 입력해주세요</div>';
   requestAnimationFrame(function(){ window.scrollTo(0,_scrollY); });
 }
+// 전주자료 가져오기: 새 회의 일자보다 앞선 가장 가까운 회의의 항목을 그대로(상태·진행률 유지) 불러온다
+async function mtgWWImportPrev(){
+  if(!canWrite())return;
+  if(!mtgCanManage()){ toast('⚠️ admin·master만 사용할 수 있습니다'); return; }
+  var date=document.getElementById('mtgWWDate').value||kstDate();
+  try{
+    var mRes=await sb.from('weekly_meetings').select('id,meeting_date,title').lt('meeting_date',date).order('meeting_date',{ascending:false}).limit(1);
+    if(mRes.error) throw mRes.error;
+    var prev=mRes.data&&mRes.data[0];
+    if(!prev){ toast('⚠️ '+date+' 이전에 등록된 회의가 없습니다'); return; }
+    var iRes=await sb.from('weekly_meeting_items').select('*').eq('meeting_id',prev.id).order('seq',{ascending:true});
+    if(iRes.error) throw iRes.error;
+    var rows=iRes.data||[];
+    if(!rows.length){ toast('⚠️ '+prev.meeting_date+' 회의에 항목이 없습니다'); return; }
+    var cur=(_mtgWeekParsedItems||[]).filter(function(it){ return it.content&&it.content.trim(); }).length;
+    if(cur&&!confirm('현재 입력된 항목 '+cur+'건이 사라지고, '+prev.meeting_date+' 회의 항목 '+rows.length+'건으로 바뀝니다.\n바꿀까요?')) return;
+    _mtgWeekParsedItems=rows.map(function(it){ return {
+      section:it.section||'기타', content:it.content||'', due_date:it.due_date||'', assignee:it.assignee||'',
+      status:it.status||'수행전', progress_pct:it.progress_pct==null?null:it.progress_pct, status_reason:it.status_reason||null,
+      completed_at:it.completed_at||null, task_group_id:it.task_group_id||null }; });
+    mtgRenderWeekReview();
+    toast('✅ '+prev.meeting_date+' 회의 항목 '+rows.length+'건을 가져왔습니다');
+  }catch(e){ toast('⚠️ 가져오기 실패: '+_safeErrMsg(e)); }
+}
 function mtgWeekAddItem(){
   _mtgWeekParsedItems.push({section:'자사보고사항', content:'', due_date:'', assignee:'', status:'수행전', progress_pct:null, status_reason:null, completed_at:null});
   mtgRenderWeekReview();
@@ -27179,7 +27277,7 @@ async function mtgWWSave(){
     if(mRes.error) throw mRes.error;
     var meetingId=mRes.data&&mRes.data[0]&&mRes.data[0].id;
     if(!meetingId) throw new Error('회의 ID를 확인할 수 없습니다');
-    var rows=valid.map(function(it,idx){ return { meeting_id:meetingId, section:it.section, seq:idx+1, content:it.content.trim(), due_date:it.due_date||null, assignee:it.assignee||null, status:it.status||'수행전', progress_pct:it.progress_pct==null?null:it.progress_pct, status_reason:it.status_reason||null, completed_at:it.completed_at||null }; });
+    var rows=valid.map(function(it,idx){ return { meeting_id:meetingId, section:it.section, seq:idx+1, content:it.content.trim(), due_date:it.due_date||null, assignee:it.assignee||null, status:it.status||'수행전', progress_pct:it.progress_pct==null?null:it.progress_pct, status_reason:it.status_reason||null, completed_at:it.completed_at||null, task_group_id:it.task_group_id||null }; });
     var iRes=await sb.from('weekly_meeting_items').insert(rows);
     if(iRes.error) throw iRes.error;
     var autoN=await mtgAutoCompletePrevItems(rows, meetingId);
@@ -27371,7 +27469,8 @@ async function mtgWeekOpenDetail(meetingId){
       h+='<div class="mtg-signgrid2">';
       sigs.forEach(function(s){
         var sigImg=sigStamp(s.name, s.signed_at);
-        h+='<div class="mtg-signcell2"><b>'+eeEsc(s.name)+'</b><span style="margin-left:auto">'+sigImg+'</span></div>';
+        h+='<div class="mtg-signcell2"><b>'+eeEsc(s.name)+'</b><span style="margin-left:auto">'+sigImg+'</span>'
+          +(clickable?'<span onclick="mtgWeekDeleteSignature('+s.id+','+meetingId+')" style="cursor:pointer;font-size:15px;padding:2px 0 2px 4px" title="서명 삭제">🗑️</span>':'')+'</div>';
       });
       if(sigs.length%2===1) h+='<div class="mtg-signcell2"></div>';
       h+='</div>';
@@ -27383,6 +27482,7 @@ async function mtgWeekOpenDetail(meetingId){
     if(clickable){
       var iAlreadySigned=sigs.some(function(s){ return s.name===me.name; });
       h+='<button onclick="mtgWeekSign('+meetingId+')" class="btn-prim" style="width:100%;margin-top:8px">✍️ '+(iAlreadySigned?'다시 서명하기(갱신)':'지금 서명하기')+'</button>';
+      if(iAlreadySigned) h+='<button onclick="mtgWeekDeleteMySignature('+meetingId+')" style="width:100%;margin-top:8px;padding:9px;background:none;border:1.5px solid var(--g3);color:var(--g5);border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer">🧽 내 서명 지우기</button>';
       h+='<button onclick="mtgWeekDeleteMeeting('+meetingId+')" style="width:100%;margin-top:8px;padding:9px;background:none;border:1.5px solid var(--danger);color:var(--danger);border-radius:var(--r2);font-size:13px;font-weight:700;cursor:pointer">🗑 이 회의자료 삭제</button>';
     }
     body.innerHTML=h;
@@ -27544,6 +27644,27 @@ async function mtgWeekSign(meetingId){
     toast('✅ 서명이 완료되었습니다');
     mtgWeekOpenDetail(meetingId);
   }catch(e){ toast('⚠️ 서명 실패: '+_safeErrMsg(e)); }
+}
+async function mtgWeekDeleteSignature(sigId, meetingId, mine){
+  if(!mtgCanManage()){ toast('⚠️ admin·master만 삭제할 수 있습니다'); return; }
+  if(!confirm(mine?'내 서명을 지우시겠습니까?':'이 서명을 삭제하시겠습니까?')) return;
+  try{
+    var g=await sb.from('weekly_meeting_signatures').select('name').eq('id',sigId);
+    var nm=(g&&g.data&&g.data[0]&&g.data[0].name)||'';
+    var res=await sb.from('weekly_meeting_signatures').delete().eq('id',sigId);
+    if(res.error) throw res.error;
+    await logDeletion('회의자료(주간) 서명', 'meeting_id '+meetingId+' / '+nm);
+    toast('✅ 서명이 삭제되었습니다');
+    mtgWeekOpenDetail(meetingId);
+  }catch(e){ toast('⚠️ 삭제 실패: '+_safeErrMsg(e)); }
+}
+async function mtgWeekDeleteMySignature(meetingId){
+  try{
+    var r=await sb.from('weekly_meeting_signatures').select('id,name').eq('meeting_id',meetingId);
+    var mine=((r&&r.data)||[]).filter(function(x){ return x.name===me.name; })[0];
+    if(!mine){ toast('내 서명이 없습니다'); return; }
+    await mtgWeekDeleteSignature(mine.id, meetingId, true);
+  }catch(e){ toast('⚠️ 삭제 실패: '+_safeErrMsg(e)); }
 }
 async function mtgWeekDeleteMeeting(meetingId){
   if(!mtgCanManage()){ toast('⚠️ admin·master만 삭제할 수 있습니다'); return; }
@@ -38341,6 +38462,10 @@ async function renderTimeCatStats(containerId, table, dateCol, catConf){
    인력관리 > 근무계획 (더존ERP 근무일정 변환/다운로드)
    ═══════════════════════════════════════════════════════════ */
 var WF_DAYS=['월','화','수','목','금','토','일'];
+var wfResigned=[]; var WF_SHOW_RESIGNED=false;
+function wfTodayKst(){ return new Date(Date.now()+9*3600000).toISOString().slice(0,10); }
+function wfIsResigned(e){ return !!(e&&e.resign_date&&e.resign_date<wfTodayKst()); }  // 퇴사일 다음 날부터 퇴사자
+function wfActiveOn(e,D){ return !(e&&e.resign_date&&e.resign_date<String(D).slice(0,10)); } // D일 기준 재직(퇴사일 당일까지 근무)
 var wfEmployees=[]; // [{emp_no,name,position,hq_team,team,group_name,shift_type,work_area,tkg_code,tm_code_base, off1, off2}]
 var wfCurQuarter=null;
 

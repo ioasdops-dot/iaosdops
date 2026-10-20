@@ -731,6 +731,21 @@ function loadMasters(){
     loadHomeSummary();
   }).catch(function(){ dot.classList.remove('ok'); msg.textContent='DB 연결 실패 — 네트워크를 확인하세요'; });
 }
+// ── 창고 입출고 이력(warehouse_ledger) 전체 조회 공용 캐시 ──
+// 홈 현황/창고별 현황/부족재고/기간별 통계 네 화면이 각자 전체 이력을 따로 받아오던 걸 하나로 모음.
+// 재고 정확도가 중요해서 유지시간은 짧게(90초)만 두고, 입출고 저장/수정/삭제 시(loadWarehouseItemsAndLedger 호출 시점)마다 즉시 비움.
+var _ledgerAllCache=null, _ledgerAllCacheAt=0;
+var LEDGER_ALL_TTL_MS=90*1000; // 90초
+function getLedgerAllCached(force){
+  var now=Date.now();
+  if(!force && _ledgerAllCache && (now-_ledgerAllCacheAt)<LEDGER_ALL_TTL_MS) return Promise.resolve(_ledgerAllCache);
+  return sbFetchAll('/warehouse_ledger?select=warehouse_id,item_id,remain_qty,prev_qty,in_qty,out_qty,ledger_date&order=ledger_date.desc').then(function(rows){
+    _ledgerAllCache=Array.isArray(rows)?rows:[];
+    _ledgerAllCacheAt=Date.now();
+    return _ledgerAllCache;
+  });
+}
+function clearLedgerStatCache(){ _ledgerAllCache=null; _ledgerAllCacheAt=0; }
 var homeStockData=[];
 var hsMode='day';
 var hsAnchor={day:todayStr(), week:todayStr(), month:currentYYYYMM(), year:String(new Date().getFullYear())};
@@ -776,7 +791,7 @@ function loadHomeSummary(){
   box.innerHTML='<div class="empty">불러오는 중…</div>';
   Promise.all([
     sbFetchAll('/warehouse_item?select=current_qty,warehouse_id,item_id,item_master(item_name,spec,unit)'),
-    sbFetchAll('/warehouse_ledger?select=warehouse_id,item_id,remain_qty,prev_qty,in_qty,out_qty,ledger_date&order=ledger_date.desc'),
+    getLedgerAllCached(),
     sbFetchAll('/warehouse_master?select=id,room_no,location_desc')
   ]).then(function(res){
     var wis=Array.isArray(res[0])?res[0]:[];
@@ -1013,6 +1028,7 @@ function loadDailyHeader(){
 }
 
 function loadWarehouseItemsAndLedger(){
+  if(typeof clearLedgerStatCache==='function') clearLedgerStatCache(); // 입출고 저장/수정/삭제 뒤에는 통계 캐시도 즉시 비워 최신 재고로 유지
   document.getElementById('ledgerItems').innerHTML='<tr><td colspan="7" class="empty">불러오는 중…</td></tr>';
   return sbFetch('/warehouse_item?warehouse_id=eq.'+curWarehouse.id+'&select=id,item_id,min_qty,current_qty,display_order,item_master(item_name,spec,unit)&order=created_at.asc')
     .then(function(r){return r.json();})
@@ -1917,7 +1933,7 @@ function loadWarehouseStats(){
   grid.innerHTML='<div class="empty">불러오는 중…</div>';
   Promise.all([
     sbFetchAll('/warehouse_item?select=warehouse_id,item_id,current_qty,item_master(item_name)'),
-    sbFetchAll('/warehouse_ledger?select=warehouse_id,item_id,remain_qty,ledger_date&order=ledger_date.desc')
+    getLedgerAllCached()
   ]).then(function(res){
     var wis=Array.isArray(res[0])?res[0]:[];
     var ledgers=Array.isArray(res[1])?res[1]:[];
@@ -1969,7 +1985,7 @@ function loadLowStock(){
       wis=Array.isArray(wis)?wis:[];
       var whIds=Array.from(new Set(wis.map(function(w){return w.warehouse_id;})));
       if(!whIds.length){ box.innerHTML=''; document.getElementById('lowStockEmpty').style.display='block'; return; }
-      return sbFetchAll('/warehouse_ledger?select=warehouse_id,item_id,remain_qty,ledger_date&order=ledger_date.desc').then(function(ledgers){
+      return getLedgerAllCached().then(function(ledgers){
         ledgers=Array.isArray(ledgers)?ledgers:[];
         var latest={};
         ledgers.forEach(function(l){ var key=l.warehouse_id+'_'+l.item_id; if(!(key in latest)) latest[key]=l.remain_qty; });
@@ -2013,7 +2029,7 @@ function loadPeriodStats(){
   Promise.all([
     sbFetchAll('/warehouse_ledger?select=item_id,in_qty,out_qty,item_master(item_name,spec,unit)&ledger_date=gte.'+r.from+'&ledger_date=lte.'+r.to),
     sbFetchAll('/warehouse_item?select=warehouse_id,item_id,current_qty'),
-    sbFetchAll('/warehouse_ledger?select=warehouse_id,item_id,remain_qty,ledger_date&order=ledger_date.desc')
+    getLedgerAllCached()
   ]).then(function(res){
     var rows=Array.isArray(res[0])?res[0]:[];
     var wis=Array.isArray(res[1])?res[1]:[];

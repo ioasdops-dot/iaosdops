@@ -1391,6 +1391,18 @@ html{overflow-x:hidden}
     </div>
   </div>
 
+  <div class="menu-cat" id="menuCat_abnormal" style="display:none">
+    <div class="sec-lbl" style="padding:14px 13px 6px">🚨 비정상상황</div>
+    <div class="menu-grid">
+      <button class="menu-btn" id="menuAbnormalBtn" style="display:none" onclick="location.href='abnormal.html'">
+        <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4" /><path d="M10.363 3.591l-8.106 13.534a1.914 1.914 0 0 0 1.636 2.871h16.214a1.914 1.914 0 0 0 1.636 -2.87l-8.106 -13.536a1.914 1.914 0 0 0 -3.274 0z" /><path d="M12 16h.01" /></svg></span>
+        <div class="menu-title">비정상상황</div>
+        <div class="menu-desc">출근 체크·팀 지원·투입 현황</div>
+        <span class="menu-arrow">열기 →</span>
+      </button>
+    </div>
+  </div>
+
   <div class="menu-cat" id="menuCat_equip">
     <div class="sec-lbl" style="padding:14px 13px 6px">📦 자재</div>
     <div class="menu-grid">
@@ -10408,6 +10420,15 @@ function applyRoleUI(){
   var miBtn=document.getElementById('menuInspectBtn'); if(miBtn) miBtn.style.display=canInspectWh?'flex':'none';
   var mwBtn=document.getElementById('menuWarehouseBtn'); if(mwBtn) mwBtn.style.display=canInspectWh?'flex':'none';
   var twBtn=document.getElementById('tabbarWarehouseBtn'); if(twBtn) twBtn.style.display=canInspectWh?'flex':'none';
+  // 비정상상황: 최고관리자 + 관리 화면에서 열어준 직급만 메뉴 노출 (기본 숨김, 조회 실패 시에도 숨김)
+  window._abOpen=(me.role==='master');
+  (function(){
+    function abShow(ok){ var c=document.getElementById('menuCat_abnormal'); if(c) c.style.display=ok?'block':'none'; var b=document.getElementById('menuAbnormalBtn'); if(b) b.style.display=ok?'flex':'none'; }
+    abShow(window._abOpen);
+    if(me.role!=='master'&&canInspectWh){
+      try{ sb.rpc('ab_my_access').then(function(r){ var ok=!!(r&&r.data&&r.data.open); window._abOpen=ok; abShow(ok); if(typeof renderFavMenus==='function'&&canFav) renderFavMenus(); if(ok&&typeof renderMenuFolders==='function') renderMenuFolders(); }).catch(function(){}); }catch(e){}
+    }
+  })();
   // 개별 차단 계정: 인력관리 섹션 + 관리자 섹션 전체 숨김 (역할상 권한이 있어도 강제 차단)
   if(isBlockedUser){
     var wfCat=document.getElementById('menuCat_workforce'); if(wfCat) wfCat.style.display='none';
@@ -10513,6 +10534,7 @@ var ALL_MENU_ITEMS=[
   {key:'inspect', icon:'📝', title:'현장점검', action:"location.href='inspect.html'"},
   {key:'waste', icon:'♻️', title:'폐기물 처리현황', action:"go('waste')"},
   {key:'warehouse', icon:'📦', title:'창고 재고관리', action:"location.href='warehouse.html'"},
+  {key:'abnormal', icon:'🚨', title:'비정상상황', action:"location.href='abnormal.html'", hidden:function(){ return !window._abOpen; }},
   {key:'equipment', icon:'🔧', title:'장비현황', action:"go('equipment')"},
   {key:'notice', icon:'📢', title:'공지사항', action:"go('notice')"},
   {key:'chat', icon:'📋', title:'사규 열람', action:"openRegViewGate()"},
@@ -10765,6 +10787,7 @@ var MENU_FOLDER_DEFS=[
   {icon:'🏢', label:'시설', cats:['menuCat_fac'], bg:'var(--navy-bg)', fg:'var(--navy)'},
   {icon:'📖', label:'열람·자료', cats:['menuCat_ref'], bg:'var(--pink-bg)', fg:'var(--pink)'},
   {icon:'📅', label:'근무계획', cats:['menuCat_workforce'], bg:'var(--danger-bg)', fg:'var(--danger)'},
+  {icon:'🚨', label:'비정상상황', cats:['menuCat_abnormal'], bg:'var(--danger-bg)', fg:'var(--danger)'},
   {icon:'🔐', label:'관리자', cats:['menuCat_admin'], bg:'var(--purple-bg)', fg:'var(--purple)'}
 ];
 // 폴더 안에 숨겨진 메뉴들 중 안 읽은 알림(빨간 배지)이 하나라도 있으면, 폴더 카드 자체에도 NEW로 알려준다 —

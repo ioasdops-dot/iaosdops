@@ -4356,6 +4356,7 @@ textarea.rpt-edit{resize:vertical;min-height:36px}
       </select>
       <select id="wfFPosition" onchange="wfRenderTable()" style="padding:8px 10px;border:1.5px solid var(--g2);border-radius:8px;font-size:13px"><option value="">직책 전체</option></select>
       <input id="wfFSearch" oninput="wfRenderTable()" placeholder="🔍 사번/성명 검색" style="flex:1;min-width:140px;padding:8px 10px;border:1.5px solid var(--g2);border-radius:8px;font-size:13px">
+      <button id="wfResignTgl" onclick="wfToggleResigned()" style="padding:8px 12px;background:#fffbeb;border:1.5px solid #f59e0b;border-radius:8px;font-size:13px;font-weight:800;color:#b45309;cursor:pointer">🚪 퇴사자 보기 (0)</button>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:10px;align-items:center;flex-wrap:wrap">
       <select id="wfQuarterSel" onchange="loadWfEmployees()" style="padding:8px 10px;border:1.5px solid var(--g2);border-radius:8px;font-size:13px;font-weight:700"></select>
@@ -7083,21 +7084,14 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
     </div>
     <div id="mgrLeaveSwapBlock" style="display:none">
       <div id="mgrLeaveSwapCurrentOff" style="font-size:12.5px;font-weight:700;color:var(--g6);background:var(--g0);border:1.5px solid var(--g2);border-radius:8px;padding:8px 10px;margin-bottom:10px">현재 고정휴무요일: -</div>
-      <label class="f-lbl">기간 + 요일로 한번에 추가 (요일 최대 2개)</label>
-      <div style="display:flex;gap:8px;margin-bottom:8px">
-        <div style="flex:1"><input type="date" id="mgrLeaveSwapRangeStart" class="ri" style="margin-bottom:0"></div>
-        <div style="flex:1"><input type="date" id="mgrLeaveSwapRangeEnd" class="ri" style="margin-bottom:0"></div>
-      </div>
-      <div id="mgrLeaveSwapWeekdayRow" style="display:flex;gap:5px;margin-bottom:8px"></div>
-      <button type="button" onclick="mgrLeaveSwapAddFromRange()" style="width:100%;padding:9px;margin-bottom:14px;background:#EBF0FF;color:#1B4FBE;border:1.5px solid #1B4FBE;border-radius:8px;font-size:13.5px;font-weight:700;cursor:pointer">📅 이 기간의 선택한 요일 전부 추가</button>
-      <div style="border-top:1px dashed var(--g2);margin:0 0 12px"></div>
-      <label class="f-lbl">또는 날짜 하나씩 추가</label>
-      <div style="display:flex;gap:6px;margin-bottom:8px">
-        <input type="date" id="mgrLeaveSwapDateInput" class="ri" style="flex:1;margin-bottom:0">
-        <button type="button" onclick="mgrLeaveSwapAddDate()" style="padding:0 16px;background:var(--teal);color:#fff;border:none;border-radius:8px;font-size:13.5px;font-weight:700;cursor:pointer">추가</button>
-      </div>
-      <label class="f-lbl" style="margin-top:4px">선택된 새 휴무일</label>
-      <div id="mgrLeaveSwapDateList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+      <label class="f-lbl">① 이전 휴무일 (원래 쉬는 날) <span style="color:var(--g4);font-weight:500">— 고정휴무 요일만 표시</span></label>
+      <div id="mgrLeaveSwapFromList" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px"></div>
+      <label class="f-lbl">② 이후 휴무일 (바꿔서 쉬는 날)</label>
+      <input type="date" id="mgrLeaveSwapToInput" class="ri" onchange="mgrLeaveSwapRenderPreview()">
+      <div id="mgrLeaveSwapPreview" style="margin-bottom:8px"></div>
+      <button type="button" onclick="mgrLeaveSwapAddPair()" style="width:100%;padding:10px;margin-bottom:12px;background:#EBF0FF;color:#1B4FBE;border:1.5px solid #1B4FBE;border-radius:8px;font-size:13.5px;font-weight:700;cursor:pointer">➕ 변경 추가 (이전 → 이후)</button>
+      <label class="f-lbl">추가된 변경 <span style="color:var(--g4);font-weight:500">— 여러 건 가능</span></label>
+      <div id="mgrLeaveSwapPairList" style="margin-bottom:6px"></div>
       <div id="mgrLeaveSwapSummary" style="font-size:12px;color:var(--g5);margin-bottom:10px"></div>
     </div>
     <div style="display:flex;gap:8px">
@@ -7132,6 +7126,7 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
         <option value="건강검진">📝 건강검진</option>
         <option value="병가">📝 병가</option>
         <option value="휴직">📝 휴직</option>
+        <option value="휴무변경">🔄 휴무변경</option>
       </select>
     </div>
     <div style="display:flex;gap:6px;margin-bottom:12px" id="mgrLeaveProgressTabs">
@@ -9109,8 +9104,8 @@ async function wlGenderOpen(){
   if(!wlCanGender()) return;
   if(WL.snapshot){
     try{
-      var he=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,group_name,team').eq('team',WL.team); });
-      WL.gEmps=he.data||[];
+      var he=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,group_name,team,resign_date').eq('team',WL.team); });
+      WL.gEmps=(he.data||[]).filter(function(e){ return wfActiveOn(e,WL.date||wfTodayKst()); });
       var ids=WL.gEmps.map(function(e){return e.emp_no;});
       WL.gender={};
       if(ids.length){ var gx=await sb.from('worklog_emp_ext').select('emp_no,gender').in('emp_no',ids); (gx.data||[]).forEach(function(g){ WL.gender[g.emp_no]=g.gender; }); }
@@ -12005,10 +12000,107 @@ function pickShift(el){
   updateMyTeamGrp();
   updateNightSpecialVisibility();
 }
+// ═══ 인력입력 — 선택한 조의 근태 현황(근무·휴무·연차·병가·휴직 / 관리자·현장배치 예정)과 입력값 비교 (2026-10-20 추가) ═══
+// 읽기 전용: 작업일지와 같은 기준(직원명단 − 고정휴무 − 휴직·산재 − ERP 근태, 반차는 출근, 작업일지 수동 입력 우선)으로 계산해서 보여주기만 한다.
+// 입력값이 예정과 달라도 저장은 항상 가능(알림만 표시).
+var MPA={key:'',data:null,busy:'',t:0};
+function mpAttToday(){ return new Date(Date.now()+9*3600000).toISOString().slice(0,10); }
+function mpAttBucket(r){
+  r=String(r||'');
+  if(/전반|후반|반차/.test(r)) return 'half';
+  if(r==='근무') return 'work';
+  if(/휴무/.test(r)) return '휴무';
+  if(/연차/.test(r)) return '연차';
+  if(/병가/.test(r)) return '병가';
+  if(/휴직|산재/.test(r)) return '휴직';
+  return '기타';
+}
+async function mpAttCompute(team,D){
+  var m=String(team).match(/^(\d+)팀([A-Z])$/); if(!m) return null;
+  var T=m[1]+'팀', grp=m[2]+'조';
+  await wfLoadQStart();
+  var home=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,group_name,team,resign_date').eq('team',T); });
+  var emps=(home.data||[]).filter(function(e){ return wfActiveOn(e,D); });
+  try{
+    var asg=await sb.from('worklog_assign').select('*');
+    var act=(asg.data||[]).filter(function(a){ return a.from_date<=D&&(!a.to_date||a.to_date>=D); });
+    var outIds={}; act.forEach(function(a){ if(a.work_team!==T) outIds[a.emp_no]=1; });
+    emps=emps.filter(function(e){ return !outIds[e.emp_no]; });
+  }catch(e){}
+  var mine=emps.filter(function(e){ return e.group_name===grp; });
+  var ids=mine.map(function(e){return e.emp_no;});
+  var res={D:D,team:team,T:T,grp:grp,total:mine.length,work:0,half:0,off:0,leave:0,sick:0,hold:0,etc:0,mgrWork:0,mgrAll:0,etcTxt:[],ok:true};
+  if(!ids.length){ res.ok=false; return res; }
+  var auto={};
+  var qe=wfEffQuarter(D), qc=wlQuarter(D), dow=wlDow(D);
+  var off=await sb.from('wf_fixed_off').select('emp_no,off_day1,off_day2,quarter').in('quarter',(qe===qc?[qc]:[qe,qc])).in('emp_no',ids);
+  var offBy={}; (off.data||[]).forEach(function(o){ (offBy[o.emp_no]=offBy[o.emp_no]||{})[o.quarter]=o; });
+  Object.keys(offBy).forEach(function(id){ var o=wfPickOffRow(offBy[id],D); if(o&&(o.off_day1===dow||o.off_day2===dow)) auto[id]='휴무'; });
+  var lv=await sb.from('wf_leave').select('emp_no,leave_type,start_date,end_date').lte('start_date',D).gte('end_date',D).in('emp_no',ids);
+  (lv.data||[]).forEach(function(l){ auto[l.emp_no]=/산재/.test(l.leave_type||'')?'산재':'휴직'; });
+  try{ var el2=await sb.from('erp_leave').select('emp_no,reason').lte('start_date',D).gte('end_date',D).in('emp_no',ids);
+    (el2.data||[]).forEach(function(l){ if(!auto[l.emp_no]) auto[l.emp_no]=l.reason||'기타'; }); }catch(e){}
+  try{ var ab=await sb.from('worklog_absence').select('emp_no,reason,auto').eq('log_date',D).eq('team_no',T);
+    (ab.data||[]).forEach(function(r){ if(!r.auto&&ids.indexOf(r.emp_no)>=0) auto[r.emp_no]=r.reason; }); }catch(e){}
+  mine.forEach(function(e){
+    var isMgr=(e.position==='조장'); if(isMgr) res.mgrAll++;
+    var r=auto[e.emp_no], b=r?mpAttBucket(r):'work';
+    if(b==='work'||b==='half'){ if(b==='half') res.half++; res.work++; if(isMgr) res.mgrWork++; return; }
+    if(b==='휴무') res.off++; else if(b==='연차') res.leave++; else if(b==='병가') res.sick++; else if(b==='휴직') res.hold++; else { res.etc++; if(res.etcTxt.indexOf(r)<0) res.etcTxt.push(r); }
+  });
+  res.field=res.work-res.mgrWork; // 현장배치 예정 = 근무 − 관리자(조장)
+  return res;
+}
+// 입력값 비교 — 입력 총 인원(층별) + 지원 보낸 인원 = 우리 조가 실제 현장에 낸 인원
+function mpAttCmpHtml(d,cur){
+  if(!d||!d.ok) return '';
+  var diff=cur-d.field, col, msg;
+  if(cur===0) { col='var(--g4)'; msg='현장배치 예정 <b>'+d.field+'명</b>'; }
+  else if(diff===0){ col='var(--success,#1AA260)'; msg='✔ 예정과 일치 <b>'+d.field+'명</b>'; }
+  else { col='#C2410C'; msg='예정 <b>'+d.field+'명</b> · 입력 <b>'+cur+'명</b> → <b>'+(diff>0?('+'+diff+'명 많음'):(Math.abs(diff)+'명 적음'))+'</b>'; }
+  return '<div style="font-size:12.5px;font-weight:700;color:'+col+'">'+msg+'</div>';
+}
+function mpAttCardHtml(d){
+  var md=d.D.split('-'), dl=parseInt(md[1])+'월 '+parseInt(md[2])+'일';
+  var chip=function(l,n,c){ return '<div style="flex:1;min-width:0;text-align:center;padding:7px 2px;border-radius:9px;background:'+(n>0?c[0]:'var(--g1)')+';color:'+(n>0?c[1]:'var(--g4)')+'"><div style="font-size:11.5px;font-weight:700">'+l+'</div><div style="font-size:18px;font-weight:900;line-height:1.2">'+n+'</div></div>'; };
+  var h='<div style="font-size:13px;font-weight:800;color:var(--g6);margin-bottom:8px">'+dl+' '+d.T+' '+d.grp+' 근태 현황 <span style="font-weight:600;color:var(--g4)">(총원 '+d.total+'명)</span></div>';
+  h+='<div style="display:flex;align-items:stretch;gap:6px;margin-bottom:6px">'
+    +'<div style="flex:1.25;padding:8px 6px;border-radius:10px;background:var(--teal-bg);color:var(--teal2);text-align:center"><div style="font-size:12px;font-weight:800">근무</div><div style="font-size:26px;font-weight:900;line-height:1.1">'+d.work+'<small style="font-size:13px">명</small></div></div>'
+    +chip('휴무',d.off,['#EEF1F6','#475569'])+chip('연차',d.leave,['#FFF4D6','#8A5A00'])+chip('병가',d.sick,['#FDECEC','#B42318'])+chip('휴직',d.hold,['#F3EEF8','#6B21A8'])
+    +'</div>';
+  if(d.etc) h+='<div style="font-size:12px;color:var(--g5);margin-bottom:6px">기타 '+d.etc+'명 ('+d.etcTxt.join('·')+')</div>';
+  h+='<div style="display:flex;gap:6px;align-items:center;padding:9px 11px;border-radius:10px;background:var(--navy-bg,#EAF0F8);font-size:14px;color:var(--navy,#1F3A6E)">'
+    +'<span>관리자 <b style="font-size:17px">'+d.mgrWork+'명</b></span><span style="color:var(--g4)">→</span>'
+    +'<span>현장배치 예정 <b style="font-size:19px">'+d.field+'명</b></span>'
+    +(d.half?'<span style="margin-left:auto;font-size:11.5px;color:var(--g5)">반차 '+d.half+'명 포함</span>':'')+'</div>';
+  return h;
+}
+function mpAttRefresh(){
+  var card=document.getElementById('mpAttCard'), cmp=document.getElementById('mpAttCmp'); if(!card) return;
+  var team=getSelectedTeam?getSelectedTeam():'';
+  var shEl=document.querySelector('#shiftGrp .rp.on'), shift=shEl?shEl.textContent.trim():'';
+  var D=mpAttToday();
+  var isN=(shift==='야간'); var cmpN=document.getElementById('mpAttCmpNs'); if(isN){ if(cmp) cmp.innerHTML=''; cmp=cmpN; } else if(cmpN) cmpN.innerHTML='';
+  if(!team||!/^\d+팀[A-Z]$/.test(team)){ card.style.display='none'; if(cmp) cmp.innerHTML=''; return; }
+  var key=team+'|'+D;
+  var cur=isN?(parseInt((document.getElementById('nsTot')||{}).textContent)||0):(parseInt((document.getElementById('mpTot')||{}).textContent)||0)+(function(){ try{ return mpSupSentTotal(shift,team)||0; }catch(e){ return 0; } })();
+  if(MPA.key===key&&MPA.data){
+    card.innerHTML=mpAttCardHtml(MPA.data); card.style.display=MPA.data.ok?'block':'none';
+    if(cmp) cmp.innerHTML=mpAttCmpHtml(MPA.data,cur);
+    if(Date.now()-MPA.t<120000) return;
+  }
+  if(MPA.busy===key) return;
+  MPA.busy=key;
+  mpAttCompute(team,D).then(function(d){
+    MPA.busy=''; if(!d) return; MPA.key=key; MPA.data=d; MPA.t=Date.now();
+    if(getSelectedTeam()===team) mpAttRefresh();
+  }).catch(function(e){ MPA.busy=''; console.warn('근태 현황 불러오기 실패',e); });
+}
 function calcMp(){
   let s=0;document.querySelectorAll('#mpInputArea .mp-inp2').forEach(i=>s+=parseInt(i.value)||0);
   const el=document.getElementById('mpTot');el.textContent=s;el.style.color=s>0?'var(--teal)':'var(--g3)';
   try{ mpUpdateOurTotal(); }catch(e){}
+  try{ mpAttRefresh(); }catch(e){}
 }
 // 조별 담당구역: A조=동편, B조=서편, (1팀/6팀의)C조=집하장
 function getTeamZone(teamCode){
@@ -15334,9 +15426,9 @@ async function loadQuotaInputTab(){
 async function wfSyncQuotaFromSchedule(){
   if(!me||me.role!=='master'){ toast('⚠️ master만 가능합니다'); return; }
   try{
-    var empRes=await msFetchAll(function(){ return sb.from('wf_employees').select('team,group_name,position').eq('position','사원'); });
+    var empRes=await msFetchAll(function(){ return sb.from('wf_employees').select('team,group_name,position,resign_date').eq('position','사원'); });
     var countMap={}; // key: "1팀A" 형식 (정원입력 화면 키와 동일)
-    (empRes.data||[]).forEach(function(e){
+    (empRes.data||[]).filter(function(e){ return !wfIsResigned(e); }).forEach(function(e){
       var m=(e.team||'').match(/^(\d+)팀$/);
       if(!m||!e.group_name) return;
       var gk=m[1]+'팀'+e.group_name.replace('조','');
@@ -36718,8 +36810,6 @@ function mgrLeaveApplyQuickDays(){
   endEl.value=kstDate(e);
 }
 var mgrLeaveEditId=null;
-var mgrLeaveSwapDates=[];
-var mgrLeaveSwapWeekdaySel=[];
 var MGR_DAY_NAMES=['일','월','화','수','목','금','토'];
 function mgrLeaveStatusChange(){
   var v=document.getElementById('mgrLeaveStatus').value;
@@ -36728,53 +36818,18 @@ function mgrLeaveStatusChange(){
   document.getElementById('mgrLeaveNormalBlock').style.display = isSwap ? 'none' : 'block';
   document.getElementById('mgrLeaveSwapBlock').style.display = isSwap ? 'block' : 'none';
   if(isSwap){
-    mgrLeaveSwapDates=[];
-    mgrLeaveSwapWeekdaySel=[];
-    document.getElementById('mgrLeaveSwapRangeStart').value='';
-    document.getElementById('mgrLeaveSwapRangeEnd').value='';
-    mgrLeaveSwapRenderWeekdayButtons();
-    mgrLeaveSwapRenderDates();
+    mgrLeaveSwapReset();
     mgrLeaveUpdateSwapCurrentOff();
   }
 }
-function mgrLeaveSwapToggleWeekday(idx){
-  var i=mgrLeaveSwapWeekdaySel.indexOf(idx);
-  if(i!==-1){ mgrLeaveSwapWeekdaySel.splice(i,1); }
-  else{
-    if(mgrLeaveSwapWeekdaySel.length>=2){ toast('⚠️ 요일은 최대 2개까지 선택할 수 있습니다'); return; }
-    mgrLeaveSwapWeekdaySel.push(idx);
-  }
-  mgrLeaveSwapRenderWeekdayButtons();
+function mgrLeaveFmtMD(d){ var w=MGR_DAY_NAMES[new Date(d+'T00:00:00Z').getUTCDay()]; return (+d.slice(5,7))+'/'+(+d.slice(8,10))+'('+w+')'; }
+function mgrLeaveSwapOffOf(team,name){
+  if(!mgrRosterOffCache||!team||!name) return null;
+  var person=mgrRosterOffCache.roster[team+'_'+name]; if(!person||!person.empNo) return null;
+  var o=mgrRosterOffCache.offMap[person.empNo]; if(!o||(!o.d1&&!o.d2)) return null;
+  return {person:person,d1:o.d1,d2:o.d2};
 }
-function mgrLeaveSwapRenderWeekdayButtons(){
-  var row=document.getElementById('mgrLeaveSwapWeekdayRow');
-  if(!row) return;
-  row.innerHTML=MGR_DAY_NAMES.map(function(d,idx){
-    var on=mgrLeaveSwapWeekdaySel.indexOf(idx)!==-1;
-    return '<button type="button" onclick="mgrLeaveSwapToggleWeekday('+idx+')" style="flex:1;padding:8px 0;border:1.5px solid '+(on?'var(--teal2)':'var(--g2)')+';border-radius:8px;background:'+(on?'var(--teal-bg)':'var(--g0)')+';color:'+(on?'var(--teal2)':'var(--g6)')+';font-size:12.5px;font-weight:700;cursor:pointer">'+d+'</button>';
-  }).join('');
-}
-function mgrLeaveSwapAddFromRange(){
-  var s=document.getElementById('mgrLeaveSwapRangeStart').value;
-  var e=document.getElementById('mgrLeaveSwapRangeEnd').value;
-  if(!s||!e){ toast('⚠️ 기간(시작일·종료일)을 선택해주세요'); return; }
-  if(s>e){ toast('⚠️ 종료일이 시작일보다 빠릅니다'); return; }
-  if(!mgrLeaveSwapWeekdaySel.length){ toast('⚠️ 요일을 1개 이상 선택해주세요'); return; }
-  var cur=new Date(s+'T00:00:00');
-  var end=new Date(e+'T00:00:00');
-  var added=0;
-  while(cur<=end){
-    if(mgrLeaveSwapWeekdaySel.indexOf(cur.getDay())!==-1){
-      var dStr=cur.getFullYear()+'-'+String(cur.getMonth()+1).padStart(2,'0')+'-'+String(cur.getDate()).padStart(2,'0');
-      if(mgrLeaveSwapDates.indexOf(dStr)===-1){ mgrLeaveSwapDates.push(dStr); added++; }
-    }
-    cur=new Date(cur.getTime()+86400000);
-  }
-  mgrLeaveSwapDates.sort();
-  mgrLeaveSwapRenderDates();
-  toast(added?('✓ '+added+'개 날짜가 추가되었습니다'):'추가할 새 날짜가 없습니다 (이미 목록에 있음)');
-}
-// 현재 팀+직책으로 지정된 사람의 고정휴무요일을 화면에 표시
+// 현재 팀+직책으로 지정된 사람의 고정휴무요일을 화면에 표시하고, 이전 휴무일 후보 날짜를 그린다
 async function mgrLeaveUpdateSwapCurrentOff(){
   var el=document.getElementById('mgrLeaveSwapCurrentOff');
   if(!el) return;
@@ -36784,38 +36839,69 @@ async function mgrLeaveUpdateSwapCurrentOff(){
     el.textContent='현재 고정휴무요일: 확인 중...';
     try{ mgrRosterOffCache=await fetchMgrRosterWithOff(); }catch(e){}
   }
-  if(!mgrRosterOffCache || !team || !name){ el.textContent='현재 고정휴무요일: 확인 중...'; return; }
+  if(!mgrRosterOffCache || !team || !name){ el.textContent='현재 고정휴무요일: 확인 중...'; mgrLeaveSwapRenderFrom(); return; }
   var person=mgrRosterOffCache.roster[team+'_'+name];
-  if(!person||!person.empNo){ el.textContent='현재 고정휴무요일: 정보 없음'; return; }
+  if(!person||!person.empNo){ el.textContent='현재 고정휴무요일: 정보 없음'; mgrLeaveSwapRenderFrom(); return; }
   var o=mgrRosterOffCache.offMap[person.empNo];
-  if(!o||(!o.d1&&!o.d2)){ el.textContent='현재 고정휴무요일: 등록된 정보 없음'; return; }
+  if(!o||(!o.d1&&!o.d2)){ el.textContent='현재 고정휴무요일: 등록된 정보 없음'; mgrLeaveSwapRenderFrom(); return; }
   var days=[o.d1,o.d2].filter(Boolean).join(', ');
   el.textContent='현재 고정휴무요일('+(person.name||name)+'): '+days;
+  mgrLeaveSwapRenderFrom();
 }
-function mgrLeaveSwapAddDate(){
-  var input=document.getElementById('mgrLeaveSwapDateInput');
-  var d=input.value;
-  if(!d){ toast('⚠️ 날짜를 선택해주세요'); return; }
-  if(mgrLeaveSwapDates.indexOf(d)!==-1){ toast('⚠️ 이미 추가된 날짜입니다'); return; }
-  mgrLeaveSwapDates.push(d);
-  mgrLeaveSwapDates.sort();
-  input.value='';
-  mgrLeaveSwapRenderDates();
+var mgrLeaveSwapPairs=[];      // [{from:'YYYY-MM-DD', to:'YYYY-MM-DD'}]
+var mgrLeaveSwapFromSel=null;  // 선택된 이전 휴무일
+var mgrLeaveSwapEditSid=null;  // 수정 중인 변경 묶음 번호
+function mgrLeaveSwapReset(){
+  mgrLeaveSwapPairs=[]; mgrLeaveSwapFromSel=null; mgrLeaveSwapEditSid=null;
+  var t=document.getElementById('mgrLeaveSwapToInput'); if(t) t.value='';
+  mgrLeaveSwapRenderFrom(); mgrLeaveSwapRenderPreview(); mgrLeaveSwapRenderPairs();
 }
-function mgrLeaveSwapRemoveDate(d){
-  mgrLeaveSwapDates=mgrLeaveSwapDates.filter(function(x){return x!==d;});
-  mgrLeaveSwapRenderDates();
+function mgrLeaveSwapRenderFrom(){
+  var wrap=document.getElementById('mgrLeaveSwapFromList'); if(!wrap) return;
+  var team=document.getElementById('mgrLeaveTeam').value, name=document.getElementById('mgrLeaveRole').value;
+  var off=mgrLeaveSwapOffOf(team,name);
+  if(!off){ wrap.innerHTML='<div style="font-size:12.5px;color:var(--g4);padding:6px 2px">고정휴무요일 정보를 찾을 수 없습니다</div>'; return; }
+  var used={}; mgrLeaveSwapPairs.forEach(function(p){ used[p.from]=1; });
+  var today=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
+  var cur=new Date(new Date(today+'T00:00:00Z').getTime()-7*86400000), html='', cnt=0;
+  for(var i=0;i<50;i++){
+    var d=cur.toISOString().slice(0,10), wd=MGR_DAY_NAMES[cur.getUTCDay()];
+    if((wd===off.d1||wd===off.d2)&&!used[d]){
+      var on=mgrLeaveSwapFromSel===d;
+      html+='<button type="button" onclick="mgrLeaveSwapPickFrom(\''+d+'\')" style="padding:8px 11px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;border:'+(on?'2px solid var(--teal)':'1.5px solid var(--g3)')+';background:'+(on?'var(--teal-bg)':'var(--g1)')+';color:'+(on?'var(--teal2)':'var(--g5)')+'">'+mgrLeaveFmtMD(d)+(on?' ✓':'')+'</button>';
+      cnt++;
+    }
+    cur=new Date(cur.getTime()+86400000);
+  }
+  wrap.innerHTML=html||'<div style="font-size:12.5px;color:var(--g4)">선택할 수 있는 이전 휴무일이 없습니다</div>';
 }
-function mgrLeaveSwapRenderDates(){
-  var wrap=document.getElementById('mgrLeaveSwapDateList');
-  var sum=document.getElementById('mgrLeaveSwapSummary');
-  if(!wrap) return;
-  wrap.innerHTML=mgrLeaveSwapDates.map(function(d){
-    var wd=MGR_DAY_NAMES[new Date(d+'T00:00:00Z').getUTCDay()];
-    return '<span style="display:inline-flex;align-items:center;gap:5px;background:#EBF0FF;color:#1B4FBE;border-radius:8px;padding:6px 9px;font-size:12.5px;font-weight:700">'+d+'('+wd+')'
-      +'<span onclick="mgrLeaveSwapRemoveDate(\''+d+'\')" style="cursor:pointer;font-weight:900;padding:0 2px">×</span></span>';
+function mgrLeaveSwapPickFrom(d){ mgrLeaveSwapFromSel=(mgrLeaveSwapFromSel===d)?null:d; mgrLeaveSwapRenderFrom(); mgrLeaveSwapRenderPreview(); }
+function mgrLeaveSwapRenderPreview(){
+  var el=document.getElementById('mgrLeaveSwapPreview'); if(!el) return;
+  var f=mgrLeaveSwapFromSel, t=(document.getElementById('mgrLeaveSwapToInput')||{}).value||'';
+  if(!f&&!t){ el.innerHTML=''; return; }
+  el.innerHTML='<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;border:2px solid #E0A458;background:#FFF6E8;color:#8A5A12;border-radius:10px;padding:8px;text-align:center"><small style="display:block;font-size:11px;font-weight:700">이전 (출근으로 전환)</small><b style="font-size:16px">'+(f?mgrLeaveFmtMD(f):'-')+'</b></div>'
+    +'<div style="font-size:22px;font-weight:800;color:var(--teal2)">→</div>'
+    +'<div style="flex:1;border:2px solid var(--teal);background:var(--teal-bg);color:var(--teal2);border-radius:10px;padding:8px;text-align:center"><small style="display:block;font-size:11px;font-weight:700">이후 (휴무)</small><b style="font-size:16px">'+(t?mgrLeaveFmtMD(t):'-')+'</b></div></div>';
+}
+function mgrLeaveSwapAddPair(){
+  var f=mgrLeaveSwapFromSel, t=document.getElementById('mgrLeaveSwapToInput').value;
+  if(!f){ toast('⚠️ 이전 휴무일(원래 쉬는 날)을 선택해주세요'); return; }
+  if(!t){ toast('⚠️ 이후 휴무일(바꿔서 쉬는 날)을 선택해주세요'); return; }
+  if(f===t){ toast('⚠️ 이전과 이후 날짜가 같습니다'); return; }
+  if(mgrLeaveSwapPairs.some(function(p){ return p.to===t; })){ toast('⚠️ 이미 같은 이후 휴무일이 추가되어 있습니다'); return; }
+  mgrLeaveSwapPairs.push({from:f,to:t});
+  mgrLeaveSwapPairs.sort(function(a,b){ return a.from<b.from?-1:1; });
+  mgrLeaveSwapFromSel=null; document.getElementById('mgrLeaveSwapToInput').value='';
+  mgrLeaveSwapRenderFrom(); mgrLeaveSwapRenderPreview(); mgrLeaveSwapRenderPairs();
+}
+function mgrLeaveSwapRemovePair(i){ mgrLeaveSwapPairs.splice(i,1); mgrLeaveSwapRenderFrom(); mgrLeaveSwapRenderPairs(); }
+function mgrLeaveSwapRenderPairs(){
+  var wrap=document.getElementById('mgrLeaveSwapPairList'), sum=document.getElementById('mgrLeaveSwapSummary'); if(!wrap) return;
+  wrap.innerHTML=mgrLeaveSwapPairs.map(function(p,i){
+    return '<div style="display:flex;align-items:center;justify-content:space-between;background:#EBF0FF;color:#1B4FBE;border-radius:8px;padding:9px 11px;margin-bottom:6px;font-size:14px;font-weight:800"><span>'+mgrLeaveFmtMD(p.from)+' <span style="color:var(--teal2)">→</span> '+mgrLeaveFmtMD(p.to)+'</span><span onclick="mgrLeaveSwapRemovePair('+i+')" style="cursor:pointer;font-weight:900;padding:0 4px">×</span></div>';
   }).join('');
-  sum.textContent = mgrLeaveSwapDates.length ? ('새 휴무일 '+mgrLeaveSwapDates.length+'개 선택됨 — 저장 시 원래 고정휴무요일과 겹치는 날은 자동으로 출근일로 전환됩니다') : '';
+  sum.textContent=mgrLeaveSwapPairs.length?('휴무변경 '+mgrLeaveSwapPairs.length+'건 — 저장 시 이전일은 출근, 이후일은 휴무로 반영됩니다'):'';
 }
 function mgrLeaveOpenModal(){
   if(!me||me.role==='acting_leader'||me.role==='member'){ toast('⚠️ 조장 이상만 가능합니다'); return; }
@@ -36855,8 +36941,7 @@ function mgrLeaveOpenModal(){
   document.getElementById('mgrLeaveStatusCustom').value='';
   document.getElementById('mgrLeaveNormalBlock').style.display='block';
   document.getElementById('mgrLeaveSwapBlock').style.display='none';
-  mgrLeaveSwapDates=[];
-  mgrLeaveSwapRenderDates();
+  mgrLeaveSwapReset();
   var todayStr=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
   document.getElementById('mgrLeaveStart').value=todayStr;
   document.getElementById('mgrLeaveEnd').value=todayStr;
@@ -36908,6 +36993,7 @@ async function mgrLeaveOpenEdit(id){
   document.getElementById('mgrLeaveStart').value=r.start_date;
   document.getElementById('mgrLeaveEnd').value=r.end_date;
   mgrLeaveUpdateDayCount();
+  mgrLeaveSwapEditSid=null;
   mgrLeaveEditId=r.id;
   document.getElementById('mgrLeaveEditBadge').style.display='block';
   document.getElementById('mgrLeaveDeleteBtn').style.display='block';
@@ -36987,46 +37073,39 @@ async function _mgrLeaveSaveInner(){
   renderMgrAttendance();
 }
 async function mgrLeaveSaveSwap(team, name){
-  if(!mgrLeaveSwapDates.length){ toast('⚠️ 새로 쉴 날짜를 1개 이상 선택해주세요'); return; }
-  if(!mgrRosterOffCache){ try{ mgrRosterOffCache=await fetchMgrRosterWithOff(); }catch(e){} }
-  var person=mgrRosterOffCache?mgrRosterOffCache.roster[team+'_'+name]:null;
-  var off=person?mgrRosterOffCache.offMap[person.empNo]:null;
-  if(!off||(!off.d1&&!off.d2)){ toast('⚠️ 이 사람의 고정휴무요일 정보를 찾을 수 없어 휴무변경을 등록할 수 없습니다'); return; }
-  var newOffDates=mgrLeaveSwapDates.slice();
-  var rangeStart=newOffDates[0], rangeEnd=newOffDates[newOffDates.length-1];
-  // 새 휴무일 기간에 걸치는, 원래 고정휴무요일이던 날짜(=이번엔 출근하는 날) 찾기
-  var origOffDates=[];
-  var cur=new Date(rangeStart+'T00:00:00Z');
-  var endD=new Date(rangeEnd+'T00:00:00Z');
-  while(cur<=endD){
-    var dStr=cur.toISOString().slice(0,10);
-    var wd=MGR_DAY_NAMES[cur.getUTCDay()];
-    if((wd===off.d1||wd===off.d2) && newOffDates.indexOf(dStr)===-1) origOffDates.push(dStr);
-    cur=new Date(cur.getTime()+86400000);
-  }
-  var allDates=newOffDates.concat(origOffDates);
+  // 입력칸에 이전/이후를 골라 두고 [변경 추가]를 안 눌렀어도 저장되게 자동 추가
+  var _t=document.getElementById('mgrLeaveSwapToInput').value;
+  if(mgrLeaveSwapFromSel&&_t&&mgrLeaveSwapFromSel!==_t){ mgrLeaveSwapAddPair(); }
+  if(!mgrLeaveSwapPairs.length){ toast('⚠️ 이전 휴무일과 이후 휴무일을 선택하고 [변경 추가]를 눌러주세요'); return; }
+  var editSid=mgrLeaveSwapEditSid;
+  var allDates=[]; mgrLeaveSwapPairs.forEach(function(p){ allDates.push(p.from,p.to); });
   var dupList=(mgrLeaveScheduleCache||[]).filter(function(x){
+    if(editSid&&x.swap_id===editSid) return false;
     return x.team===team && x.name===name && allDates.indexOf(x.start_date)!==-1 && x.start_date===x.end_date;
   });
   if(dupList.length){
     var dupTxt=dupList.map(function(x){return x.start_date+'('+x.status+')';}).join(', ');
     if(!confirm('⚠️ '+team+' '+name+'님은 겹치는 날짜에 이미 등록된 일정이 있습니다.\n('+dupTxt+')\n\n그래도 저장하시겠습니까? (겹치는 날짜는 새 내용으로 덮어쓰기 됩니다)')) return;
-    // 겹치는 기존 항목 삭제 후 새로 등록 (덮어쓰기)
     for(var i=0;i<dupList.length;i++){
-      await sb.from('mgr_leave_schedule').delete().eq('id',dupList[i].id);
+      var dd=await sb.from('mgr_leave_schedule').delete().eq('id',dupList[i].id);
+      if(dd.error){ toast('저장 오류: '+_safeErrMsg(dd.error)); return; }
     }
   }
-  var rows=newOffDates.map(function(d){
-    return {team:team, name:name, status:'휴무', start_date:d, end_date:d, created_by:me?me.name:''};
-  }).concat(origOffDates.map(function(d){
-    return {team:team, name:name, status:'출근', start_date:d, end_date:d, created_by:me?me.name:''};
-  }));
+  var rows=[];
+  mgrLeaveSwapPairs.forEach(function(p,i){
+    var sid='sw'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)+i;
+    var base={team:team, name:name, created_by:me?me.name:'', swap_id:sid, swap_from:p.from, swap_to:p.to};
+    rows.push(Object.assign({status:'휴무', start_date:p.to, end_date:p.to},base));     // 이후 휴무일 = 쉬는 날
+    rows.push(Object.assign({status:'출근', start_date:p.from, end_date:p.from},base));  // 이전 휴무일 = 출근으로 전환
+  });
+  if(editSid){ var de=await sb.from('mgr_leave_schedule').delete().eq('swap_id',editSid); if(de.error){ toast('저장 오류: '+_safeErrMsg(de.error)); return; } }
   var res=await sb.from('mgr_leave_schedule').insert(rows);
   if(res.error){ toast('저장 오류: '+_safeErrMsg(res.error)); return; }
-  toast('✓ 휴무변경 등록 완료 — 새 휴무 '+newOffDates.length+'일, 정상근무 전환 '+origOffDates.length+'일');
-  mgrLogStatus(team, name, 'schedule', '휴무변경', '새휴무 '+newOffDates.join(',')+' / 정상근무전환 '+(origOffDates.join(',')||'-'));
-  mgrLeaveSwapDates=[];
-  mgrLeaveSwapRenderDates();
+  var txt=mgrLeaveSwapPairs.map(function(p){ return mgrLeaveFmtMD(p.from)+' → '+mgrLeaveFmtMD(p.to); }).join(', ');
+  toast('✓ 휴무변경 '+(editSid?'수정':'등록')+' 완료 — '+txt);
+  mgrLogStatus(team, name, 'schedule', '휴무변경', (editSid?'(수정) ':'')+txt);
+  mgrLeaveSwapReset();
+  if(editSid){ document.getElementById('mgrLeaveEditBadge').style.display='none'; document.getElementById('mgrLeaveDeleteBtn').style.display='none'; }
   var lsRes=await sb.from('mgr_leave_schedule').select('*'); mgrLeaveScheduleCache=lsRes.data||[];
   mgrLeaveTab(1);
   renderMgrAttendance();
@@ -37097,7 +37176,7 @@ async function mgrLeaveLoadList(){
     if(fTeam) q=q.eq('team',fTeam);
   }
   var fStatus=document.getElementById('mgrLeaveFilterStatus').value;
-  if(fStatus) q=q.eq('status',fStatus);
+  if(fStatus&&fStatus!=='휴무변경') q=q.eq('status',fStatus);
   var res=await q;
   if(res.error){ wrap.innerHTML='<div style="color:var(--danger);font-size:13px">불러오기 실패</div>'; return; }
   var rows=res.data||[];
@@ -37123,10 +37202,23 @@ async function mgrLeaveLoadList(){
     var realName=mgrLeaveRealNameSuffix(r.team, r.name).replace(/[()]/g,''); // r.name엔 "B조장" 같은 직책명이 들어있고, 실제 이름은 이걸로 따로 찾아야 함
     return r.name.indexOf(fName)!==-1 || realName.indexOf(fName)!==-1;
   });
+  // 휴무변경(이전→이후)은 묶음 번호(swap_id)로 한 건으로 합쳐서 보여준다 (내부적으로는 휴무·출근 2줄)
+  var _seenSw={}, _colRows=[];
+  rows.forEach(function(r){
+    if(r.swap_id&&(r.status==='휴무'||r.status==='출근')){
+      if(_seenSw[r.swap_id]) return; _seenSw[r.swap_id]=1;
+      var f=r.swap_from||r.start_date, t=r.swap_to||r.start_date;
+      _colRows.push(Object.assign({},r,{_swap:1,_from:f,_to:t,start_date:(f<t?f:t),end_date:(f<t?t:f)}));
+    }else _colRows.push(r);
+  });
+  rows=_colRows;
+  if(fStatus==='휴무변경') rows=rows.filter(function(r){ return r._swap; });
+  rows.sort(function(a,b){ return a.start_date<b.start_date?-1:(a.start_date>b.start_date?1:0); });
   if(!rows.length){ wrap.innerHTML='<div style="text-align:center;padding:12px;color:var(--g3);font-size:13px">조건에 맞는 일정이 없습니다</div>'; return; }
   // 현재 조회된(필터링된) 결과 기준 유형별 통계 — 건수가 아니라 실제 사용 일수(days)로 집계 (예: 3일짜리 연차 1건 = 연차 3일)
-  var statCounts={};
+  var statCounts={}, swapN=0;
   rows.forEach(function(r){
+    if(r._swap){ swapN++; return; }
     var days=Math.round((new Date(r.end_date+'T00:00:00')-new Date(r.start_date+'T00:00:00'))/86400000)+1;
     statCounts[r.status]=(statCounts[r.status]||0)+days;
   });
@@ -37136,6 +37228,7 @@ async function mgrLeaveLoadList(){
     if(!statCounts[s]) return;
     statHtml+='<span style="padding:5px 10px;border-radius:8px;background:var(--g1);font-size:12px;font-weight:700;color:var(--g6)">'+s+' '+statCounts[s]+'일</span>';
   });
+  if(swapN) statHtml+='<span style="padding:5px 10px;border-radius:8px;background:var(--g1);font-size:12px;font-weight:700;color:var(--g6)">휴무변경 '+swapN+'건</span>';
   var etcCount=0;
   Object.keys(statCounts).forEach(function(k){ if(STAT_ORDER.indexOf(k)===-1) etcCount+=statCounts[k]; });
   if(etcCount) statHtml+='<span style="padding:5px 10px;border-radius:8px;background:var(--g1);font-size:12px;font-weight:700;color:var(--g6)">기타 '+etcCount+'일</span>';
@@ -37148,6 +37241,20 @@ async function mgrLeaveLoadList(){
       curMonthKey=ymKey;
       var y=ymKey.slice(0,4), m=parseInt(ymKey.slice(5,7),10);
       html+='<div style="font-size:13px;font-weight:800;color:var(--g6);margin:'+(html?'16px':'0')+' 0 8px;padding-bottom:4px;border-bottom:1.5px solid var(--g2)">'+y+'년 '+m+'월</div>';
+    }
+    if(r._swap){
+      var _dn=r.end_date<todayStr;
+      html+='<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-radius:10px;background:'+(_dn?'var(--g1)':'var(--teal-bg)')+';margin-bottom:8px;opacity:'+(_dn?'.75':'1')+'">'
+        +'<div>'
+          +'<div style="font-size:13px;font-weight:700;color:'+(_dn?'var(--g5)':'var(--teal2)')+'">🔄 '+r.team+' '+r.name+mgrLeaveRealNameSuffix(r.team,r.name)+' · 휴무변경'+(_dn?' <span style="font-size:11px;font-weight:800;color:var(--g4);background:var(--g2);border-radius:8px;padding:1px 6px;margin-left:2px">완료</span>':'')+'</div>'
+          +'<div style="font-size:15px;font-weight:800;margin-top:3px;color:'+(_dn?'var(--g5)':'var(--g7)')+'">'+mgrLeaveFmtMD(r._from)+' <span style="color:var(--teal2)">→</span> '+mgrLeaveFmtMD(r._to)+'</div>'
+          +'<div style="font-size:11.5px;color:var(--g4);margin-top:2px">이전 휴무일 → 이후 휴무일 · 등록: '+(r.created_by||'-')+'</div>'
+        +'</div>'
+        +'<div style="display:flex;gap:5px;flex-shrink:0;margin-left:6px">'
+          +'<button onclick="mgrLeaveSwapOpenEdit(\''+r.swap_id+'\')" style="padding:5px 9px;background:white;color:#1B4FBE;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">수정</button>'
+          +'<button onclick="mgrLeaveSwapDelete(\''+r.swap_id+'\')" style="padding:5px 9px;background:white;color:#dc2626;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer">삭제</button>'
+        +'</div></div>';
+      return;
     }
     var st=MGR_LEAVE_STATUS_STYLE[r.status]||MGR_LEAVE_STATUS_DEFAULT;
     var isDone=r.end_date<todayStr;
@@ -37165,6 +37272,42 @@ async function mgrLeaveLoadList(){
   });
   wrap.innerHTML=html;
 }
+async function mgrLeaveSwapOpenEdit(sid){
+  if(!me||me.role==='acting_leader'||me.role==='member'){ toast('⚠️ 조장 이상만 가능합니다'); return; }
+  var res=await sb.from('mgr_leave_schedule').select('*').eq('swap_id',sid);
+  var rs=res.data||[]; if(!rs.length){ toast('⚠️ 일정을 찾을 수 없습니다'); return; }
+  var r=rs[0];
+  var isFullAccess = me.role==='admin'||me.role==='master';
+  if(!isFullAccess){ var mine=mgrLeaveMyTeamRole(); if(!mine||mine.team!==r.team||mine.name!==r.name){ toast('⚠️ 본인 일정만 수정할 수 있습니다'); return; } }
+  mgrLeaveOpenModal();
+  var teamSel=document.getElementById('mgrLeaveTeam'), roleSel=document.getElementById('mgrLeaveRole');
+  teamSel.value=r.team; mgrLeaveTeamChange(); roleSel.value=r.name;
+  document.getElementById('mgrLeaveStatus').value='휴무변경';
+  mgrLeaveStatusChange();
+  mgrLeaveSwapPairs=[{from:r.swap_from||r.start_date,to:r.swap_to||r.start_date}];
+  mgrLeaveSwapEditSid=sid; mgrLeaveEditId=null;
+  mgrLeaveSwapRenderFrom(); mgrLeaveSwapRenderPairs();
+  document.getElementById('mgrLeaveEditBadge').style.display='block';
+  document.getElementById('mgrLeaveDeleteBtn').style.display='block';
+  mgrLeaveTab(0);
+}
+async function mgrLeaveSwapDelete(sid, fromModal){
+  if(!confirm('이 휴무변경(이전→이후)을 삭제할까요?')) return;
+  var r=(mgrLeaveScheduleCache||[]).find(function(x){return x.swap_id===sid;});
+  var res=await sb.from('mgr_leave_schedule').delete().eq('swap_id',sid);
+  if(res.error){ toast('삭제 오류: '+_safeErrMsg(res.error)); return; }
+  toast('✓ 삭제되었습니다');
+  if(r) mgrLogStatus(r.team, r.name, 'schedule', '삭제', '휴무변경 '+mgrLeaveFmtMD(r.swap_from||r.start_date)+' → '+mgrLeaveFmtMD(r.swap_to||r.start_date));
+  if(fromModal){
+    mgrLeaveSwapEditSid=null;
+    document.getElementById('mgrLeaveEditBadge').style.display='none';
+    document.getElementById('mgrLeaveDeleteBtn').style.display='none';
+    hideM('mgrLeaveModal');
+  }
+  var lsRes=await sb.from('mgr_leave_schedule').select('*'); mgrLeaveScheduleCache=lsRes.data||[];
+  if(!fromModal) mgrLeaveLoadList();
+  renderMgrAttendance();
+}
 async function mgrLeaveDelete(id){
   if(!confirm('이 일정을 삭제할까요?')) return;
   var r=(mgrLeaveScheduleCache||[]).find(function(x){return x.id===id;});
@@ -37177,6 +37320,7 @@ async function mgrLeaveDelete(id){
   renderMgrAttendance();
 }
 async function mgrLeaveDeleteCurrent(){
+  if(mgrLeaveSwapEditSid){ await mgrLeaveSwapDelete(mgrLeaveSwapEditSid,true); return; }
   if(!mgrLeaveEditId) return;
   if(!confirm('이 일정을 삭제할까요?')) return;
   var r=(mgrLeaveScheduleCache||[]).find(function(x){return x.id===mgrLeaveEditId;});
@@ -38416,6 +38560,10 @@ async function renderTimeCatStats(containerId, table, dateCol, catConf){
         wkCount[wIdx]++;
       }
     });
+var wfResigned=[]; var WF_SHOW_RESIGNED=false;
+function wfTodayKst(){ return new Date(Date.now()+9*3600000).toISOString().slice(0,10); }
+function wfIsResigned(e){ return !!(e&&e.resign_date&&e.resign_date<wfTodayKst()); }  // 퇴사일 다음 날부터 퇴사자
+function wfActiveOn(e,D){ return !(e&&e.resign_date&&e.resign_date<String(D).slice(0,10)); } // D일 기준 재직(퇴사일 당일까지 근무)
 
     var wdOrder=[1,2,3,4,5,6,0]; // 월~일 순서로 표시
     var wdMax=Math.max.apply(null, wdCount)||1;
@@ -38532,7 +38680,9 @@ async function loadWfEmployees(){
     var lastEditorMap={};
     (editLogRes.data||[]).forEach(function(r){ if(!lastEditorMap[r.emp_no]) lastEditorMap[r.emp_no]=r.changed_by; }); // 최신순 정렬이라 처음 만나는 값이 최근 수정자
     var todayStrForLeave=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
-    wfEmployees=(empRes.data||[]).map(function(e){
+    var _wfAll=empRes.data||[];
+    wfResigned=_wfAll.filter(wfIsResigned).map(function(e){ return Object.assign({}, e, {off1:'',off2:'',leave:null,onLeaveNow:false,lastEditor:null}); });
+    wfEmployees=_wfAll.filter(function(e){ return !wfIsResigned(e); }).map(function(e){
       var off=offMap[e.emp_no]||{};
       var myLeaves=(leaveMap[e.emp_no]||[]).slice().sort(function(a,b){ return a.start_date<b.start_date?-1:1; });
       // 오늘 기준으로 진행중인 휴직 우선, 없으면 앞으로 예정된 휴직 중 가장 빠른 것
@@ -38541,8 +38691,9 @@ async function loadWfEmployees(){
       var onLeaveNow = !!(curLeave && curLeave.start_date<=todayStrForLeave && curLeave.end_date>=todayStrForLeave);
       return Object.assign({}, e, {off1:off.off1||'', off2:off.off2||'', leave:curLeave, onLeaveNow:onLeaveNow, lastEditor:lastEditorMap[e.emp_no]||null});
     });
-    document.getElementById('wfEmpCountLbl').textContent='전체 '+wfEmployees.length+'명';
+    document.getElementById('wfEmpCountLbl').textContent='전체 '+wfEmployees.length+'명'+(wfResigned.length?(' · 퇴사 '+wfResigned.length+'명'):'');
     wfFillFilterOptions();
+    wfResignBtnRefresh();
     wfRenderTable();
     wfRenderQStartBar();
   }catch(e){
@@ -38785,7 +38936,7 @@ function wfRenderTable(){
   var fDay=document.getElementById('wfFDay').value;
   var fPosition=document.getElementById('wfFPosition').value;
   var fSearch=(document.getElementById('wfFSearch').value||'').trim();
-  var rows=wfEmployees.filter(function(e){
+  var rows=(WF_SHOW_RESIGNED?wfResigned:wfEmployees).filter(function(e){
     if(fTeam && e.team!==fTeam) return false;
     if(fGroup && e.group_name!==fGroup) return false;
     if(fShift && e.shift_type!==fShift) return false;
@@ -38807,7 +38958,7 @@ function wfRenderTable(){
     return (a.name||'').localeCompare(b.name||'');
   });
   if(!rows.length){
-    wrap.innerHTML='<div style="text-align:center;padding:30px;color:var(--g3);font-size:14px">해당 조건의 직원이 없습니다. (엑셀 업로드로 인원현황을 등록해주세요)</div>';
+    wrap.innerHTML='<div style="text-align:center;padding:30px;color:var(--g3);font-size:14px">'+(WF_SHOW_RESIGNED?'퇴사자가 없습니다.':'해당 조건의 직원이 없습니다. (엑셀 업로드로 인원현황을 등록해주세요)')+'</div>';
     return;
   }
   var h='<table style="width:100%;border-collapse:collapse;font-size:12.5px;white-space:nowrap">';
@@ -38830,7 +38981,7 @@ function wfRenderTable(){
     h+='<tr style="background:'+rowBg+';border-bottom:1px solid var(--g2)">'+
        '<td style="padding:8px;text-align:center;color:var(--g4)">'+(i+1)+'</td>'+
        '<td style="padding:8px;text-align:center">'+e.emp_no+'</td>'+
-       '<td style="padding:8px;text-align:center;font-weight:700">'+(e.name||'')+'</td>'+
+       '<td style="padding:8px;text-align:center;font-weight:700">'+(e.name||'')+(WF_SHOW_RESIGNED&&e.resign_date?' <span style="padding:2px 8px;border-radius:10px;background:#fef3c7;color:#b45309;font-weight:800;font-size:10.5px">퇴사 '+e.resign_date.slice(5).replace('-','/')+'</span>':'')+'</td>'+
        '<td style="padding:8px;text-align:center">'+(e.position||'-')+'</td>'+
        '<td style="padding:8px;text-align:center">'+(e.team||'-')+'</td>'+
        '<td style="padding:8px;text-align:center">'+(e.group_name||'-')+'</td>'+
@@ -38838,8 +38989,11 @@ function wfRenderTable(){
        '<td style="padding:8px;text-align:center"><span style="padding:3px 10px;border-radius:10px;background:'+pc.bg+';color:'+pc.fg+';font-weight:700">'+offTxt+'</span>'+leaveBadge+'</td>'+
        '<td style="padding:8px;text-align:center;color:var(--g5)">'+(e.lastEditor||'-')+'</td>'+
        '<td style="padding:8px;text-align:center"><div style="display:flex;gap:4px;justify-content:center">'+
-       '<button onclick="wfOpenEditEmp(\''+e.emp_no+'\')" style="padding:4px 8px;background:#dbeafe;color:#1e40af;border:none;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer">수정</button>'+
+       (WF_SHOW_RESIGNED
+         ? '<button onclick="wfResignCancel(\''+e.emp_no+'\',\''+nameEsc+'\')" style="padding:4px 8px;background:#fef3c7;color:#b45309;border:none;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer">퇴사취소</button>'
+         : '<button onclick="wfOpenEditEmp(\''+e.emp_no+'\')" style="padding:4px 8px;background:#dbeafe;color:#1e40af;border:none;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer">수정</button>')+
        '<button onclick="wfOpenEditLog(\''+e.emp_no+'\',\''+nameEsc+'\')" style="padding:4px 8px;background:#f1f5f9;color:#475569;border:none;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer">이력</button>'+
+       (WF_SHOW_RESIGNED?'':((me&&(me.role==='admin'||me.role==='master'))?'<button onclick="wfResignOpen(\''+e.emp_no+'\',\''+nameEsc+'\')" style="padding:4px 8px;background:#fef3c7;color:#b45309;border:none;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer">퇴사</button>':''))+
        '<button onclick="wfDeleteEmployee(\''+e.emp_no+'\',\''+nameEsc+'\')" style="padding:4px 8px;background:#fee2e2;color:#dc2626;border:none;border-radius:6px;font-size:11.5px;font-weight:700;cursor:pointer">삭제</button>'+
        '</div></td>'+
        '</tr>';
@@ -39105,6 +39259,109 @@ async function wfSaveNewEmp(){
   toast('✓ '+name+'님 추가되었습니다');
   hideM('wfAddModal');
   loadWfEmployees();
+}
+
+function wfResignBtnRefresh(){
+  var b=document.getElementById('wfResignTgl'); if(!b) return;
+  b.textContent=WF_SHOW_RESIGNED?'👥 재직자 보기':'🚪 퇴사자 보기 ('+wfResigned.length+')';
+  b.style.background=WF_SHOW_RESIGNED?'#f59e0b':'#fffbeb'; b.style.color=WF_SHOW_RESIGNED?'#fff':'#b45309';
+}
+function wfToggleResigned(){
+  WF_SHOW_RESIGNED=!WF_SHOW_RESIGNED;
+  wfResignBtnRefresh(); wfRenderTable();
+}
+var WF_RESIGN={empNo:'',name:'',date:'',plan:null};
+function wfNextDay(d){ var t=new Date(d+'T00:00:00Z'); t.setUTCDate(t.getUTCDate()+1); return t.toISOString().slice(0,10); }
+function wfResignClose(){ var m=document.getElementById('wfResignM'); if(m) m.remove(); }
+function wfResignOpen(empNo,name){
+  if(!(me&&(me.role==='admin'||me.role==='master'))){ toast('⚠️ admin·master만 퇴사 처리할 수 있습니다'); return; }
+  WF_RESIGN={empNo:empNo,name:name,date:'',plan:null};
+  wfResignClose();
+  var m=document.createElement('div'); m.id='wfResignM';
+  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9000;display:flex;align-items:flex-end;justify-content:center';
+  m.innerHTML='<div style="background:#fff;width:100%;max-width:520px;max-height:88vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px 16px 22px">'
+    +'<div style="display:flex;align-items:center;margin-bottom:10px"><b style="font-size:16px">🚪 퇴사 처리 · '+eeEsc(name)+' ('+eeEsc(empNo)+')</b><span style="flex:1"></span><span onclick="wfResignClose()" style="cursor:pointer;font-size:20px;color:var(--g4)">✕</span></div>'
+    +'<div style="font-size:12.5px;color:var(--g5);line-height:1.6;margin-bottom:10px">퇴사일 <b>당일까지</b>는 근무로 보고 그대로 둡니다. 퇴사일 <b>다음 날부터</b>의 작업일지·일정 자료는 삭제되고, 이후 모든 화면에서 빠집니다.</div>'
+    +'<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px"><span style="font-weight:700;font-size:13px">퇴사일</span><input type="date" id="wfResignDate" style="padding:8px 10px;border:1.5px solid var(--g2);border-radius:8px;font-size:14px">'
+    +'<button onclick="wfResignPreview()" style="padding:9px 14px;background:var(--navy);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer">삭제 대상 확인</button></div>'
+    +'<div id="wfResignBody"></div></div>';
+  document.body.appendChild(m);
+}
+async function wfResignPreview(){
+  var R=(document.getElementById('wfResignDate')||{}).value||'';
+  var body=document.getElementById('wfResignBody');
+  if(!R){ toast('⚠️ 퇴사일을 선택해주세요'); return; }
+  body.innerHTML='<div style="text-align:center;padding:16px;color:var(--g3)">확인 중...</div>';
+  var N=wfNextDay(R), E=WF_RESIGN.empNo;
+  try{
+    var a=await sb.from('worklog_absence').select('id,log_date,reason').eq('emp_no',E).gte('log_date',N).order('log_date');
+    var st=await sb.from('worklog_staff').select('id,log_date').eq('emp_no',E).gte('log_date',N).order('log_date');
+    var asD=await sb.from('worklog_assign').select('id,from_date').eq('emp_no',E).gte('from_date',N);
+    var asT=await sb.from('worklog_assign').select('id,from_date,to_date').eq('emp_no',E).lte('from_date',R);
+    var wlD=await sb.from('wf_leave').select('id,leave_type,start_date,end_date').eq('emp_no',E).gte('start_date',N);
+    var wlT=await sb.from('wf_leave').select('id,leave_type,start_date,end_date').eq('emp_no',E).lte('start_date',R).gte('end_date',N);
+    var elD=await sb.from('erp_leave').select('id,reason,start_date,end_date').eq('emp_no',E).gte('start_date',N);
+    var elT=await sb.from('erp_leave').select('id,reason,start_date,end_date').eq('emp_no',E).lte('start_date',R).gte('end_date',N);
+    var fo=await sb.from('wf_fixed_off').select('quarter').eq('emp_no',E);
+    var rq=wfCalQuarter(R);
+    var plan={R:R,N:N,
+      abs:(a.data||[]), staff:(st.data||[]), asgDel:(asD.data||[]),
+      asgTrim:(asT.data||[]).filter(function(x){ return !x.to_date||x.to_date>=N; }),
+      wlDel:(wlD.data||[]), wlTrim:(wlT.data||[]), elDel:(elD.data||[]), elTrim:(elT.data||[]),
+      off:(fo.data||[]).filter(function(x){ return x.quarter>rq; })};
+    WF_RESIGN.plan=plan; WF_RESIGN.date=R;
+    function rng(arr,k){ if(!arr.length) return ''; var d=arr.map(function(x){return x[k];}).sort(); return d[0].slice(5).replace('-','/')+(d.length>1?' ~ '+d[d.length-1].slice(5).replace('-','/'):''); }
+    var rows=[
+      ['작업일지 결근·휴무 기록', plan.abs.length+'건', rng(plan.abs,'log_date')],
+      ['작업일지 인력 배치 기록', plan.staff.length+'건', rng(plan.staff,'log_date')],
+      ['파견·배치 일정(퇴사일 이후 시작)', plan.asgDel.length+'건', ''],
+      ['파견·배치 일정(퇴사일로 종료일 조정)', plan.asgTrim.length+'건', ''],
+      ['휴직·휴가 일정(퇴사일 이후 시작)', (plan.wlDel.length+plan.elDel.length)+'건', ''],
+      ['휴직·휴가 일정(퇴사일로 종료일 조정)', (plan.wlTrim.length+plan.elTrim.length)+'건', ''],
+      ['다음 분기 이후 고정휴무요일', plan.off.length+'건', '']
+    ];
+    var tot=plan.abs.length+plan.staff.length+plan.asgDel.length+plan.asgTrim.length+plan.wlDel.length+plan.elDel.length+plan.wlTrim.length+plan.elTrim.length+plan.off.length;
+    var h='<div style="font-size:13px;font-weight:800;margin-bottom:6px">📋 '+eeEsc(R)+' 퇴사 · '+eeEsc(N)+' 이후 삭제 대상</div>'
+      +'<table style="width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:10px">'
+      +rows.map(function(r,i){ return '<tr style="border-bottom:1px solid var(--g1);'+(r[1]==='0건'?'color:var(--g3)':'font-weight:700')+'"><td style="padding:7px 4px">'+r[0]+'</td><td style="padding:7px 4px;text-align:right;white-space:nowrap">'+r[1]+'</td><td style="padding:7px 4px;text-align:right;color:var(--g5);white-space:nowrap">'+r[2]+'</td></tr>'; }).join('')
+      +'</table>';
+    if(plan.abs.length){
+      h+='<div style="font-size:11.5px;color:var(--g5);margin-bottom:10px;line-height:1.7">삭제될 작업일지 기록: '+plan.abs.map(function(x){ return x.log_date.slice(5).replace('-','/')+'('+eeEsc(x.reason||'')+')'; }).join(', ')+'</div>';
+    }
+    h+='<div style="font-size:12px;color:#b45309;background:#fffbeb;border-radius:8px;padding:8px 10px;margin-bottom:12px">'+eeEsc(R)+' 이전(당일 포함) 기록은 그대로 보존됩니다. 삭제된 자료는 복구되지 않습니다.</div>'
+      +'<button onclick="wfResignDo()" style="width:100%;padding:12px;background:#dc2626;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer">퇴사 처리 및 '+tot+'건 삭제</button>';
+    body.innerHTML=h;
+  }catch(e){ body.innerHTML='<div style="color:var(--danger);padding:12px">확인 실패: '+eeEsc(_safeErrMsg(e))+'</div>'; }
+}
+async function wfResignDo(){
+  var p=WF_RESIGN.plan, E=WF_RESIGN.empNo, nm=WF_RESIGN.name;
+  if(!p||!(me&&(me.role==='admin'||me.role==='master'))) return;
+  if(!confirm(nm+'('+E+') 님을 '+p.R+' 퇴사로 처리하고 이후 자료를 삭제합니다.\n되돌릴 수 없습니다. 진행할까요?')) return;
+  var N=p.N, rq=wfCalQuarter(p.R), step='';
+  try{
+    var r;
+    step='작업일지 결근'; r=await sb.from('worklog_absence').delete().eq('emp_no',E).gte('log_date',N); if(r.error) throw r.error;
+    step='작업일지 인력'; r=await sb.from('worklog_staff').delete().eq('emp_no',E).gte('log_date',N); if(r.error) throw r.error;
+    step='파견 삭제'; r=await sb.from('worklog_assign').delete().eq('emp_no',E).gte('from_date',N); if(r.error) throw r.error;
+    for(var i=0;i<p.asgTrim.length;i++){ step='파견 조정'; r=await sb.from('worklog_assign').update({to_date:p.R}).eq('id',p.asgTrim[i].id); if(r.error) throw r.error; }
+    step='휴직 삭제'; r=await sb.from('wf_leave').delete().eq('emp_no',E).gte('start_date',N); if(r.error) throw r.error;
+    for(var j=0;j<p.wlTrim.length;j++){ step='휴직 조정'; r=await sb.from('wf_leave').update({end_date:p.R}).eq('id',p.wlTrim[j].id); if(r.error) throw r.error; }
+    step='ERP 휴가 삭제'; r=await sb.from('erp_leave').delete().eq('emp_no',E).gte('start_date',N); if(r.error) throw r.error;
+    for(var k=0;k<p.elTrim.length;k++){ step='ERP 휴가 조정'; r=await sb.from('erp_leave').update({end_date:p.R}).eq('id',p.elTrim[k].id); if(r.error) throw r.error; }
+    for(var q=0;q<p.off.length;q++){ step='고정휴무'; r=await sb.from('wf_fixed_off').delete().eq('emp_no',E).eq('quarter',p.off[q].quarter); if(r.error) throw r.error; }
+    step='퇴사일 저장'; r=await sb.from('wf_employees').update({resign_date:p.R,resign_by:me.name||'',resign_at:new Date().toISOString()}).eq('emp_no',E); if(r.error) throw r.error;
+    await logDeletion('퇴사 처리', nm+'('+E+') 퇴사일 '+p.R+' · 이후 자료 삭제 (결근 '+p.abs.length+', 인력 '+p.staff.length+', 일정 '+(p.asgDel.length+p.wlDel.length+p.elDel.length)+')');
+    toast('✅ '+nm+'님 퇴사 처리 완료');
+    wfResignClose(); loadWfEmployees();
+  }catch(e){ toast('⚠️ 처리 중단('+step+'): '+_safeErrMsg(e)); }
+}
+async function wfResignCancel(empNo,name){
+  if(!(me&&(me.role==='admin'||me.role==='master'))){ toast('⚠️ admin·master만 가능합니다'); return; }
+  if(!confirm(name+'('+empNo+') 님의 퇴사를 취소하고 재직자로 되돌립니다.\n(이미 삭제된 퇴사일 이후 자료는 복구되지 않습니다)')) return;
+  var r=await sb.from('wf_employees').update({resign_date:null,resign_by:null,resign_at:null}).eq('emp_no',empNo);
+  if(r.error){ toast('⚠️ 실패: '+_safeErrMsg(r.error)); return; }
+  await logDeletion('퇴사 취소', name+'('+empNo+')');
+  toast('✅ 퇴사 취소됨'); loadWfEmployees();
 }
 async function wfDeleteEmployee(empNo, name){
   if(!confirm(name+'('+empNo+') 님을 근무계획에서 삭제하시겠습니까?\n고정휴무요일·휴직정보도 함께 삭제됩니다.')) return;
@@ -40015,8 +40272,8 @@ async function wfSpComputeAuto(){
   try{
     var dates=wfSpDateRange(ev); var dFrom=dates[0], dTo=dates[dates.length-1];
     await wfLoadQStart();
-    var er=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,team'); });
-    var emps=er.data||[]; if(!emps.length) return;
+    var er=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,team,resign_date'); });
+    var emps=(er.data||[]).filter(function(e){ return !(e.resign_date&&e.resign_date<dFrom); }); if(!emps.length) return;
     var qs={}; dates.forEach(function(d){ qs[wfEffQuarter(d)]=1; qs[wfCalQuarter(d)]=1; });
     var fo=await msFetchAll(function(){ return sb.from('wf_fixed_off').select('emp_no,off_day1,off_day2,quarter').in('quarter',Object.keys(qs)); });
     var offBy={}; (fo.data||[]).forEach(function(o){ (offBy[o.emp_no]=offBy[o.emp_no]||{})[o.quarter]=o; });
@@ -41288,8 +41545,8 @@ async function cpEligibleSyncByRole(tier){
   var ADMIN_NAMES=['유준영','한지원','양민석','조준희']; // admin
   var MASTER_NAMES=['이동환']; // master
   try{
-    var empRes=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position'); });
-    var all=empRes.data||[];
+    var empRes=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,resign_date'); });
+    var all=(empRes.data||[]).filter(function(e){ return !wfIsResigned(e); });
     var rows;
     if(tier==='all') rows=all;
     else if(tier==='leader') rows=all.filter(function(e){ return ['조장','팀장','총괄팀장','사업부장'].indexOf(e.position)!==-1; });
@@ -41312,9 +41569,9 @@ async function cpEligibleSyncByTeam(){
   var team=document.getElementById('cpEligTeamSel').value;
   if(!team){ toast('⚠️ 팀을 선택해주세요'); return; }
   try{
-    var res=await sb.from('wf_employees').select('emp_no,name').eq('team',team);
+    var res=await sb.from('wf_employees').select('emp_no,name,resign_date').eq('team',team);
     if(res.error){ toast('오류: '+_safeErrMsg(res.error)); return; }
-    var rows=(res.data||[]).filter(function(e){return e.emp_no&&e.name;}).map(function(e){ return {campaign_id:cpCurCampaign.id, emp_no:e.emp_no, name:e.name, uploaded_by:me?me.name:''}; });
+    var rows=(res.data||[]).filter(function(e){return e.emp_no&&e.name&&!wfIsResigned(e);}).map(function(e){ return {campaign_id:cpCurCampaign.id, emp_no:e.emp_no, name:e.name, uploaded_by:me?me.name:''}; });
     if(!rows.length){ toast('⚠️ '+team+'에 등록된 인원이 없습니다'); return; }
     if(!confirm('기존 명단을 지우고 '+team+' 기준 '+rows.length+'명으로 교체할까요?')) return;
     var delRes=await sb.from('campaign_eligible').delete().eq('campaign_id',cpCurCampaign.id);

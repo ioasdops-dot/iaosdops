@@ -7980,7 +7980,7 @@ async function loadExecDashboard(){
       msFetchAll(function(){ return sb.from('lost_found').select('id,status').gte('found_date',tsFrom).lte('found_date',tsTo); }),
       msFetchAll(function(){ return sb.from('safety_accidents').select('id,accident_type').gte('occurred_at',tsFrom).lte('occurred_at',tsTo); }),
       msFetchAll(function(){ return sb.from('night_special_data').select('date,team_code,carpet,pbb,wax,stone,wood,restroom,es,toilet_daily,common_area,collection,carpet_land,carpet_air,pbb_land,pbb_air,wax_land,wax_air,stone_land,stone_air,wood_land,wood_air,restroom_land,restroom_air,es_land,es_air,toilet_daily_land,toilet_daily_air,common_area_land,common_area_air,collection_land,collection_air').gte('date',dFrom).lte('date',dTo); }),
-      msFetchAll(function(){ return sb.from('mgr_attendance').select('date,checked,status').gte('date',dFrom).lte('date',dTo); }),
+      msFetchAll(function(){ return sb.from('mgr_attendance').select('date,team,name,checked,status').gte('date',dFrom).lte('date',dTo); }),
       msFetchAll(function(){ return sb.from('joint_work_data').select('id,teams,headcount,batch_id,record_type').gte('work_date',dFrom).lte('work_date',dTo); }),
       msFetchAll(function(){ return sb.from('mp_support').select('date,from_team_code,values').gte('date',dFrom).lte('date',dTo); })
     ]);
@@ -7988,9 +7988,9 @@ async function loadExecDashboard(){
 
     // 인력 집계 (층별 7 + 교대별) — 기간 내 일수로 나눠 일평균 산출
     var floorSum=[0,0,0,0,0,0,0];
-    var shiftSum={'오전':0,'오후':0,'야간':0,'관리자':0,'지원':0};
+    var shiftSum={'오전':0,'오후':0,'야간':0,'관리자':0,'지원':0,'교육·출장':0};
     var daysSet={};
-    var edToiletByShift={'오전':0,'오후':0}, edBothByShift={'오전':0,'오후':0}, edCommonByShift={'오전':0,'오후':0};
+    var edToiletByShift={'오전':0,'오후':0}, edBothByShift={'오전':0,'오후':0}, edCommonByShift={'오전':0,'오후':0}, edCollectByShift={'오전':0,'오후':0};
     mpRows.forEach(function(r){
       if(!r.team_code||r.team_code.indexOf('_')===0) return;
       var vals=r.values;
@@ -8033,25 +8033,28 @@ async function loadExecDashboard(){
     supRows.forEach(function(r){
       var vals5=r.values||{};
       var rowSum5=0;
-      Object.keys(vals5).forEach(function(f){ rowSum5+=(Number(vals5[f].toilet)||0)+(Number(vals5[f].both)||0)+(Number(vals5[f].common)||0); });
+      Object.keys(vals5).forEach(function(f){ rowSum5+=(Number(vals5[f].toilet)||0)+(Number(vals5[f].both)||0)+(Number(vals5[f].common)||0)+(Number(vals5[f].collect)||0); });
       if(rowSum5<=0) return;
       daysSet[r.date]=1;
       shiftSum['지원']+=rowSum5;
     });
+    // 교육·출장 직원 — 층 칸에는 배치되지 않지만 출근한 인원이므로 근무인원에 포함 (관리자의 교육·출장은 위 '관리자'에 이미 포함)
+    try{ (await eduStaffRows(dFrom,dTo)).forEach(function(r){ daysSet[r.date]=1; shiftSum['교육·출장']++; }); }catch(e){}
     var dayCount=Math.max(Object.keys(daysSet).length,1);
     var isAvg=edMode!=='day';
     var floorShow=floorSum.map(function(v){ return isAvg?Math.round(v/dayCount):v; });
     var shiftShow={}; Object.keys(shiftSum).forEach(function(k){ shiftShow[k]=isAvg?Math.round(shiftSum[k]/dayCount):shiftSum[k]; });
     var nsLsShow=isAvg?Math.round(nsLsSum/dayCount):nsLsSum, nsAsShow=isAvg?Math.round(nsAsSum/dayCount):nsAsSum;
-    var edToiletShow={}, edBothShow={}, edCommonShow={};
+    var edToiletShow={}, edBothShow={}, edCommonShow={}, edCollectShow={};
     ['오전','오후'].forEach(function(s){
       edToiletShow[s]=isAvg?Math.round(edToiletByShift[s]/dayCount):edToiletByShift[s];
       edBothShow[s]=isAvg?Math.round(edBothByShift[s]/dayCount):edBothByShift[s];
       edCommonShow[s]=isAvg?Math.round(edCommonByShift[s]/dayCount):edCommonByShift[s];
+      edCollectShow[s]=isAvg?Math.round(edCollectByShift[s]/dayCount):edCollectByShift[s];
     });
-    var totalStaffShow=shiftShow['오전']+shiftShow['오후']+shiftShow['야간']+shiftShow['관리자']+shiftShow['지원'];
+    var totalStaffShow=shiftShow['오전']+shiftShow['오후']+shiftShow['야간']+shiftShow['관리자']+shiftShow['지원']+shiftShow['교육·출장'];
     var isLiveToday=(edMode==='day'&&dFrom===today);
-    var staffQuota=isLiveToday?edStaffQuota():ED_TOTAL_STAFF;
+    var staffQuota=isLiveToday?edStaffQuota():(edQuotaStages.full||ED_TOTAL_STAFF);
     var attendRate=Math.round(totalStaffShow/staffQuota*100);
 
     var hoTotal=hoRows.length, hoConfirmed=hoRows.filter(function(r){return r.confirmed;}).length;
@@ -8104,11 +8107,11 @@ async function loadExecDashboard(){
     }
 
     // ── 오전/오후/야간/관리자 카드
-    var shiftColors={'오전':'#00A99D','오후':'#1A6B8A','야간':'#1E3A5F','관리자':'#8B5CF6','지원':'#C2751A'};
+    var shiftColors={'오전':'#00A99D','오후':'#1A6B8A','야간':'#1E3A5F','관리자':'#8B5CF6','지원':'#C2751A','교육·출장':'#1B4FBE'};
     var shHtml='';
     // ★ 상단 "실시간 근무인원" 총계(totalStaffShow)에는 지원(다른 조 지원 인원)이 포함되는데,
     //   이 카드들엔 지원이 빠져 있어서 카드를 손으로 더한 값과 상단 총계가 달라 보이는 문제가 있었음 — 지원 카드 추가
-    ['오전','오후','야간','관리자','지원'].forEach(function(s){
+    ['오전','오후','야간','관리자','지원','교육·출장'].forEach(function(s){
       var nsSub=(s==='야간')?('<div style="font-size:8.5px;color:var(--g4);margin-top:1px">L/S '+nsLsShow+' · A/S '+nsAsShow+'</div>'):'';
       var edAvgM=(s==='오후')?mpAvgToiletAMPM:mpAvgToiletAM, edAvgMB=(s==='오후')?mpAvgBothAMPM:mpAvgBothAM, edAvgMC=(s==='오후')?mpAvgCommonAMPM:mpAvgCommonAM;
       var edAvgT=edAvgM?edAvgM.reduce(function(a,row){return a+row.reduce(function(x,y){return x+y;},0);},0):0;
@@ -8117,9 +8120,9 @@ async function loadExecDashboard(){
       var edTCol=isLiveToday&&edAvgT?mpAvgColor(edToiletShow[s],edAvgT):null;
       var edBCol=isLiveToday&&edAvgB?mpAvgColor(edBothShow[s],edAvgB):null;
       var edCCol=isLiveToday&&edAvgC?mpAvgColor(edCommonShow[s],edAvgC):null;
-      var mpSub=(s==='오전'||s==='오후')?('<div style="font-size:8.5px;margin-top:1px"><span style="color:'+(edTCol||'var(--g4)')+'">화'+edToiletShow[s]+'</span> · <span style="color:'+(edBCol||'var(--g4)')+'">겸'+edBothShow[s]+'</span> · <span style="color:'+(edCCol||'var(--g4)')+'">공'+edCommonShow[s]+'</span></div>'):'';
+      var mpSub=(s==='오전'||s==='오후')?('<div style="font-size:8.5px;margin-top:1px"><span style="color:'+(edTCol||'var(--g4)')+'">화'+edToiletShow[s]+'</span> · <span style="color:'+(edBCol||'var(--g4)')+'">겸'+edBothShow[s]+'</span> · <span style="color:'+(edCCol||'var(--g4)')+'">공'+edCommonShow[s]+'</span> · <span style="color:var(--g4)">수'+edCollectShow[s]+'</span></div>'):'';
       shHtml+='<div style="background:white;border-radius:var(--r2);padding:8px;border:1px solid var(--g2);text-align:center">'
-        +'<div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:3px">'+((s==='관리자'||s==='지원')?s:s+'팀')+'</div>'
+        +'<div style="font-size:10px;font-weight:700;color:var(--g5);margin-bottom:3px">'+((s==='관리자'||s==='지원'||s==='교육·출장')?s:s+'팀')+'</div>'
         +'<div style="font-size:19px;font-weight:900;color:'+shiftColors[s]+'">'+shiftShow[s]+'<span style="font-size:9px;font-weight:600;color:var(--g4)">명</span></div>'+nsSub+mpSub+'</div>';
     });
     var sr=document.getElementById('edShiftRow'); if(sr) sr.innerHTML=shHtml;
@@ -8248,6 +8251,8 @@ async function edDownloadExcel(){
     rows.push(['오후팀(명)', d.shiftShow['오후']]);
     rows.push(['야간팀(명)', d.shiftShow['야간']]);
     rows.push(['관리자(명)', d.shiftShow['관리자']]);
+    rows.push(['지원(명)', d.shiftShow['지원']]);
+    rows.push(['교육·출장(명)', d.shiftShow['교육·출장']]);
     rows.push([]);
     rows.push(['[층별 인력]']);
     MS_FLOORS.forEach(function(fl,i){ rows.push([fl, d.floorShow[i]]); });
@@ -8598,13 +8603,13 @@ function wlRecalc(){
 }
 function wlCalc(){
   var z=function(){return {m:0,f:0,x:0};};
-  var R={'총원':{m:WL.tot.m,f:WL.tot.f,x:WL.tot.x},'휴무':z(),'연차':z(),'반차':z(),'산재/휴직':z(),'기타':z()};
+  var R={'총원':{m:WL.tot.m,f:WL.tot.f,x:WL.tot.x},'휴무':z(),'연차':z(),'반차':z(),'산재/휴직':z(),'기타':z(),'교육·출장':z()};
   WL.absList.forEach(function(a){
-    var k=a.reason==='휴무'?'휴무':a.reason==='연차'?'연차':wlHalf(a.reason)?'반차':(a.reason==='산재'||a.reason==='휴직')?'산재/휴직':'기타';
+    var k=a.reason==='휴무'?'휴무':a.reason==='연차'?'연차':wlHalf(a.reason)?'반차':(a.reason==='산재'||a.reason==='휴직')?'산재/휴직':(a.reason==='교육'||a.reason==='출장')?'교육·출장':'기타';
     var g=a.gender==='남'?'m':a.gender==='여'?'f':'x'; R[k][g]++;
   });
   var s=z(), cur=z();
-  ['휴무','연차','산재/휴직','기타'].forEach(function(k){ ['m','f','x'].forEach(function(g){ s[g]+=R[k][g]; }); }); // 반차는 소계에서 제외
+  ['휴무','연차','산재/휴직','기타'].forEach(function(k){ ['m','f','x'].forEach(function(g){ s[g]+=R[k][g]; }); }); // 반차·교육·출장은 소계에서 제외(출근으로 봄)
   ['m','f','x'].forEach(function(g){ cur[g]=R['총원'][g]-s[g]; });
   R['소계']=s; R['현원']=cur; return R;
 }
@@ -8671,12 +8676,12 @@ function wlViewMain(){
   if(wlIsAdm()) h+='<div style="margin:8px 13px 0"><button class="wl-btn" style="width:100%" onclick="wlPunchOpen(false)">📥 ERP 출퇴근 엑셀 올리기 (관리자)</button></div>';
   // 1. 인원현황
   var hasX=C['총원'].x>0||C['소계'].x>0||C['휴무'].x>0||C['연차'].x>0||C['기타'].x>0;
-  var rows=['총원','휴무','연차','반차','산재/휴직','기타','소계','현원'];
+  var rows=['총원','휴무','연차','반차','산재/휴직','기타','교육·출장','소계','현원'];
   h+='<div class="wl-sec"><h3><span>1. 인원현황</span>'+(w&&!WL.snapshot?'<button class="wl-btn pri sm" onclick="wlView(\'abs\')">✏️ 휴가·결근 입력</button>':'')+'</h3>';
   h+='<table class="wl-tbl"><tr><th>구분</th><th>남</th><th>여</th>'+(hasX?'<th>미정</th>':'')+'<th>계</th></tr>';
   rows.forEach(function(k){ var r=C[k], tot=r.m+r.f+r.x, bold=(k==='총원'||k==='소계'||k==='현원')?' class="tot"':'';
     var f=function(n){ return n?n:'-'; };
-    h+='<tr'+bold+'><td class="l">'+k+(k==='반차'?' <small style="color:var(--g4)">(소계 제외)</small>':'')+'</td><td>'+f(r.m)+'</td><td>'+f(r.f)+'</td>'+(hasX?'<td>'+f(r.x)+'</td>':'')+'<td>'+f(tot)+'</td></tr>'; });
+    h+='<tr'+bold+'><td class="l">'+k+((k==='반차'||k==='교육·출장')?' <small style="color:var(--g4)">(소계 제외)</small>':'')+'</td><td>'+f(r.m)+'</td><td>'+f(r.f)+'</td>'+(hasX?'<td>'+f(r.x)+'</td>':'')+'<td>'+f(tot)+'</td></tr>'; });
   h+='</table>';
   var ab={}; WL_REASONS_ALL.forEach(function(r){ ab[r]=[]; }); WL.absList.forEach(function(a){ (ab[a.reason]=ab[a.reason]||[]).push(a); });
   h+='<div class="wl-abs-line" style="margin-top:9px">';
@@ -8884,9 +8889,15 @@ async function wlCmpLoad(){
     for(var i=0;i<4;i++){ if(!Array.isArray(v[i])) continue; for(var j=0;j<7;j++) sum+=Number(v[i][j])||0; } });
   var nsq=await sb.from('night_special_data').select('*').eq('date',D); var nsv=wlNsSum(nsq.data,T);
   sum+=nsv.sum;
+  // ★ 지원 나간 인원(mp_support) — 층별 입력엔 빠져 있지만 일지 배치(우리 팀 소속 인원)에는 들어 있으므로 보낸 조 기준으로 다시 더해서 비교한다 (TOPS 홈 '현재 근무'와 같은 규칙)
+  var supN=0;
+  try{ var sq=await sb.from('mp_support').select('from_team_code,values').eq('date',D);
+    (sq.data||[]).forEach(function(r){ var f=r.from_team_code||''; if(f.indexOf(T)!==0||!/^[A-Z]$/.test(f.slice(T.length))) return;
+      var v=r.values||{}; Object.keys(v).forEach(function(k){ var o=v[k]||{}; supN+=(Number(o.toilet)||0)+(Number(o.both)||0)+(Number(o.common)||0)+(Number(o.collect)||0); }); }); }catch(e){}
+  sum+=supN;
   var m=await sb.from('mgr_attendance').select('team,name,checked,status').eq('date',D).eq('team',T).eq('checked',true);
-  var mg=(m.data||[]).filter(function(r){ var st=r.status||'출근'; return mgrIsPresentSt(st); }).length;
-  WL.cmp={rows:rows.length+nsv.n, sum:sum, mgr:mg, mp:(rows.length+nsv.n)?sum+mg:null};
+  var mg=(m.data||[]).filter(function(r){ var st=r.status||'출근'; return mgrIsFloorSt(st); }).length; // 교육·출장 관리자는 일지·층에 배치되지 않으므로 비교에서 제외
+  WL.cmp={rows:rows.length+nsv.n, sum:sum, sup:supN, mgr:mg, mp:(rows.length+nsv.n)?sum+mg:null};
 }
 async function wlCmpReload(){ try{ await wlCmpLoad(); }catch(e){ WL.cmp=null; } wlRender(); toast('인력현황을 다시 불러왔습니다'); }
 function wlUnassignedBanner(){
@@ -8898,9 +8909,9 @@ function wlCmpBanner(){
   if(WL.snapshot||!wlCanWrite()||!WL.cmp) return '';
   var c=WL.cmp, as=wlAssignedCount(), t=' onclick="wlCmpReload()" style="cursor:pointer"';
   if(c.mp==null) return '<div class="wl-warn" style="background:#f1f5f9;color:#475569"'+t+'>인력현황 입력 대기 중 · 아직 조장 입력이 없어 비교하지 않습니다 (눌러서 새로고침)</div>';
-  if(c.mp===as) return '<div class="wl-warn" style="background:#dcfce7;color:#166534"'+t+'>✔ 인력현황 출근 '+c.mp+'명 = 일지 배치 '+as+'명 · 일치합니다</div>';
+  if(c.mp===as) return '<div class="wl-warn" style="background:#dcfce7;color:#166534"'+t+'>✔ 인력현황 출근 '+c.mp+'명'+(c.sup?' (지원 나간 '+c.sup+'명 포함)':'')+' = 일지 배치 '+as+'명 · 일치합니다</div>';
   var d=c.mp-as;
-  return '<div class="wl-warn" style="background:#fee2e2;color:#991b1b"'+t+'>⚠ 인력현황 출근 '+c.mp+'명 ≠ 일지 배치 '+as+'명 ('+Math.abs(d)+'명 '+(d>0?'부족':'초과')+') · 확정 저장할 때 확인 팝업이 뜹니다'+(WL.mmNote?'<br>저장된 사유: '+wlEsc(WL.mmNote):'')+'</div>';
+  return '<div class="wl-warn" style="background:#fee2e2;color:#991b1b"'+t+'>⚠ 인력현황 출근 '+c.mp+'명'+(c.sup?' (지원 나간 '+c.sup+'명 포함)':'')+' ≠ 일지 배치 '+as+'명 ('+Math.abs(d)+'명 '+(d>0?'부족':'초과')+') · 확정 저장할 때 확인 팝업이 뜹니다'+(WL.mmNote?'<br>저장된 사유: '+wlEsc(WL.mmNote):'')+'</div>';
 }
 async function wlSave(status){
   if(status==='confirmed'&&wlCanWrite()&&!WL.busy){
@@ -8918,7 +8929,7 @@ function wlCmpPopup(c,as){
   var h='<div id="wlCmpOv" style="position:fixed;inset:0;z-index:500;background:rgba(15,36,72,.45);display:flex;align-items:center;justify-content:center;padding:18px"><div style="background:#fff;border-radius:16px;padding:16px;width:100%;max-width:420px;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)">'
    +'<div style="font-weight:800;font-size:16px;color:#b91c1c">⚠ 인력현황과 작업일지 인원이 맞지 않습니다</div>'
    +'<table class="wl-tbl" style="margin:8px 0"><tr><th></th><th>조장 입력 합계</th><th>출근 조장·팀장</th><th>계</th></tr>'
-   +'<tr><td>인력현황</td><td>'+c.sum+'명</td><td>'+c.mgr+'명</td><td><b>'+c.mp+'명</b></td></tr>'
+   +'<tr><td>인력현황</td><td>'+c.sum+'명'+(c.sup?'<br><span style="font-size:11px;color:#6b7280">(지원 나간 '+c.sup+'명 포함)</span>':'')+'</td><td>'+c.mgr+'명</td><td><b>'+c.mp+'명</b></td></tr>'
    +'<tr><td>작업일지 배치</td><td colspan="2">근무자로 선택한 인원</td><td><b>'+as+'명</b></td></tr></table>'
    +'<div style="font-size:12.5px;font-weight:700;color:#7f1d1d;margin-bottom:6px">'+Math.abs(d)+'명 '+(d>0?'부족':'초과')+'</div>';
   if(un.length) h+='<div style="font-size:12.5px;color:#92400e;background:#fef3c7;border-radius:8px;padding:8px 10px;line-height:1.5">배치하지 않은 근무자 '+un.length+'명: <b>'+un.join(' · ')+'</b><br>(휴무·연차가 아닌데 어느 구역에도 없는 인원)</div>';
@@ -8964,7 +8975,7 @@ async function wlSaveCore(status){
     WL.absList.forEach(function(a){ var e=WL.emps.filter(function(x){return x.emp_no===a.emp_no;})[0]||{}; seen[a.emp_no]=1;
       ar.push({log_date:D,team_no:T,emp_no:a.emp_no,reason:a.reason,updated_by:me.name,name:a.name,group_name:e.group_name||null,gender:a.gender||null,auto:a.auto}); });
     WL.emps.forEach(function(e){ if(WL.absMap[e.emp_no]==='근무'&&!seen[e.emp_no]) ar.push({log_date:D,team_no:T,emp_no:e.emp_no,reason:'근무',updated_by:me.name,name:e.name,group_name:e.group_name||null,gender:wlGen(e.emp_no)||null,auto:false}); });
-    if(ar.length){ var i2=await sb.from('worklog_absence').insert(wlNormRows(ar)); if(i2.error) throw i2.error; }
+    if(ar.length){ var i2=await sb.from('worklog_absence').insert(wlNormRows(ar)); if(i2.error) throw i2.error; } try{ eduTodayRefresh(); }catch(_e){}
     var d3=await sb.from('worklog_report').delete().eq('log_date',D).eq('team_no',T); if(d3.error) throw d3.error;
     if(WL.reports.length){ var i3=await sb.from('worklog_report').insert(wlNormRows(WL.reports.map(function(x){ return {log_date:D,team_no:T,reporter:x.reporter||null,category:x.category,report_time:x.time||null,place_content:x.place||null,report_to:x.to||null,receiver:x.receiver||null}; }))); if(i3.error) throw i3.error; }
     WL.status=status; WL.confirmedBy=status==='confirmed'?me.name:''; WL.dirty=false; WL._bk=null;
@@ -9159,9 +9170,9 @@ function wlViewReport(){
   var hasX=C['총원'].x>0||C['소계'].x>0;
   var f=function(n){return n?n:'-';};
   var t='<div id="wlPrintArea" class="wl-rpt"><div class="wl-rt">환경미화 '+WL.team.replace('팀','').padStart(2,'0')+'팀 현장 작업일지</div><div class="wl-rd">'+wlDateKo()+(WL.status==='confirmed'?' · 확정'+(WL.confirmedBy?'('+wlEsc(WL.confirmedBy)+')':''):' · 초안')+'</div>';
-  t+='<div class="wl-rh">1. 인원현황</div><table class="wl-rtb"><tr><th>구분</th><th>남자</th><th>여자</th>'+(hasX?'<th>미정</th>':'')+'<th>계</th><th>내용 (휴무, 연차, 반차, 산재, 휴직, 기타: 병가·경조·결근 등)</th></tr>';
-  var names={'휴무':['휴무'],'연차':['연차'],'반차':['전반','후반','반차'],'산재/휴직':['산재','휴직'],'기타':['병가','경조','결근','기타']};
-  ['총원','휴무','연차','반차','산재/휴직','기타','소계','현원'].forEach(function(k){
+  t+='<div class="wl-rh">1. 인원현황</div><table class="wl-rtb"><tr><th>구분</th><th>남자</th><th>여자</th>'+(hasX?'<th>미정</th>':'')+'<th>계</th><th>내용 (휴무, 연차, 반차, 산재, 휴직, 기타: 병가·경조·결근 등, 교육·출장)</th></tr>';
+  var names={'휴무':['휴무'],'연차':['연차'],'반차':['전반','후반','반차'],'산재/휴직':['산재','휴직'],'기타':['병가','경조','결근','기타'],'교육·출장':['교육','출장']};
+  ['총원','휴무','연차','반차','산재/휴직','기타','교육·출장','소계','현원'].forEach(function(k){
     var r=C[k], b=(k==='총원'||k==='소계'||k==='현원')?' class="b"':'';
     var txt='';
     if(names[k]) names[k].forEach(function(rs){ var n=wlAbsNames(rs); if(!n.n) return; txt+='<div><b>'+rs+'</b> '+(n.m?'남 '+wlEsc(n.m)+' ':'')+(n.f?'여 '+wlEsc(n.f)+' ':'')+(n.x?wlEsc(n.x):'')+'</div>'; });
@@ -9199,8 +9210,8 @@ async function wlExcel(){
   var push=function(row,kind){ R.push(row); kinds[R.length-1]=kind; };
   push(['1. 인원현황','','','','',''],'h'); M.push({s:{r:R.length-1,c:0},e:{r:R.length-1,c:5}});
   push(['구분','남자','여자','미정','계','내용(휴무·연차·반차·산재·휴직·기타)'],'th');
-  var names={'휴무':['휴무'],'연차':['연차'],'반차':['전반','후반','반차'],'산재/휴직':['산재','휴직'],'기타':['병가','경조','결근','기타']};
-  ['총원','휴무','연차','반차','산재/휴직','기타','소계','현원'].forEach(function(k){ var r=C[k], txt=[];
+  var names={'휴무':['휴무'],'연차':['연차'],'반차':['전반','후반','반차'],'산재/휴직':['산재','휴직'],'기타':['병가','경조','결근','기타'],'교육·출장':['교육','출장']};
+  ['총원','휴무','연차','반차','산재/휴직','기타','교육·출장','소계','현원'].forEach(function(k){ var r=C[k], txt=[];
     if(names[k]) names[k].forEach(function(rs){ var n=wlAbsNames(rs); if(!n.n) return; txt.push(rs+': '+(n.m?'남 '+n.m+' ':'')+(n.f?'여 '+n.f+' ':'')+(n.x||'')); });
     push([k,r.m||'',r.f||'',r.x||'',(r.m+r.f+r.x)||'',txt.join(' / ')],(k==='총원'||k==='소계'||k==='현원')?'tot':'td'); });
   push(['','','','','',''],'x');
@@ -9561,7 +9572,7 @@ async function xlApply(){
       if(sr.length){ var i1=await sb.from('worklog_staff').insert(wlNormRows(sr)); if(i1.error) throw i1.error; }
       var d2=await sb.from('worklog_absence').delete().eq('log_date',D).eq('team_no',T); if(d2.error) throw d2.error;
       var ar=d.abs.map(function(a){ return {log_date:D,team_no:T,emp_no:a.emp_no,reason:a.reason,updated_by:me.name,name:a.name,group_name:a.group_name,gender:a.gender,auto:false}; });
-      if(ar.length){ var i2=await sb.from('worklog_absence').insert(wlNormRows(ar)); if(i2.error) throw i2.error; }
+      if(ar.length){ var i2=await sb.from('worklog_absence').insert(wlNormRows(ar)); if(i2.error) throw i2.error; } try{ eduTodayRefresh(); }catch(_e){}
       ok++;
     }catch(e){ fail.push(D+' '+((e&&e.message)||e)); }
   }
@@ -9602,16 +9613,18 @@ async function wlBoardLoad(){
     var mp=await sb.from('mp_data').select('team_code,values').eq('date',D);
     var nsd=[]; try{ var nsr=await sb.from('night_special_data').select('*').eq('date',D); nsd=nsr.data||[]; }catch(e){}
     var mg=await sb.from('mgr_attendance').select('team,status,checked').eq('date',D).eq('checked',true);
+    var spr=[]; try{ var sr=await sb.from('mp_support').select('from_team_code,values').eq('date',D); spr=sr.data||[]; }catch(e){} // 지원 나간 인원 — 보낸 조 입력엔 빠져 있으므로 다시 더함(일지 안 인력 비교와 같은 규칙)
     var jwr=[]; try{ var jr=await msFetchAll(function(){ return sb.from('joint_work_data').select('id,teams,headcount,batch_id,category,work_name,shift,location').eq('work_date',D); }); jwr=jr.data||[]; }catch(e){}
     var rows=[];
     for(var i=1;i<=10;i++){ var T=i+'팀';
       var d=(dl.data||[]).filter(function(x){return x.team_no===T;})[0]||null;
       var seen={}, as=0; (st.data||[]).forEach(function(x){ if(x.team_no===T&&!seen[x.emp_no]){ seen[x.emp_no]=1; as++; } });
-      var ac=0; (ab.data||[]).forEach(function(x){ if(x.team_no===T&&x.reason!=='근무') ac++; });
+      var ac=0; (ab.data||[]).forEach(function(x){ if(x.team_no===T&&x.reason!=='근무'&&x.reason!=='교육'&&x.reason!=='출장') ac++; });
       var sum=0, nr=0;
       (mp.data||[]).forEach(function(r){ if(!r.team_code||r.team_code.indexOf(T)!==0||!/^[A-Z]$/.test(r.team_code.slice(T.length))) return; nr++; var v=r.values; if(typeof v==='string'){ try{ v=JSON.parse(v); }catch(e){ return; } } if(!Array.isArray(v)) return; for(var a=0;a<4;a++){ if(!Array.isArray(v[a])) continue; for(var b=0;b<7;b++) sum+=Number(v[a][b])||0; } });
       var nsv=wlNsSum(nsd,T); nr+=nsv.n; sum+=nsv.sum;
-      var mgc=(mg.data||[]).filter(function(r){ var s=r.status||'출근'; return r.team===T&&mgrIsPresentSt(s); }).length;
+      spr.forEach(function(r){ var f=r.from_team_code||''; if(f.indexOf(T)!==0||!/^[A-Z]$/.test(f.slice(T.length))) return; var v=r.values||{}; Object.keys(v).forEach(function(k){ var o=v[k]||{}; sum+=(Number(o.toilet)||0)+(Number(o.both)||0)+(Number(o.common)||0)+(Number(o.collect)||0); }); });
+      var mgc=(mg.data||[]).filter(function(r){ var s=r.status||'출근'; return r.team===T&&mgrIsFloorSt(s); }).length;
       var jg=wlJwGroup(jwr,T), jh=0; jg.forEach(function(x){ jh+=x.head||0; });
       rows.push({jwN:jg.length,jwH:jh,team:T,status:d?d.status:'',writer:d?d.writer:'',by:d?d.confirmed_by:'',note:d?d.mismatch_note:'',assigned:as,abs:ac,mp:nr?sum+mgc:null});
     }
@@ -12029,16 +12042,36 @@ function pickShift(el){
 // 읽기 전용: 작업일지와 같은 기준(직원명단 − 고정휴무 − 휴직·산재 − ERP 근태, 반차는 출근, 작업일지 수동 입력 우선)으로 계산해서 보여주기만 한다.
 // 입력값이 예정과 달라도 저장은 항상 가능(알림만 표시).
 var MPA={key:'',data:null,busy:'',t:0};
+document.addEventListener('visibilitychange',function(){ if(!document.hidden){ MPA.t=0; try{ mpAttRefresh(); }catch(e){} } });
 function mpAttToday(){ return new Date(Date.now()+9*3600000).toISOString().slice(0,10); }
 function mpAttBucket(r){
   r=String(r||'');
   if(/전반|후반|반차/.test(r)) return 'half';
   if(r==='근무') return 'work';
+  if(/^(교육|출장)/.test(r)) return 'edu'; // 교육·출장: 출근으로 보되 현장 층 배치에서만 제외
   if(/휴무/.test(r)) return '휴무';
   if(/연차/.test(r)) return '연차';
   if(/병가/.test(r)) return '병가';
   if(/휴직|산재/.test(r)) return '휴직';
   return '기타';
+}
+// 파견(인사발령 없이 다른 팀·조에서 근무) — D일 기준 진행 중인 파견 (직원별 가장 늦게 시작한 1건)
+async function wfAssignActive(D){
+  var r=await sb.from('worklog_assign').select('*').order('from_date',{ascending:true}).order('id',{ascending:true});
+  var m={}; (r.data||[]).forEach(function(a){ if(String(a.from_date).slice(0,10)<=D&&(!a.to_date||String(a.to_date).slice(0,10)>=D)) m[a.emp_no]=a; });
+  return m;
+}
+// 팀 T의 명단에 파견 반영: 파견 나간 인원은 빼고, 파견 온 인원은 더함 (근무 조를 지정했으면 그 조로)
+async function wfApplyAssignToRoster(T,D,emps){
+  var amap={}; try{ amap=await wfAssignActive(D); }catch(e){}
+  var out={};
+  var res=emps.filter(function(e){ var a=amap[e.emp_no]; if(a&&a.work_team!==T){ out[e.emp_no]=a.work_team; return false; } return true; });
+  var inIds=Object.keys(amap).filter(function(id){ return amap[id].work_team===T&&!res.some(function(e){ return e.emp_no===id; }); });
+  if(inIds.length){
+    try{ var inn=await sb.from('wf_employees').select('emp_no,name,position,group_name,team,resign_date').in('emp_no',inIds); (inn.data||[]).filter(function(e){ return wfActiveOn(e,D); }).forEach(function(e){ res.push(e); }); }catch(e){}
+  }
+  res.forEach(function(e){ var a=amap[e.emp_no]; if(a&&a.work_team===T){ e._asg=e.team; if(a.work_group) e.group_name=a.work_group; } });
+  return {emps:res,out:out};
 }
 async function mpAttCompute(team,D){
   var m=String(team).match(/^(\d+)팀([A-Z])$/); if(!m) return null;
@@ -12046,15 +12079,10 @@ async function mpAttCompute(team,D){
   await wfLoadQStart();
   var home=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,group_name,team,resign_date').eq('team',T); });
   var emps=(home.data||[]).filter(function(e){ return wfActiveOn(e,D); });
-  try{
-    var asg=await sb.from('worklog_assign').select('*');
-    var act=(asg.data||[]).filter(function(a){ return a.from_date<=D&&(!a.to_date||a.to_date>=D); });
-    var outIds={}; act.forEach(function(a){ if(a.work_team!==T) outIds[a.emp_no]=1; });
-    emps=emps.filter(function(e){ return !outIds[e.emp_no]; });
-  }catch(e){}
+  try{ emps=(await wfApplyAssignToRoster(T,D,emps)).emps; }catch(e){}
   var mine=emps.filter(function(e){ return e.group_name===grp; });
   var ids=mine.map(function(e){return e.emp_no;});
-  var res={D:D,team:team,T:T,grp:grp,total:mine.length,work:0,half:0,off:0,leave:0,sick:0,hold:0,etc:0,mgrWork:0,mgrAll:0,etcTxt:[],ok:true};
+  var res={D:D,team:team,T:T,grp:grp,total:mine.length,work:0,half:0,off:0,leave:0,sick:0,hold:0,etc:0,edu:0,mgrWork:0,mgrAll:0,etcTxt:[],names:{'휴무':[],'연차':[],'병가':[],'휴직':[],'기타':[],'교육·출장':[]},ok:true};
   if(!ids.length){ res.ok=false; return res; }
   var auto={};
   var qe=wfEffQuarter(D), qc=wlQuarter(D), dow=wlDow(D);
@@ -12067,25 +12095,32 @@ async function mpAttCompute(team,D){
     (el2.data||[]).forEach(function(l){ if(!auto[l.emp_no]) auto[l.emp_no]=l.reason||'기타'; }); }catch(e){}
   try{ var ab=await sb.from('worklog_absence').select('emp_no,reason,auto').eq('log_date',D).eq('team_no',T);
     (ab.data||[]).forEach(function(r){ if(!r.auto&&ids.indexOf(r.emp_no)>=0) auto[r.emp_no]=r.reason; }); }catch(e){}
+  var genM={}; try{ var gx=await sb.from('worklog_emp_ext').select('emp_no,gender').in('emp_no',ids); (gx.data||[]).forEach(function(g){ genM[g.emp_no]=g.gender; }); }catch(e){}
+  res.people=[];
   mine.forEach(function(e){
     var isMgr=(e.position==='조장'); if(isMgr) res.mgrAll++;
     var r=auto[e.emp_no], b=r?mpAttBucket(r):'work';
+    res.people.push({emp_no:e.emp_no,name:e.name,isMgr:isMgr,reason:r||'',bucket:b,gender:genM[e.emp_no]||''});
     if(b==='work'||b==='half'){ if(b==='half') res.half++; res.work++; if(isMgr) res.mgrWork++; return; }
+    var nmx=e.name+(isMgr?'(조장)':'');
+    if(b==='edu'){ res.work++; if(isMgr) res.mgrWork++; else res.edu++; res.names['교육·출장'].push(nmx+'('+r+')'); return; } /* 출근 포함 · 현장배치 예정에서만 제외 */
+    if(b==='기타') res.names['기타'].push(nmx+'('+r+')'); else if(res.names[b]) res.names[b].push(nmx);
     if(b==='휴무') res.off++; else if(b==='연차') res.leave++; else if(b==='병가') res.sick++; else if(b==='휴직') res.hold++; else { res.etc++; if(res.etcTxt.indexOf(r)<0) res.etcTxt.push(r); }
   });
-  res.field=res.work-res.mgrWork; // 현장배치 예정 = 근무 − 관리자(조장)
+  res.field=res.work-res.mgrWork-res.edu; // 현장배치 예정 = 근무 − 관리자(조장) − 교육·출장
   return res;
 }
 // 입력값 비교 — 입력 총 인원(층별) + 지원 보낸 인원 = 우리 조가 실제 현장에 낸 인원
-function mpAttCmpHtml(d,cur){
+function mpAttCmpHtml(d,cur,night){
   if(!d||!d.ok) return '';
-  var diff=cur-d.field, col, msg;
-  if(cur===0) { col='var(--g4)'; msg='현장배치 예정 <b>'+d.field+'명</b>'; }
-  else if(diff===0){ col='var(--success,#1AA260)'; msg='✔ 예정과 일치 <b>'+d.field+'명</b>'; }
-  else { col='#C2410C'; msg='예정 <b>'+d.field+'명</b> · 입력 <b>'+cur+'명</b> → <b>'+(diff>0?('+'+diff+'명 많음'):(Math.abs(diff)+'명 적음'))+'</b>'; }
-  return '<div style="font-size:12.5px;font-weight:700;color:'+col+'">'+msg+'</div>';
+  var EXP=d.field, LB='현장배치 예정'; // 주간·야간 동일: 근무 − 조장(조장은 관리자 집계에서 따로 반영)
+  var diff=cur-EXP, bg, fg, msg;
+  if(cur===0){ bg='#E6F5F3'; fg='#0F766E'; msg=LB+' <b style="font-size:19px">'+EXP+'명</b>'; }
+  else if(diff===0){ bg='#DDF3E8'; fg='#14724F'; msg='✔ 예정과 일치 <b style="font-size:19px">'+EXP+'명</b>'; }
+  else { bg='#FFF1D6'; fg='#9A3F0B'; msg=LB+' <b style="font-size:19px">'+EXP+'명</b> · 입력 <b style="font-size:19px">'+cur+'명</b> → <b style="font-size:19px">'+(diff>0?('+'+diff+'명 많음'):(Math.abs(diff)+'명 적음'))+'</b>'; }
+  return '<div style="font-size:14px;font-weight:800;color:'+fg+';background:'+bg+';padding:8px 12px;border-radius:10px;line-height:1.4">'+msg+'</div>';
 }
-function mpAttCardHtml(d){
+function mpAttCardHtml(d,night){
   var md=d.D.split('-'), dl=parseInt(md[1])+'월 '+parseInt(md[2])+'일';
   var chip=function(l,n,c){ return '<div style="flex:1;min-width:0;text-align:center;padding:7px 2px;border-radius:9px;background:'+(n>0?c[0]:'var(--g1)')+';color:'+(n>0?c[1]:'var(--g4)')+'"><div style="font-size:11.5px;font-weight:700">'+l+'</div><div style="font-size:18px;font-weight:900;line-height:1.2">'+n+'</div></div>'; };
   var h='<div style="font-size:13px;font-weight:800;color:var(--g6);margin-bottom:8px">'+dl+' '+d.T+' '+d.grp+' 근태 현황 <span style="font-weight:600;color:var(--g4)">(총원 '+d.total+'명)</span></div>';
@@ -12093,11 +12128,15 @@ function mpAttCardHtml(d){
     +'<div style="flex:1.25;padding:8px 6px;border-radius:10px;background:var(--teal-bg);color:var(--teal2);text-align:center"><div style="font-size:12px;font-weight:800">근무</div><div style="font-size:26px;font-weight:900;line-height:1.1">'+d.work+'<small style="font-size:13px">명</small></div></div>'
     +chip('휴무',d.off,['#EEF1F6','#475569'])+chip('연차',d.leave,['#FFF4D6','#8A5A00'])+chip('병가',d.sick,['#FDECEC','#B42318'])+chip('휴직',d.hold,['#F3EEF8','#6B21A8'])
     +'</div>';
-  if(d.etc) h+='<div style="font-size:12px;color:var(--g5);margin-bottom:6px">기타 '+d.etc+'명 ('+d.etcTxt.join('·')+')</div>';
-  h+='<div style="display:flex;gap:6px;align-items:center;padding:9px 11px;border-radius:10px;background:var(--navy-bg,#EAF0F8);font-size:14px;color:var(--navy,#1F3A6E)">'
-    +'<span>관리자 <b style="font-size:17px">'+d.mgrWork+'명</b></span><span style="color:var(--g4)">→</span>'
-    +'<span>현장배치 예정 <b style="font-size:19px">'+d.field+'명</b></span>'
-    +(d.half?'<span style="margin-left:auto;font-size:11.5px;color:var(--g5)">반차 '+d.half+'명 포함</span>':'')+'</div>';
+  var NL=[['휴무','#475569','#EEF1F6'],['연차','#8A5A00','#FFF4D6'],['병가','#B42318','#FDECEC'],['휴직','#6B21A8','#F3EEF8'],['기타','#475569','#EEF1F6']], nh='';
+  NL.forEach(function(x){ var a=(d.names&&d.names[x[0]])||[]; if(!a.length) return;
+    nh+='<div style="display:flex;gap:7px;align-items:flex-start;margin-top:5px;font-size:13px;line-height:1.55"><span style="flex:none;min-width:50px;text-align:center;padding:1px 6px;border-radius:6px;font-weight:800;background:'+x[2]+';color:'+x[1]+'">'+x[0]+' '+a.length+'</span><span style="color:var(--g6);font-weight:600">'+a.map(wlEsc).join(' · ')+'</span></div>'; });
+  if(nh) h+='<div style="margin:0 0 8px;padding:4px 10px 8px;border-radius:10px;background:var(--g1)"><div style="font-size:11.5px;font-weight:800;color:var(--g5);margin-top:6px">오늘 미출근 명단</div>'+nh+'</div>';
+  var eduA=(d.names&&d.names['교육·출장'])||[];
+  if(eduA.length) h+='<div style="margin:0 0 8px;padding:8px 10px;border-radius:10px;background:#EBF0FF;display:flex;gap:7px;align-items:flex-start;font-size:13px;line-height:1.55"><span style="flex:none;padding:1px 8px;border-radius:6px;font-weight:800;background:#1B4FBE;color:#fff">교육·출장 '+eduA.length+'</span><span style="color:#1B4FBE;font-weight:700">'+eduA.map(wlEsc).join(', ')+' <small style="color:var(--g5);font-weight:600">· 출근 포함 · 현장배치 제외</small></span></div>';
+  h+='<div style="display:flex;align-items:center;gap:10px;padding:11px 14px;border-radius:12px;background:linear-gradient(135deg,#0F766E,#14A39A);color:#fff;box-shadow:0 3px 10px rgba(15,118,110,.28)">'
+    +'<div style="flex:1;min-width:0"><div style="font-size:12.5px;font-weight:700;opacity:.92">'+('근무 '+d.work+'명 − 관리자(조장) '+d.mgrWork+'명'+(d.edu?(' − 교육·출장 '+d.edu+'명'):''))+'</div><div style="font-size:16px;font-weight:900;margin-top:1px">'+'현장배치 예정'+'</div>'+(d.half?'<div style="font-size:11.5px;opacity:.9;margin-top:2px">반차 '+d.half+'명 포함</div>':'')+'</div>'
+    +'<div style="font-size:42px;font-weight:900;line-height:1">'+d.field+'<small style="font-size:18px;margin-left:2px">명</small></div></div>';
   return h;
 }
 function mpAttRefresh(){
@@ -12176,7 +12215,7 @@ function mpZoneColPrefix(zone,building){
 // mp_support(오늘)를 60초 캐시로 읽어서: ① 입력현황 조장 칩에 "→받는조 N명" 표시 ② 인력입력 화면에 "우리 조 총 N명 = 층별 + 지원" 표시
 // ※ 기존 지원 저장/층별 총원 반영 로직(mpSupportAt 등)은 건드리지 않고, 읽기 전용으로만 사용
 var mpSupSent={t:0, rows:[], sig:'', loading:false};
-function mpSupRowSum(r){ var v=r.values||{}, s=0; Object.keys(v).forEach(function(f){ s+=(Number(v[f].toilet)||0)+(Number(v[f].both)||0)+(Number(v[f].common)||0); }); return s; }
+function mpSupRowSum(r){ var v=r.values||{}, s=0; Object.keys(v).forEach(function(f){ s+=(Number(v[f].toilet)||0)+(Number(v[f].both)||0)+(Number(v[f].common)||0)+(Number(v[f].collect)||0); }); return s; }
 function mpSupSentList(shift, fromTeam){
   return (mpSupSent.rows||[]).filter(function(r){ return r.from_team_code===fromTeam && String(r.shift||'').trim()===String(shift||'').trim(); });
 }
@@ -12316,12 +12355,13 @@ async function saveSupportEntry(){
   var any=false;
   document.querySelectorAll('#supInputArea .sup-inp').forEach(function(i){
     var floor=i.dataset.floor;
-    if(!vals[floor]) vals[floor]={toilet:0,both:0,common:0};
+    if(!vals[floor]) vals[floor]={toilet:0,both:0,common:0,collect:0};
     var n=parseInt(i.value)||0;
     if(n>0) any=true;
     if(i.classList.contains('sup-toilet-inp')) vals[floor].toilet=n;
     else if(i.classList.contains('sup-both-inp')) vals[floor].both=n;
     else if(i.classList.contains('sup-common-inp')) vals[floor].common=n;
+    else if(i.classList.contains('sup-collect-inp')) vals[floor].collect=n;
   });
   if(!any){ toast('⚠️ 지원 인원을 1명 이상 입력해주세요'); return; }
   var shift=supCurShift();
@@ -12469,6 +12509,34 @@ var mpSupportByKey={}; // zonePrefix_floorSuf → {toilet,both,common}
 // 오늘 하루 "다른 조 지원" 총인원(보낸 조 기준 원복해야 할 인원) — updateStaff()의 "현재 근무"에 더하기 위한 캐시.
 // 지원 나간 인원은 보낸 조의 층별 입력값에서 이미 빠진 채로 들어오므로, 이 값을 더해야 실제 출근한 총원이 맞는다.
 var _todaySupportTotal=0;
+// ── 교육·출장 직원(조원) 출근 집계 — 층 칸에 배치되지 않아 층별 입력값에 없으므로 따로 더해 준다 (TOPS 2026-10-28)
+// 층별 배치 현황에는 넣지 않고, 팀 현황·조별 출근인원·오늘/전일 근무 인원 같은 "출근" 집계에만 사용한다.
+// 반환: [{date:'YYYY-MM-DD', tc:'1팀A', team:'1팀'}] (같은 날 같은 사람은 1건) — 사업부 구분은 서버 규칙(division_id)으로 자동 적용
+var _eduEmpCache=null, _eduEmpAt=0;
+async function eduEmpMap(){
+  if(_eduEmpCache&&Date.now()-_eduEmpAt<300000) return _eduEmpCache;
+  var m={};
+  try{ var r=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,team,group_name'); });
+    (r.data||[]).forEach(function(e){ var g=String(e.group_name||'').replace(/조$/,''); if(e.emp_no&&e.team&&g) m[e.emp_no]=e.team+g; });
+    if(!r.error&&Object.keys(m).length){ _eduEmpCache=m; _eduEmpAt=Date.now(); }
+  }catch(e){}
+  return m;
+}
+async function eduStaffRows(from,to){
+  try{
+    var rs=await msFetchAll(function(){ return sb.from('worklog_absence').select('log_date,emp_no,reason').in('reason',['교육','출장']).eq('auto',false).gte('log_date',from).lte('log_date',to); });
+    var rows=(rs.data||[]); if(!rows.length) return [];
+    var em=await eduEmpMap(), seen={}, out=[];
+    rows.forEach(function(r){ var d=String(r.log_date).slice(0,10), tc=em[r.emp_no]; if(!tc) return; var k=d+'|'+r.emp_no; if(seen[k]) return; seen[k]=1; var mm=tc.match(/^(\d+팀)/); out.push({date:d,tc:tc,team:mm?mm[1]:tc}); });
+    return out;
+  }catch(e){ return []; }
+}
+var _todayEduStaff=0;
+async function eduTodayRefresh(){
+  var today=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
+  try{ _todayEduStaff=(await eduStaffRows(today,today)).length; }catch(e){}
+  try{ updateStaff(); }catch(e){}
+}
 async function loadMpSupportToday(){
   var today=new Date(Date.now()+9*3600000).toISOString().slice(0,10);
   try{
@@ -12479,16 +12547,18 @@ async function loadMpSupportToday(){
       var vals=r.values||{};
       Object.keys(vals).forEach(function(floor){
         var key=r.zone_prefix+'_'+floor;
-        if(!byKey[key]) byKey[key]={toilet:0,both:0,common:0};
-        var t=Number(vals[floor].toilet)||0, b=Number(vals[floor].both)||0, c=Number(vals[floor].common)||0;
+        if(!byKey[key]) byKey[key]={toilet:0,both:0,common:0,collect:0};
+        var t=Number(vals[floor].toilet)||0, b=Number(vals[floor].both)||0, c=Number(vals[floor].common)||0, k=Number(vals[floor].collect)||0;
         byKey[key].toilet+=t;
         byKey[key].both+=b;
         byKey[key].common+=c;
-        supTotal+=t+b+c;
+        byKey[key].collect+=k;
+        supTotal+=t+b+c+k;
       });
     });
     mpSupportByKey=byKey;
     _todaySupportTotal=supTotal;
+    try{ _todayEduStaff=(await eduStaffRows(today,today)).length; }catch(e){}
   }catch(e){ console.error(e); }
   if(typeof updateFloorChart==='function') updateFloorChart();
 }
@@ -12499,14 +12569,14 @@ async function loadMpSupportToday(){
 //   앞으로 "오늘 실시간" 화면에서 지원 인원을 반영해야 하는 곳은 예외 없이 이 함수만 통해서 더한다 —
 //   계산 방식이 바뀌어도 여기 한 곳만 고치면 모든 화면이 같이 맞아진다.
 function mpSupportAt(zi, fi, suppByKey){
-  if(!suppByKey || fi==null || fi>=6) return {toilet:0, both:0, common:0, total:0}; // 집하장(fi=6)은 지원 대상 아님
+  if(!suppByKey || fi==null || fi>=6) return {toilet:0, both:0, common:0, collect:0, total:0}; // 집하장(fi=6)은 지원 대상 아님
   var sv=suppByKey[MP_ZONE_PREFIX[zi]+'_'+MP_FLOOR_SUFFIX[fi]];
-  if(!sv) return {toilet:0, both:0, common:0, total:0};
-  var t=sv.toilet||0, b=sv.both||0, c=sv.common||0;
-  return {toilet:t, both:b, common:c, total:t+b+c};
+  if(!sv) return {toilet:0, both:0, common:0, collect:0, total:0};
+  var t=sv.toilet||0, b=sv.both||0, c=sv.common||0, cl=sv.collect||0;
+  return {toilet:t, both:b, common:c, collect:cl, total:t+b+c+cl};
 }
 function mpEmptySplit(){
-  return {toilet:[[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]], both:[[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]], common:[[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]]};
+  return {toilet:[[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]], both:[[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]], common:[[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]], collect:[[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0],[0,0,0,0,0,0]]};
 }
 function mpRowToSplit(row){
   var out=mpEmptySplit();
@@ -12515,30 +12585,31 @@ function mpRowToSplit(row){
       out.toilet[zi][fi]=Number(row[prefix+'_toilet_'+suf])||0;
       out.both[zi][fi]=Number(row[prefix+'_both_'+suf])||0;
       out.common[zi][fi]=Number(row[prefix+'_common_'+suf])||0;
+      out.collect[zi][fi]=Number(row[prefix+'_collect_'+suf])||0;
     });
   });
   return out;
 }
 function mpAddSplit(target, src){
-  for(var zi=0;zi<4;zi++) for(var fi=0;fi<6;fi++){ target.toilet[zi][fi]+=src.toilet[zi][fi]; target.both[zi][fi]+=src.both[zi][fi]; target.common[zi][fi]+=src.common[zi][fi]; }
+  for(var zi=0;zi<4;zi++) for(var fi=0;fi<6;fi++){ target.toilet[zi][fi]+=src.toilet[zi][fi]; target.both[zi][fi]+=src.both[zi][fi]; target.common[zi][fi]+=src.common[zi][fi]; target.collect[zi][fi]+=(src.collect&&src.collect[zi][fi])||0; }
   return target;
 }
 var mpSplit=mpEmptySplit(); // 금일(실시간) 전체 합산 — 홈화면/현황판 등에서 사용
 // 항목(구역) x 겸용구역 구분 표 HTML — 인력현황 > 전체현황/일별이력 공용
 function mpSplitTotals(mpDataArr, splitObj, suppByKey){
-  var toilet=0, both=0, common=0;
+  var toilet=0, both=0, common=0, collect=0;
   for(var zi=0;zi<4;zi++){
     for(var fi=0;fi<6;fi++){
-      toilet+=splitObj.toilet[zi][fi]||0; both+=splitObj.both[zi][fi]||0; common+=splitObj.common[zi][fi]||0;
+      toilet+=splitObj.toilet[zi][fi]||0; both+=splitObj.both[zi][fi]||0; common+=splitObj.common[zi][fi]||0; collect+=(splitObj.collect&&splitObj.collect[zi][fi])||0;
       // 지원 인원은 mpSupportAt() 하나로만 더한다(재발방지 — 위 mpSupportAt 주석 참고)
       var sup=mpSupportAt(zi, fi, suppByKey);
-      toilet+=sup.toilet; both+=sup.both; common+=sup.common;
+      toilet+=sup.toilet; both+=sup.both; common+=sup.common; collect+=sup.collect||0;
     }
     common+=mpDataArr[zi][6]||0; // 집하장은 공용구역에 포함
   }
-  return {toilet:toilet, both:both, common:common};
+  return {toilet:toilet, both:both, common:common, collect:collect};
 }
-function mpFullSplitTableHtml(mpDataArr, splitObj, avgToilet, avgCommon, avgBoth, suppByKey){
+function mpFullSplitTableHtml(mpDataArr, splitObj, avgToilet, avgCommon, avgBoth, suppByKey, mgrInfo, avgCollect){
   var ZONE_LABELS=['L/S 동편','L/S 서편','A/S 동편','A/S 서편'];
   // ★ 2026-09-29: "층별 인력현황 전체총계"(이 표)와 홈/현황판의 "금일현장인원"이 서로 다르게 보이던 문제 수정.
   //   다른 조 지원(mp_support)은 지원 "나간" 사람의 원래 소속 조가 자기 층별 입력값(mp_data)에서 이미
@@ -14450,11 +14521,11 @@ function updateStaff(){
   var mgrTodayCount=0;
   try{
     if(typeof mgrAttData==='object'&&mgrAttData){
-      mgrTodayCount=Object.keys(mgrAttData).filter(function(k){ var r=mgrAttData[k]; return r&&r.checked&&mgrIsPresentSt(r.status); }).length;
+      mgrTodayCount=Object.keys(mgrAttData).filter(function(k){ var r=mgrAttData[k]; return r&&r.checked&&!mgrIsHaeng(r)&&mgrIsPresentSt(r.status); }).length; // 행정1·2 제외
     }
   }catch(e){}
   // ★ 다른 조로 지원 나간 인원 — 보낸 조 층별 입력값엔 이미 빠져 있으므로 원래 출근한 총원이 되게 다시 더함
-  var fieldCount=calcDayTotal(today)+getNightSpecialTotal()+(_todaySupportTotal||0);
+  var fieldCount=calcDayTotal(today)+getNightSpecialTotal()+(_todaySupportTotal||0)+(_todayEduStaff||0); // 교육·출장 직원은 층 배치는 안 되지만 출근 인원에는 포함
   var todayTotal=fieldCount+mgrTodayCount;
   var vE=document.getElementById('curStaff');
   var uE=document.getElementById('curUnit');
@@ -14507,10 +14578,11 @@ async function loadPrevStaff(){
     if(supRes.data){
       supRes.data.forEach(function(row){
         var vals=row.values||{};
-        Object.keys(vals).forEach(function(f){ total+=(Number(vals[f].toilet)||0)+(Number(vals[f].both)||0)+(Number(vals[f].common)||0); });
+        Object.keys(vals).forEach(function(f){ total+=(Number(vals[f].toilet)||0)+(Number(vals[f].both)||0)+(Number(vals[f].common)||0)+(Number(vals[f].collect)||0); });
       });
     }
   }catch(e){}
+  try{ total+=(await eduStaffRows(yesterday,yesterday)).length; }catch(e){} // 교육·출장 직원 출근 포함
   var pE=document.getElementById('prevStaff');
   var pU=document.getElementById('prevUnit');
   if(pE) pE.textContent=total>0?total:'—';
@@ -14731,11 +14803,18 @@ async function loadTeamAvgAttendance(prefix){
       if(!r.from_team_code || sumByTeam[r.from_team_code]===undefined) return;
       var vals=r.values||{};
       var sum=0;
-      Object.keys(vals).forEach(function(f){ sum+=(Number(vals[f].toilet)||0)+(Number(vals[f].both)||0)+(Number(vals[f].common)||0); });
+      Object.keys(vals).forEach(function(f){ sum+=(Number(vals[f].toilet)||0)+(Number(vals[f].both)||0)+(Number(vals[f].common)||0)+(Number(vals[f].collect)||0); });
       if(sum<=0) return;
       sumByTeam[r.from_team_code]+=sum;
       daysByTeam[r.from_team_code][r.date]=1;
     });
+    // ★ 교육·출장 직원 — 층 칸에는 배치되지 않지만 출근했으므로 소속 조 출근 인원에 더한다
+    var eduData=[]; try{ eduData=await eduStaffRows(queryFrom,dTo); }catch(e){}
+    if(isNightWindow) eduData=eduData.filter(function(r){ return NIGHT_TEAM_CODES[r.tc] ? r.date===nightDate : (r.date>=dFrom&&r.date<=dTo); });
+    var eduN=0;
+    eduData.forEach(function(r){ if(sumByTeam[r.tc]===undefined) return; sumByTeam[r.tc]+=1; daysByTeam[r.tc][r.date]=1; if(mode==='day') eduN++; });
+    var eduM=0; if(mode==='day') mgrData.forEach(function(r){ if((r.status==='교육'||r.status==='출장')&&!mgrIsHaeng(r)) eduM++; }); // 교육·출장 중인 관리자(조장·팀장·총괄)도 함께 표시
+    if(lblEl&&(eduN+eduM)) lblEl.textContent=periodLbl+' · 조원 + 조장 + 팀장 포함 · 교육·출장 '+(eduN+eduM)+'명 포함 (층별 제외)';
     // 조장(A조장/B조장/C조장)은 해당 조에, 팀장은 팀 단위로 별도 집계
     // ※ 출근으로 인정하는 상태는 '출근'·'교육'·'출장'뿐 — 휴무/연차/공가/건강검진/병가/휴직 등은 미출근으로 처리
     var ATT_OK_STATUS={'출근':1,'교육':1,'출장':1};
@@ -15831,7 +15910,7 @@ async function loadFullStatusForDate(dateStr){
   try{
     var mpRes=await sb.from('mp_data').select('*').eq('date',dateStr);
     var nsRes=await sb.from('night_special_data').select('*').eq('date',dateStr);
-    var mgrRes=await sb.from('mgr_attendance').select('team,checked,status').eq('date',dateStr).eq('checked',true);
+    var mgrRes=await sb.from('mgr_attendance').select('team,name,checked,status').eq('date',dateStr).eq('checked',true);
     var supRes=await sb.from('mp_support').select('from_team_code,values').eq('date',dateStr);
     // 1) 층별(오전/오후) 합산 - recalcMpData와 동일 로직, 전역 mpData는 건드리지 않음
     var localMp=[[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0],[0,0,0,0,0,0,0]];
@@ -15929,9 +16008,12 @@ async function loadFullStatusForDate(dateStr){
         return a.localeCompare(b);
       });
     }
+    // 교육·출장 직원 — 층 칸에는 없지만 출근했으므로 소속 팀 총원에 합산
+    try{ (await eduStaffRows(dateStr,dateStr)).forEach(function(r){ if(!teamSums[r.team]){ teamSums[r.team]=0; teamOrder.push(r.team); } teamSums[r.team]+=1; }); }catch(e){}
     // 관리자(팀장·조장) 출근인원도 각자 소속 팀에 합산 (별도 칸 아님) — 출근/교육/출장만 (휴무 등 제외)
     if(mgrRes&&mgrRes.data){
       mgrRes.data.forEach(function(row){
+        if(mgrIsHaeng(row)) return;
         var mgrSt3=row.status||'출근';
         if(!mgrIsPresentSt(mgrSt3)) return;
         var t=(row.team||'').trim();
@@ -16049,7 +16131,15 @@ function updateFloorChart(){
   fps.forEach(function(fp){
     var panel=document.getElementById('flP_'+fp.id);if(!panel)return;
     var vals=fp.merged?[mpData[0][fp.ci[0]]+mpData[0][fp.ci[1]],mpData[1][fp.ci[0]]+mpData[1][fp.ci[1]],mpData[2][fp.ci[0]]+mpData[2][fp.ci[1]],mpData[3][fp.ci[0]]+mpData[3][fp.ci[1]]]:[mpData[0][fp.ci],mpData[1][fp.ci],mpData[2][fp.ci],mpData[3][fp.ci]];
-    var flTot=vals.reduce(function(a,b){return a+b;},0);
+    // 관리자: 조장은 동·서편 칸에, 팀장·총괄·사업부장은 층 합계에만 포함
+    var _fcols=fp.merged?fp.ci:[fp.ci], _cellAdd=[0,0,0,0], _flAdd=0, _cellAvgAdd=[0,0,0,0], _flAvgAdd=0, _ad=mgrInfoNow.avgDet;
+    _fcols.forEach(function(c){
+      _flAdd+=(mgrInfoNow.floor[c]||0);
+      for(var _z=0;_z<4;_z++){ _cellAdd[_z]+=(mgrInfoNow.cell[_z][c]||0); if(_ad) _cellAvgAdd[_z]+=(_ad.cell[_z][c]||0); }
+      if(_ad) _flAvgAdd+=(_ad.floor[c]||0);
+    });
+    for(var _z2=0;_z2<4;_z2++) vals[_z2]+=_cellAdd[_z2];
+    var flTot=vals.reduce(function(a,b){return a+b;},0)+(_flAdd-_cellAdd.reduce(function(a,b){return a+b;},0));
     // 다른 조 지원 입력분을 층 합계에도 반영
     // ★ 지원 인원은 mpSupportAt() 하나로만 더한다 — 이 화면이 원래(2026-09-23 이전) 지원을 정확히
     //   반영하던 기준이며, 다른 화면들(전체현황 표 등)도 이제 전부 이 함수로 통일했다(재발방지).
@@ -34574,7 +34664,7 @@ async function loadMpHistory(){
   try{
     var res = await sb.from('mp_data').select('date,shift,values').order('date',{ascending:false});
     var nsRes = await sb.from('night_special_data').select('date,carpet,pbb,wax,stone,wood,restroom,es,toilet_daily,common_area,collection');
-    var mgrRes = await sb.from('mgr_attendance').select('date,status').eq('checked',true);
+    var mgrRes = await sb.from('mgr_attendance').select('date,team,name,status').eq('checked',true);
     var supRes = await sb.from('mp_support').select('date,values');
     if(res.error||!res.data||!res.data.length){
       listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--g3);font-size:14px">이력이 없습니다</div>';
@@ -34619,13 +34709,14 @@ async function loadMpHistory(){
       supRes.data.forEach(function(row){
         var vals6=row.values||{};
         var rowSum6=0;
-        Object.keys(vals6).forEach(function(f){ rowSum6+=(Number(vals6[f].toilet)||0)+(Number(vals6[f].both)||0)+(Number(vals6[f].common)||0); });
+        Object.keys(vals6).forEach(function(f){ rowSum6+=(Number(vals6[f].toilet)||0)+(Number(vals6[f].both)||0)+(Number(vals6[f].common)||0)+(Number(vals6[f].collect)||0); });
         if(rowSum6<=0) return;
         var d=row.date;
         if(!byDate[d]) byDate[d]={total:0,ls:0,as:0,night:0};
         byDate[d].total+=rowSum6;
       });
     }
+    try{ (await eduStaffRows('2000-01-01','2100-01-01')).forEach(function(r){ if(byDate[r.date]) byDate[r.date].total+=1; }); }catch(e){} // 교육·출장 직원 출근 포함
     var dates=Object.keys(byDate).sort().reverse();
     if(!dates.length){
       listEl.innerHTML='<div style="text-align:center;padding:20px;color:var(--g3);font-size:14px">이력이 없습니다</div>';
@@ -35119,6 +35210,14 @@ function fcBlockStaff(rk,w,bi,isTdy){
     if(live){ val+=fcStaffToday(rk,sh); act=true; } else val+=a;
   });
   return {avg:avg,val:val,act:act};
+}
+// 조장 출근 한 건 → 예보 칸 키(구역|동·서편|층)와 근무조. 해당 없으면 null
+function fcMgrCellOf(r){
+  var t=r.team, m=(r.name||'').match(/^([AB])조장$/);
+  if(!m||!mgrIsFloorSt(r.status||'출근')) return null; // 교육·출장 조장은 층에 없음
+  var sh=MP_MGR_AM_TEAMS.indexOf(t)>=0?'오전':(MP_MGR_PM_TEAMS.indexOf(t)>=0?'오후':null);
+  var fl=MP_MGR_TEAM_FLOOR[t]; if(!sh||!fl) return null;
+  return {k:(fl[0]==='LS'?'L/S':'A/S')+'|'+(m[1]==='A'?'동편':'서편')+'|'+({2:'1F',3:'2F',4:'3F'}[fl[1]]||'3F'), sh:sh};
 }
 function fcStaffToday(rk,shift){ var p=rk.split('|'); return FC.stToday?(FC.stToday[p[0]+'|'+p[1]+'|'+p[2]+'|'+shift]||0):0; }
 // 오늘 실제 인력이 5주 평균보다 적으면 그만큼 민원 위험을 키운다 (최대 1.5배). 오늘이 아니거나 해당 근무조 입력이 없으면 1
@@ -36206,6 +36305,16 @@ async function loadMgrAttQuotaSummaryFor(dateStr, attSrc){
       for(var ri=0;ri<4;ri++){ if(!vals[ri]) continue; for(var ci=0;ci<7;ci++){ sum+=Number(vals[ri][ci])||0; } }
       staffMap[r.team_code]=(staffMap[r.team_code]||0)+sum;
     });
+    // 다른 조 지원 나간 인원 — 보낸 조 입력엔 빠져 있으므로 소속 조(보낸 조) 출근에 다시 더한다 (조별 평균 출근인원·작업일지와 같은 규칙)
+    try{
+      var sqR=await sb.from('mp_support').select('from_team_code,values').eq('date',dateStr);
+      (sqR.data||[]).forEach(function(r){
+        var f=r.from_team_code; if(!f) return; var v=r.values||{}, n=0;
+        Object.keys(v).forEach(function(k){ var o=v[k]||{}; n+=(Number(o.toilet)||0)+(Number(o.both)||0)+(Number(o.common)||0)+(Number(o.collect)||0); });
+        staffMap[f]=(staffMap[f]||0)+n;
+      });
+    }catch(e){}
+    try{ (await eduStaffRows(dateStr,dateStr)).forEach(function(r){ staffMap[r.tc]=(staffMap[r.tc]||0)+1; }); }catch(e){} // 교육·출장 직원 출근 포함
     TEAM_ROW_ORDER_G.forEach(function(team){
       var subs=TEAM_SUBGROUPS_G[team]||[];
       var quota=quotaForTeam(team, qCounts); // 정원은 고정값 그대로 사용 (휴무라고 빼지 않음)
@@ -36720,6 +36829,8 @@ function mgrIsBancha(st){ return /반차/.test(String(st||''))||st==='전반'||s
 function mgrBanKind(st){ st=String(st||''); return (/전반/.test(st)||/오전반차/.test(st))?'F':((/후반/.test(st)||/오후반차/.test(st))?'B':''); }
 function mgrBanShort(st){ if(!mgrIsBancha(st)) return st; var k=mgrBanKind(st); return k==='F'?'전반':(k==='B'?'후반':st); } // 카드 표기는 전반/후반만
 function mgrIsPresentSt(st){ st=st||'출근'; return st==='출근'||st==='출장'||st==='교육'||mgrIsBancha(st); }
+// 층별 배치에 넣을 수 있는 출근 — 교육·출장 중인 관리자는 출근으로는 잡히지만 층에는 배치하지 않는다
+function mgrIsFloorSt(st){ st=st||'출근'; return mgrIsPresentSt(st)&&st!=='출장'&&st!=='교육'; }
 function mgrBanchaPending(team, name, dateStr){ var e=mgrLeaveEntryFor(team,name,dateStr); return !!(e&&mgrIsBancha(e.status)); }
 function mgrBanPendingCount(dateStr, attSrc, team){
   var n=0;
@@ -40577,9 +40688,10 @@ async function wfSpFetchActuals(){
       if(!actuals[r.date][code]) actuals[r.date][code]={leader:null, subs:[], staff:0};
       var vals=r.values||{};
       var sum=0;
-      Object.keys(vals).forEach(function(f){ sum+=(Number(vals[f].toilet)||0)+(Number(vals[f].both)||0)+(Number(vals[f].common)||0); });
+      Object.keys(vals).forEach(function(f){ sum+=(Number(vals[f].toilet)||0)+(Number(vals[f].both)||0)+(Number(vals[f].common)||0)+(Number(vals[f].collect)||0); });
       actuals[r.date][code].staff += sum;
     });
+    try{ (await eduStaffRows(dFrom,dTo)).forEach(function(r){ if(!actuals[r.date]) return; if(!actuals[r.date][r.team]) actuals[r.date][r.team]={leader:null, subs:[], staff:0}; actuals[r.date][r.team].staff+=1; }); }catch(e){} // 교육·출장 직원 실적 포함
     // ★ 운영팀(행정/총괄팀)도 mgr_attendance에 team:'운영팀', name:'사업부장'/'행정1'/'행정2'/'총괄1팀장'/'총괄2팀장'으로 저장됨
     //   — 이걸 안 넣으면 행정/총괄팀 실적이 항상 0으로 잡혀 총계(SUM_ALL)가 안 맞고, 셀 자체도 계획만 표시되는 문제가 있었음
     // ★ mgr_attendance엔 운영팀 소속이 team:'운영팀'이 아니라 team:'운영'으로 저장됨(myMgrAttSlot·MGR_STRUCTURE 내부 키 기준) — '운영팀'으로 조회하면 0건만 나와 실적이 항상 0으로 잡히던 버그
@@ -42827,7 +42939,10 @@ async function loadMonthlyStats(force){
       msFetchAll(function(){ return sb.from('mgr_attendance').select('date,team,name,checked,status').gte('date',dFrom).lte('date',dTo); }),
       msFetchAll(function(){ return sb.from('voc_data').select('id,voc_date,status,completed_at,content,channel,category,category_etc,loc_zone,loc_side,loc_floor,created_at').gte('voc_date',dFrom).lte('voc_date',dTo); }),
       msFetchAll(function(){ return sb.from('waste_data').select('waste_date,team_code,incineration_living,incineration_synthetic,incineration_food,incineration_wood,recycle_paper,recycle_plastic,recycle_can,recycle_glass,recycle_etc,misc_etc').gte('waste_date',dFrom).lte('waste_date',dTo); }),
-      msFetchAll(function(){ return sb.from('joint_work_data').select('id,work_date,teams,floors,headcount,items,batch_id,record_type').gte('work_date',dFrom).lte('work_date',dTo); })
+      msFetchAll(function(){ return sb.from('joint_work_data').select('id,work_date,teams,floors,headcount,items,batch_id,record_type').gte('work_date',dFrom).lte('work_date',dTo); }),
+      Promise.resolve({data:[]}),
+      msFetchAll(function(){ return sb.from('mp_support').select('date,values').gte('date',dFrom).lte('date',dTo); }),
+      eduStaffRows(dFrom,dTo).then(function(rows){ return {data:rows}; })
     ]);
     _dataTs=Date.now();
     }
@@ -42948,7 +43063,9 @@ async function loadMReport(){
       msFetchAll(function(){ return sb.from('voc_data').select('id,voc_date,status,completed_at,content,channel,category,category_etc,loc_zone,loc_side,loc_floor,created_at').gte('voc_date',dFrom).lte('voc_date',dTo); }),
       msFetchAll(function(){ return sb.from('waste_data').select('waste_date,team_code,incineration_living,incineration_synthetic,incineration_food,incineration_wood,recycle_paper,recycle_plastic,recycle_can,recycle_glass,recycle_etc,misc_etc').gte('waste_date',dFrom).lte('waste_date',dTo); }),
       msFetchAll(function(){ return sb.from('joint_work_data').select('id,work_date,teams,floors,headcount,items,batch_id,record_type').gte('work_date',dFrom).lte('work_date',dTo); }),
-      msFetchAll(function(){ return sb.from('work_vehicle_log').select('date,vehicle,purpose').gte('date',dFrom).lte('date',dTo); })
+      msFetchAll(function(){ return sb.from('work_vehicle_log').select('date,vehicle,purpose').gte('date',dFrom).lte('date',dTo); }),
+      msFetchAll(function(){ return sb.from('mp_support').select('date,values').gte('date',dFrom).lte('date',dTo); }),
+      eduStaffRows(dFrom,dTo).then(function(rows){ return {data:rows}; })
     ]);
     var anyErr=q.slice(0,9).some(function(r){ return r&&r.error; });
     if(anyErr){ if(banner) banner.style.display='flex'; return; }
@@ -43673,14 +43790,31 @@ function msCalc(q, key){
     var hb2=msKstHourBucket(r.occurred_at);
     if(hb2>=0) s.acc.byHour[hb2]++;
   });
+  // ── 지원 인원(mp_support) — 보낸 조 층별 입력엔 빠져 있으므로 일 총원에 다시 더함 (홈·현황판·전일 근무와 같은 기준)
+  ((q[10]&&q[10].data)||[]).forEach(function(r){
+    if(!r.date||r.date.indexOf(key)!==0) return;
+    var vv=r.values||{}, n=0;
+    Object.keys(vv).forEach(function(f){ n+=(Number(vv[f].toilet)||0)+(Number(vv[f].both)||0)+(Number(vv[f].common)||0)+(Number(vv[f].collect)||0); });
+    if(n<=0) return;
+    if(s.mp.days[r.date]!==undefined) s.mp.days[r.date]+=n;
+  });
+  // ── 교육·출장 직원 — 층 칸에는 없지만 출근했으므로 일 총원·조별 출근인원에 더함
+  ((q[11]&&q[11].data)||[]).forEach(function(r){
+    if(!r.date||r.date.indexOf(key)!==0) return;
+    if(s.mp.days[r.date]!==undefined) s.mp.days[r.date]+=1;
+    s.mp.byTeamSum[r.tc]=(s.mp.byTeamSum[r.tc]||0)+1;
+    if(!s.mp.byTeamDays[r.tc]) s.mp.byTeamDays[r.tc]={};
+    s.mp.byTeamDays[r.tc][r.date]=1;
+  });
   // ── 관리자 출근 (mgr_attendance)
   ((q[5]&&q[5].data)||[]).forEach(function(r){
     if(!r.date||r.date.indexOf(key)!==0) return;
-    if(!r.checked) return;
+    if(!r.checked || mgrIsHaeng(r)) return;
     // 출근 인원 집계 기준 통일: 출근/교육/출장만 (휴무·연차 등 제외) — 홈 화면·관리자출근탭과 동일
     var mgrSt=r.status||'출근';
     if(!mgrIsPresentSt(mgrSt)) return;
     s.mgr.days[r.date]=(s.mgr.days[r.date]||0)+1;
+    if(s.mp.days[r.date]!==undefined) s.mp.days[r.date]+=1; // 인력 일평균에 관리자(팀장·조장·총괄·사업부장) 포함 — 행정 2명은 위에서 제외됨
     if(r.status==='출장') s.mgr.trip++;
     if(r.status==='교육') s.mgr.edu++;
     // 조장(A/B/C조장)은 조별 인원(byTeamSum)에 합산, 팀장은 팀 단위로 별도 집계(byTeamMgrSum)

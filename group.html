@@ -422,9 +422,9 @@ function dashCalc(rows,rg){
     var o=R[d.id]||{}, g=function(m,k){return (o[m]&&o[m][k])||0;};
     var days=Math.max(g('days',''),1), f=rg.avg?function(v){return Math.round(v/days);}:function(v){return Math.round(v);};
     var sh={'오전':f(g('shift','오전')),'오후':f(g('shift','오후')),'야간':f(g('shift','야간')),'관리자':f(g('shift','관리자'))};
-    var staff=sh['오전']+sh['오후']+sh['야간']+sh['관리자'], quota=g('quota','total');
+    var edu=f(g('edu','')), staff=sh['오전']+sh['오후']+sh['야간']+sh['관리자']+edu, quota=g('quota','total');
     var hoT=g('ho','total'), hoC=g('ho','confirmed'), vT=g('voc','total'), vD=g('voc','done'), lT=g('lost','total'), lD=g('lost','done');
-    out[d.id]={sh:sh,staff:staff,quota:quota,rate:quota?Math.round(staff/quota*100):null,
+    out[d.id]={sh:sh,edu:edu,staff:staff,quota:quota,rate:quota?Math.round(staff/quota*100):null,
       hoT:hoT,hoC:hoC,hoRate:hoT?Math.round(hoC/hoT*100):100,vT:vT,vRate:vT?Math.round(vD/vT*100):100,lT:lT,lRate:lT?Math.round(lD/lT*100):100,
       acc:g('acc','total'),ev:g('ho','event'),jwN:g('jw','count'),jwP:g('jw','people'),
       fac:o.fac||{},vcat:o.voc_cat||{},atype:o.acc_type||{}};
@@ -1735,7 +1735,14 @@ function saveImage(){
 
 /* ---------- 로딩 ---------- */
 function stamp(){var p=kstParts();$('stamp').textContent='오늘 '+p.m+'/'+p.d+' '+p.hh+':'+p.mm+' 기준';}
-function loadNow(){var rg=dashRange();return rpc('group_dashboard',{p_from:rg.from,p_to:rg.to}).then(renderNow);}
+function loadNow(){var rg=dashRange();
+  return rpc('group_dashboard',{p_from:rg.from,p_to:rg.to}).then(function(rows){
+    rows=rows||[];
+    return rpc('group_edu_staff',{p_from:rg.from,p_to:rg.to}).then(function(ex){
+      (ex||[]).forEach(function(r){rows.push({division_id:r.division_id,metric:'edu',k:'',v:r.v});});
+      return rows;
+    },function(){return rows;});
+  }).then(renderNow);}
 function loadStats(){
   var rg=state.repMode==='year'&&state.tab==='rep'?yearRange(+state.month.slice(0,4)):monthRange(state.month);
   var yr=+state.month.slice(0,4), key=state.tab+'|'+state.month+'|'+state.repMode;

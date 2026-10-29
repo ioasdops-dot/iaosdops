@@ -860,7 +860,7 @@ function t1CClear(name){ try{ for(var i=localStorage.length-1;i>=0;i--){ var key
         }
         return {data:null,error:{message:'지원하지 않는 요청',code:'mp_compat'}};
       }
-      var UPS_KEYS={mp_card_assign:'division_id,date,shift,team_code',mp_support_draft:'division_id,date,shift,team_code',wf_quarter_start:'division_id,quarter',worklog_daily:'division_id,log_date,team_no',floor_report_snapshots:'division_id,report_date,slot',leaders:'division_id,shift,team',jw_year_teams:'division_id,year',night_special_data:'division_id,date,team_code',kpi_data:'division_id,year,month',mgr_attendance:'division_id,date,team,name',iso9001_files:'division_id,name,cert_type',companynews_files:'division_id,name',safety_files:'division_id,name',operation_manual_files:'division_id,name',risk_assessment_files:'division_id,name',training_material_files:'division_id,name',regulation_files:'division_id,name'};
+      var UPS_KEYS={app_settings:'division_id,key',mp_card_assign:'division_id,date,shift,team_code',mp_support_draft:'division_id,date,shift,team_code',wf_quarter_start:'division_id,quarter',worklog_daily:'division_id,log_date,team_no',floor_report_snapshots:'division_id,report_date,slot',leaders:'division_id,shift,team',jw_year_teams:'division_id,year',night_special_data:'division_id,date,team_code',kpi_data:'division_id,year,month',mgr_attendance:'division_id,date,team,name',iso9001_files:'division_id,name,cert_type',companynews_files:'division_id,name',safety_files:'division_id,name',operation_manual_files:'division_id,name',risk_assessment_files:'division_id,name',training_material_files:'division_id,name',regulation_files:'division_id,name'};
       var DIV_FREE={fc_pax:1,users:1,divisions:1,teams:1,team_groups:1,push_subscriptions:1,pw_reset_requests:1,user_read_marks:1,user_signatures:1};
       // 모든 사업부가 함께 보는 공통 자료 (등록·수정·삭제는 최고관리자만, 사업부 코드는 ALL)
       var COMMON_TABLES={regulation_files:1,iso9001_files:1,iso_cert_types:1,companynews_files:1,companynews_posts:1,safety_files:1,risk_assessment_files:1,training_material_files:1};
@@ -1645,6 +1645,12 @@ function t1CClear(name){ try{ for(var i=localStorage.length-1;i>=0;i--){ var key
         <div class="menu-title">현재 접속자</div>
         <div class="menu-desc">최근 5분 이내 활동한 사용자 확인</div>
         <span class="menu-arrow">보기 →</span>
+      </button>
+      <button class="menu-btn" id="refreshCfgBtn" onclick="go('refreshcfg')" style="display:none">
+        <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0 -2.3 5.7" /><path d="M20 4v7h-7" /></svg></span>
+        <div class="menu-title">갱신 주기 설정</div>
+        <div class="menu-desc">자동 조회 간격·임시저장 시간·전체채팅 켜기/끄기</div>
+        <span class="menu-arrow">설정 →</span>
       </button>
       <button class="menu-btn" id="deleteLogsBtn" onclick="go('deleteLogs')" style="display:none">
         <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l16 0" /><path d="M10 11l0 6" /><path d="M14 11l0 6" /><path d="M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2 -2l1 -12" /><path d="M9 7v-3a1 1 0 0 1 1 -1h4a1 1 0 0 1 1 1v3" /></svg></span>
@@ -2816,6 +2822,14 @@ function t1CClear(name){ try{ for(var i=localStorage.length-1;i>=0;i--){ var key
   </div>
   <div id="activeUsersSummary" style="margin:0 13px 10px;font-size:13px;color:var(--g5)"></div>
   <div id="activeUsersList" style="padding:0 13px 20px"></div>
+</div>
+<div id="sRefreshCfg" class="scr">
+  <div class="app-hd">
+    <button class="back-hd" onclick="go('main')">← 메인</button>
+    <div class="user-chip"><div class="u-av">⚙</div><span>갱신 주기 설정</span></div>
+  </div>
+  <div class="pg-hd"><div><h1>갱신 주기 설정</h1><small>마스터 전용 · 데이터 사용량(egress) 조절</small></div></div>
+  <div id="rcBody" style="padding:0 13px 24px"></div>
 </div>
 <div id="sHo" class="scr">
   <div class="app-hd">
@@ -8086,12 +8100,12 @@ function edSetMode(m){
 var _edPollTimer=null;
 function startExecDashPoll(){
   if(_edPollTimer) return;
-  _edPollTimer=setInterval(function(){
+  _edPollTimer=true; t1Every('dash',60,function(){
     // 지금 실제로 현황판 화면이 보이고 있을 때만 갱신 (불필요한 조회 방지)
     var scr=document.getElementById('sExecDash');
     if(!scr||scr.style.display==='none') return;
     if(typeof loadExecDashboard==='function') loadExecDashboard();
-  }, 60000); // 60초
+  });
 }
 
 async function loadExecDashboard(){
@@ -10306,6 +10320,7 @@ async function wlAnExcel(){
 }
 
 function go(name){
+  if(name==='refreshcfg'&&(!me||me.role!=='master')){ toast('⚠️ 최고관리자만 접근할 수 있습니다'); return; }
   if(name==='login'){ try{ ['noticeM','newsPopupM'].forEach(function(id){ var e=document.getElementById(id); if(e) e.classList.remove('on'); }); _noticeQueue=[]; _newsQueue=[]; _newsShowing=false; }catch(e){} }
   if(me&&me.role==='vehicle_guest'&&name!=='veh'&&name!=='login'){ return; }
   if(me&&me.role==='work_vehicle'&&name!=='workveh'&&name!=='login'){ return; }
@@ -10347,7 +10362,7 @@ function go(name){
   _curScreenName=name;
   if(typeof FACILITY_MENU_KEYS!=='undefined'&&FACILITY_MENU_KEYS.indexOf(name)!==-1) bumpFacilityMenuView(name);
   updateIosBackBtn();
-  const map={hazard:'sHazard',login:'sLogin',reg:'sReg',main:'sMain',mp:'sMp',ho:'sHo',chat:'sChat',iso9001:'sIso9001',news:'sNews',safety:'sSafety',manual:'sManual',risk:'sRisk',training:'sTraining',accident:'sAccident',groupchat:'sGroupChat',admin:'sAdmin',veh:'sVeh',kpi:'sKpi',facility:'sFacility',voc:'sVoc',lost:'sLost',equipment:'sEquipment',waste:'sWaste',notice:'sNotice',statsdash:'sStatsDash',mreport:'sMReport',execdash:'sExecDash',downloadcenter:'sDownloadCenter',workveh:'sWorkVeh',jointwork:'sJointWork',toilet:'sToiletMgmt',shower:'sShowerMgmt',smoking:'sSmokingMgmt',rest:'sRestMgmt',storage:'sStorageMgmt',baby:'sBabyMgmt',office:'sOfficeMgmt',activeUsers:'sActiveUsers',perf:'sPerf',deleteLogs:'sDeleteLogs',admconfirm:'sAdc',eduevent:'sEduEvent',eduattend:'sEduAttend',workforce:'sWorkforce',workschedule:'sWorkSchedule',specialwork:'sSpecialWork',forecast:'sForecast',pax:'sPax',worklog:'sWorkLog',campaign:'sCampaign',campaigndetail:'sCampaignDetail',emproster:'sEmpRoster',noticeconfirm:'sNcf',mtgmaterial:'sMtg',mtgweekdetail:'sMtgWeekDetail',mtgmonthdetail:'sMtgMonthDetail',mtgweekwrite:'sMtgWeekWrite',mtgmonthwrite:'sMtgMonthWrite',mtgweekreport:'sMtgWeekReport',mtgmonthreport:'sMtgMonthReport',mtgmonthitemedit:'sMtgMonthItemEdit',mtgweekitemedit:'sMtgWeekItemEdit'};
+  const map={refreshcfg:'sRefreshCfg',hazard:'sHazard',login:'sLogin',reg:'sReg',main:'sMain',mp:'sMp',ho:'sHo',chat:'sChat',iso9001:'sIso9001',news:'sNews',safety:'sSafety',manual:'sManual',risk:'sRisk',training:'sTraining',accident:'sAccident',groupchat:'sGroupChat',admin:'sAdmin',veh:'sVeh',kpi:'sKpi',facility:'sFacility',voc:'sVoc',lost:'sLost',equipment:'sEquipment',waste:'sWaste',notice:'sNotice',statsdash:'sStatsDash',mreport:'sMReport',execdash:'sExecDash',downloadcenter:'sDownloadCenter',workveh:'sWorkVeh',jointwork:'sJointWork',toilet:'sToiletMgmt',shower:'sShowerMgmt',smoking:'sSmokingMgmt',rest:'sRestMgmt',storage:'sStorageMgmt',baby:'sBabyMgmt',office:'sOfficeMgmt',activeUsers:'sActiveUsers',perf:'sPerf',deleteLogs:'sDeleteLogs',admconfirm:'sAdc',eduevent:'sEduEvent',eduattend:'sEduAttend',workforce:'sWorkforce',workschedule:'sWorkSchedule',specialwork:'sSpecialWork',forecast:'sForecast',pax:'sPax',worklog:'sWorkLog',campaign:'sCampaign',campaigndetail:'sCampaignDetail',emproster:'sEmpRoster',noticeconfirm:'sNcf',mtgmaterial:'sMtg',mtgweekdetail:'sMtgWeekDetail',mtgmonthdetail:'sMtgMonthDetail',mtgweekwrite:'sMtgWeekWrite',mtgmonthwrite:'sMtgMonthWrite',mtgweekreport:'sMtgWeekReport',mtgmonthreport:'sMtgMonthReport',mtgmonthitemedit:'sMtgMonthItemEdit',mtgweekitemedit:'sMtgWeekItemEdit'};
   const id=map[name]||name;
   SCREENS.forEach(s=>{
     const el=document.getElementById(s);
@@ -10369,6 +10384,7 @@ function go(name){
   if(name==='worklog') wlEnter();
   if(name==='hazard') hzEnter();
   if(name==='activeUsers') loadActiveUsers();
+  if(name==='refreshcfg') rcLoad();
   if(name==='deleteLogs') loadDeleteLogs();
   // 화면 진입 시 자동 새로고침
   if(name==='mp'){
@@ -10549,6 +10565,7 @@ function applyRoleUI(){
   if(ab) ab.style.display=isMaster?'block':'none';
   var aub=document.getElementById('activeUsersBtn');
   if(aub) aub.style.display=(me.role==='admin'||me.role==='master')?'block':'none';
+  var rcb=document.getElementById('refreshCfgBtn'); if(rcb) rcb.style.display=isMaster?'block':'none';
   var dlb=document.getElementById('deleteLogsBtn');
   if(dlb) dlb.style.display=isMaster?'block':'none';
   var adcb=document.getElementById('adcMenuBtn');
@@ -24155,7 +24172,7 @@ async function acctGuardCheck(){
   }catch(e){}
   _acctGuardBusy=false;
 }
-setInterval(function(){ if(!document.hidden) acctGuardCheck(); },30000);
+t1Every('acct',30,function(){ if(!document.hidden) acctGuardCheck(); });
 document.addEventListener('visibilitychange',function(){ if(!document.hidden) acctGuardCheck(); });
 
 // 로그인 7회 실패로 잠긴 계정 해제 (관리자/최고관리자, 본인 비밀번호 확인)
@@ -35996,7 +36013,7 @@ function fcRefreshIfVisible(){
     fcLoad().then(function(){ FC._busy=0; fcRender(); }).catch(function(){ FC._busy=0; });
   }catch(e){ FC._busy=0; }
 }
-setInterval(function(){ if(!document.hidden) fcRefreshIfVisible(); },180000);
+t1Every('fc',180,function(){ if(!document.hidden) fcRefreshIfVisible(); });
 document.addEventListener('visibilitychange',function(){ if(!document.hidden&&FC.loadedAt&&Date.now()-FC.loadedAt>60000) fcRefreshIfVisible(); });
 function fcPickDay(w){ FC.wd=w; fcRenderPills(); fcRender(); }
 function fcToggleMore(){ FC.more=!FC.more; fcRender(); }
@@ -37003,7 +37020,7 @@ async function sendHeartbeat(){
   if(document.visibilityState!=='visible') return;
   try{ await sb.rpc('self_update_prefs', {p_last_active: new Date().toISOString()}); }catch(e){}
 }
-setInterval(sendHeartbeat, 60000);
+t1Every('beat',60,sendHeartbeat);
 document.addEventListener('visibilitychange', function(){ if(document.visibilityState==='visible') sendHeartbeat(); });
 
 // ── 현재 접속자 화면 (admin·master 전용) ──

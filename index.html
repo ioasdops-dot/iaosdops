@@ -1308,6 +1308,12 @@ function t1CClear(name){ try{ for(var i=localStorage.length-1;i>=0;i--){ var key
   <div class="menu-cat" id="menuCat_stat">
     <div class="sec-lbl" style="padding:14px 13px 6px">📊 통계·현황</div>
     <div class="menu-grid">
+      <button class="menu-btn" id="refreshCfgBtn2" onclick="go('refreshcfg')" style="display:none">
+        <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0 -2.3 5.7" /><path d="M20 4v7h-7" /></svg></span>
+        <div class="menu-title">사용 설정·갱신 주기</div>
+        <div class="menu-desc">메뉴 사용/끔 · 직급별 권한 · 갱신 간격 (최고관리자 전용)</div>
+        <span class="menu-arrow">설정 →</span>
+      </button>
       <button class="menu-btn" id="execDashMenuBtn" onclick="go('execdash')" style="display:none">
         <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4l4 -6" /></svg></span>
         <div class="menu-title">현황판</div>
@@ -10565,7 +10571,7 @@ function applyRoleUI(){
   if(ab) ab.style.display=isMaster?'block':'none';
   var aub=document.getElementById('activeUsersBtn');
   if(aub) aub.style.display=(me.role==='admin'||me.role==='master')?'block':'none';
-  var rcb=document.getElementById('refreshCfgBtn'); if(rcb) rcb.style.display=isMaster?'block':'none';
+  var rcb=document.getElementById('refreshCfgBtn'); if(rcb) rcb.style.display=isMaster?'block':'none'; var rcb2=document.getElementById('refreshCfgBtn2'); if(rcb2) rcb2.style.display=isMaster?'block':'none';
   var dlb=document.getElementById('deleteLogsBtn');
   if(dlb) dlb.style.display=isMaster?'block':'none';
   var adcb=document.getElementById('adcMenuBtn');

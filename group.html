@@ -290,6 +290,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
     <button data-t="vh" role="tab">차량</button>
     <button data-t="fc" role="tab">청결예보</button>
     <button data-t="px" role="tab">여객</button>
+    <button data-t="ab" role="tab">비정상상황</button>
     <button data-t="rep" role="tab">리포트</button>
     <button data-t="adm" role="tab" id="tabAdm" style="display:none">관리</button>
   </div>
@@ -307,6 +308,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
   <section class="pane" id="p-fc"></section>
   <section class="pane" id="p-px"></section>
   <section class="pane" id="p-adm"></section>
+  <section class="pane" id="p-ab"></section>
   <section class="pane" id="p-rep"></section>
 </div>
 
@@ -499,13 +501,13 @@ var AT_OPS={'유준영':'사업부장','양민석':'총괄1팀장','조준희':'
 var AT_GRP={id:'ALL',short:'그룹',name:'그룹 소속 관리자',color:'#6B7280',soft:'#EEF0F4'};
 function admCanUse(){return state.role==='master'||state.role==='admin';}
 /* 기능 권한: 직급 기본값 + 개인 지정 (최고관리자가 관리 탭에서 지정) */
-var FEATS=[['now','현황판'],['div','사업부'],['at','근태'],['sp','특별근무'],['sc','일정'],['lb','자료실'],['stat','통계'],['vh','차량'],['fc','청결예보'],['px','여객'],['rep','리포트']];
-function featOk(k){ return !state.feats||state.feats.indexOf(k)>=0; }
+var FEATS=[['now','현황판'],['div','사업부'],['at','근태'],['sp','특별근무'],['sc','일정'],['lb','자료실'],['stat','통계'],['vh','차량'],['fc','청결예보'],['px','여객'],['ab','비정상상황'],['rep','리포트']];
+function featOk(k){ if(k==='ab'&&(state.role==='master'||state.role==='group_viewer')) return true; return !state.feats||state.feats.indexOf(k)>=0; }
 function applyFeats(){
   document.querySelectorAll('.tabs button').forEach(function(b){ var k=b.dataset.t; if(k==='adm') return; b.style.display=featOk(k)?'':'none'; });
   if(!featOk(state.tab)){ var f=FEATS.filter(function(x){return featOk(x[0]);})[0]; state.tab=f?f[0]:'now'; }
   document.querySelectorAll('.tabs button').forEach(function(b){ b.classList.toggle('on',b.dataset.t===state.tab); });
-  ['now','div','at','sp','sc','lb','vh','fc','px','stat','rep','adm'].forEach(function(k){ var e=$('p-'+k); if(e) e.classList.toggle('on',k===state.tab); });
+  ['now','div','at','sp','sc','lb','vh','fc','px','stat','ab','rep','adm'].forEach(function(k){ var e=$('p-'+k); if(e) e.classList.toggle('on',k===state.tab); });
 }
 function atCanEdit(){return state.role==='master'||(state.role==='admin'&&state.myDiv==='ALL');}
 function atIsGroupMe(){return state.role!=='group_viewer'&&state.role!=='group_staff'&&(state.myDiv==='ALL'||state.role==='master');}
@@ -1743,6 +1745,39 @@ function loadNow(){var rg=dashRange();
       return rows;
     },function(){return rows;});
   }).then(renderNow);}
+
+/* ---------- 비정상상황 (3개 사업장 합산 · 사업장 화면이 저장한 스냅샷) ---------- */
+function loadAb(){return rpc('group_abnormal',{p_date:null}).then(renderAb);}
+function abAgo(t){if(!t)return '';var m=Math.max(0,Math.round((Date.now()-new Date(t).getTime())/60000));return m<1?'방금 전':(m<60?m+'분 전':Math.floor(m/60)+'시간 '+(m%60)+'분 전');}
+function renderAb(rows){
+  var el=$('p-ab'); rows=rows||[];
+  if(!divs.length){el.innerHTML='<div class="card empty">등록된 사업부가 없어요.</div>';return;}
+  var by={}; rows.forEach(function(r){by[r.division_id]=r;});
+  var T={q:0,inn:0,c:0,mc:0,sup:0,xie:0,sh:0,n:0};
+  var cards=divs.map(function(d){
+    var r=by[d.id]||{}, x=r.data||null, has=x&&x.q!=null;
+    if(r.dormant) return '<div class="card"><div style="font-size:16px;font-weight:800;margin-bottom:4px"><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+d.color+';margin-right:6px"></i>'+esc(d.short)+'</div><div class="empty" style="padding:14px">비정상상황 대기 중 (현재 꺼져 있음)</div></div>';
+    if(!has) return '<div class="card"><div style="font-size:16px;font-weight:800;margin-bottom:4px"><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+d.color+';margin-right:6px"></i>'+esc(d.short)+'</div><div class="empty" style="padding:14px">오늘 집계 전입니다.<br>사업장 비정상상황 화면이 열리면 표시됩니다.</div></div>';
+    var rate=x.q?Math.round(x.in/x.q*100):0, old=(Date.now()-new Date(r.updated_at).getTime())>30*60000;
+    T.q+=x.q;T.inn+=x.in;T.c+=x.c;T.mc+=x.mc;T.sup+=x.sup;T.xie+=x.xie;T.sh+=x.short||0;T.n++;
+    var cl=rate>=90?'#1A7F37':(rate>=70?'#B45F06':'#C0392B');
+    return '<div class="card" style="border-left:5px solid '+d.color+'"><div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:16px"><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+d.color+';margin-right:6px"></i>'+esc(d.short)+'</b><small style="color:'+(old?'#C0392B':'var(--mut)')+';font-weight:700">'+(old?'⚠ ':'')+abAgo(r.updated_at)+' 갱신</small></div>'
+     +'<div style="display:flex;align-items:baseline;gap:6px;margin-top:6px"><b style="font-size:34px;line-height:1">'+n0(x.in)+'</b><span style="font-size:15px;font-weight:700">명 투입</span><span style="margin-left:auto;font-size:14px;color:var(--mut);font-weight:700">정원 '+n0(x.q)+'명</span></div>'
+     +'<div style="height:10px;background:#EDEFF2;border-radius:6px;overflow:hidden;margin:8px 0 4px"><i style="display:block;height:100%;width:'+Math.min(100,rate)+'%;background:'+cl+'"></i></div>'
+     +'<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800"><span style="color:'+cl+'">투입률 '+rate+'%</span><span style="color:'+((x.short||0)>0?'#C0392B':'#1A7F37')+'">부족 구역 '+(x.short||0)+'곳</span></div>'
+     +'<div style="display:flex;flex-wrap:wrap;gap:4px 12px;font-size:13px;margin-top:8px;color:var(--ink)"><span>근무 <b>'+n0(x.c)+'</b></span><span>관리 <b>'+n0(x.mc)+'</b></span><span>지원 <b>'+n0(x.sup)+'</b></span><span>협정 <b>'+n0(x.xie)+'</b></span>'+(x.ent?'<span>조장입력 <b>'+n0(x.ent)+'</b></span>':'')+'</div>'
+     +'<div style="font-size:11.5px;color:var(--mut);margin-top:6px">기준 '+esc(x.base||'')+(x.dowAvg!=null?' · '+esc(x.dow||'')+'요일 평균 '+n0(x.dowAvg)+'명':'')+' · 휴무외 '+n0(x.o)+' · 결근 '+n0(x.abs)+(x.pend?' · 체크 대기 '+n0(x.pend):'')+'</div></div>';
+  }).join('');
+  var rt=T.q?Math.round(T.inn/T.q*100):0, cl2=rt>=90?'#1A7F37':(rt>=70?'#B45F06':'#C0392B');
+  var hero='<div class="card"><div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px"><b style="font-size:16px">비정상상황 투입 현황</b><small style="color:var(--mut);font-weight:700">'+(T.n?T.n+'개 사업장 합계':'집계 전')+'</small></div>'
+    +(T.n?'<div style="display:flex;align-items:baseline;gap:6px"><b style="font-size:44px;line-height:1">'+n0(T.inn)+'</b><span style="font-size:17px;font-weight:700">명 투입</span><span style="margin-left:auto;font-size:15px;color:var(--mut);font-weight:700">정원 '+n0(T.q)+'명</span></div>'
+    +'<div style="height:12px;background:#EDEFF2;border-radius:7px;overflow:hidden;margin:10px 0 6px"><i style="display:block;height:100%;width:'+Math.min(100,rt)+'%;background:'+cl2+'"></i></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:800"><span style="color:'+cl2+'">투입률 '+rt+'%</span><span style="color:'+(T.sh>0?'#C0392B':'#1A7F37')+'">부족 구역 '+T.sh+'곳</span></div>'
+    +'<div class="kg" style="margin-top:10px;grid-template-columns:repeat(4,minmax(0,1fr))">'+kcell('근무',n0(T.c),'명')+kcell('관리',n0(T.mc),'명')+kcell('지원',n0(T.sup),'명')+kcell('협정',n0(T.xie),'명')+'</div>'
+    :'<div class="empty" style="padding:14px">아직 집계된 사업장이 없어요.</div>')
+    +'<div style="font-size:11.5px;color:var(--mut)">합계에는 집계된 사업장만 포함됩니다. 각 사업장의 비정상상황 화면이 계산한 값을 그대로 모은 것이며, 그 화면이 열려 있을 때 1분마다 갱신됩니다.</div></div>';
+  el.innerHTML=hero+cards;
+}
 function loadStats(){
   var rg=state.repMode==='year'&&state.tab==='rep'?yearRange(+state.month.slice(0,4)):monthRange(state.month);
   var yr=+state.month.slice(0,4), key=state.tab+'|'+state.month+'|'+state.repMode;
@@ -2583,7 +2618,7 @@ document.addEventListener('click',function(e){
 
 function load(){
   stamp(); wxLoad();
-  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : state.tab==='fc' ? loadFc() : state.tab==='px' ? loadPx() : state.tab==='adm' ? loadAdm() : (state.tab==='stat' ? loadStat() : loadRep()));
+  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : state.tab==='fc' ? loadFc() : state.tab==='px' ? loadPx() : state.tab==='ab' ? loadAb() : state.tab==='adm' ? loadAdm() : (state.tab==='stat' ? loadStat() : loadRep()));
   return p.catch(function(e){
     var msg=(e&&e.message)||'알 수 없는 오류';
     $('p-'+state.tab).innerHTML='<div class="card empty">데이터를 불러오지 못했어요.<br>'+esc(msg)+'<br>잠시 후 새로고침을 눌러 주세요.</div>';
@@ -2593,7 +2628,7 @@ function showTab(t){
   if(t!=='adm'&&!featOk(t)) return;
   state.tab=t;
   document.querySelectorAll('.tabs button').forEach(function(b){var on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
-  ['now','div','at','sp','sc','lb','vh','fc','px','stat','rep','adm'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
+  ['now','div','at','sp','sc','lb','vh','fc','px','stat','ab','rep','adm'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
   load();
 }
 

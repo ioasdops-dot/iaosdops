@@ -484,13 +484,19 @@ async function loadAll(quiet){
     S.coClose=null;try{var clr=await getAll('/ab_coop_close?select=closed_at,closed_by&work_date=eq.'+D);S.coClose=(clr&&clr[0])||null;}catch(e){S.coClose=null;}
     S.coAdm=null;if(isAdm()){try{S.coAdm=await rpc('ab_coop_admin_view',{p_date:D});}catch(e){S.coAdm=null;}}
     S.coop=R[11];S.roster=R[20]||[];S.coTimes={};(R[21]||[]).forEach(function(t){S.coTimes[t.shift]=t.label;});S.companies=R[12];S.events=R[14]||[];S.hq={'경영본부':0,'사업본부':0};R[13].forEach(function(x){S.hq[x.org]=x.cnt;});
-    compute();
+    compute();snapSave();
     S.loadedKey=D+'|'+S.base;
     if(!S.ck.team)initSel();
     S.lastAt=new Date();
   }catch(e){console.error(e);S.err=e.message||String(e);}
   S.loading=false;render();
 }
+// 그룹앱 합산용 스냅샷: 오늘·실시간 기준일 때만, 화면이 계산한 숫자를 그대로 저장 (1분 이상 간격, 같은 값은 10분에 한 번)
+function snapSave(){try{if(S.date!==kst()||S.base!=='auto'||!S.acc||!S.acc.open)return;var T=totals(),z=zoneCounts(),n=0;ZKEYS.forEach(function(k){if(lowZ(z[k],k))n++;});
+  var dw=dowAvg(),d={q:T.q,in:T.in,c:T.c,mc:T.mc,sup:T.sup,xie:T.xie,ent:T.ent||0,o:T.o,abs:T.abs,pend:T.pend,short:n,base:baseLabel(),dowAvg:dw?dw.avg:null,dow:dw?dw.dow:null};
+  var js=JSON.stringify(d),now=Date.now(),st=snapSave._st||(snapSave._st={t:0,s:''});
+  if(now-st.t<55000)return;if(st.s===js&&now-st.t<600000)return;st.t=now;st.s=js;
+  rpc('ab_snapshot_save',{p_data:d}).catch(function(){});}catch(e){}}
 function grpLetter(g){var m=String(g||'').match(/^[A-C]/);return m?m[0]:'';}
 function compute(){
   S.grp={};var shiftCnt={};

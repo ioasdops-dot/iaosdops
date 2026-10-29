@@ -323,6 +323,7 @@ var SUPABASE_KEY='sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
 var DIV_NAMES={T1:'T1환경미화사업부',T2:'T2환경미화사업부',BD:'부대건물환경미화사업부'};
 function curDiv(){try{var u=JSON.parse(localStorage.getItem('t1_me')||'null');if(!u)return null;if(u.role==='master'||u.role==='group_viewer')return localStorage.getItem('iaos_div')||u.division_id||null;return u.division_id||null;}catch(e){return null;}}
 function isMultiUser(){try{var u=JSON.parse(localStorage.getItem('t1_me')||'null');return !!(u&&(u.role==='master'||u.role==='group_viewer'));}catch(e){return false;}}
+function divShort(){return {T1:'T1',T2:'T2',BD:'부대건물'}[curDiv()]||'T1';}
 function divName(){return DIV_NAMES[curDiv()]||'환경미화사업부';}
 function sbFetch(path,opt){opt=opt||{};
   if(path.indexOf('/rpc/')!==0&&(opt.method||'GET')==='GET'&&isMultiUser()&&curDiv()&&path.indexOf('division_id=')<0){path+=(path.indexOf('?')>=0?'&':'?')+'division_id=eq.'+encodeURIComponent(curDiv());}var tok=SUPABASE_KEY;try{var a=JSON.parse(localStorage.getItem('t1_auth')||'null');if(a&&a.access_token)tok=a.access_token;}catch(e){}
@@ -414,7 +415,6 @@ async function loadAll(quiet){
   try{
     S.acc=await rpc('ab_my_access');
     if(!S.acc||!S.acc.open){S.loading=false;render();return;}
-    var _dv=curDiv();if(_dv&&_dv!=='T1'){S.loading=false;S.otherDiv=true;render();return;}
     var qsRows=await getJ('/wf_quarter_start?select=quarter,apply_from');var qs={};qsRows.forEach(function(x){qs[x.quarter]=String(x.apply_from).slice(0,10);});
     var cq=calQ(D),eq=(qs[cq]&&D<qs[cq])?prevQ(cq):cq;var qin=(eq===cq?[cq]:[eq,cq]).map(encodeURIComponent).join(',');
     var from28=shiftD(D,-28);
@@ -1079,7 +1079,7 @@ function pubRender(){var A=APP(),I=PUB.info;
   if(I&&I.dormant){A.innerHTML='<div class="pub"><div class="card"><div class="empty">현재 휴면 중입니다.<br>현장 담당자에게 문의하세요.</div></div></div>';return;}
   if(!I||!I.ok){A.innerHTML='<div class="pub"><div class="card"><div class="empty">유효하지 않거나 만료된 QR입니다.<br>현장 담당자에게 오늘 QR을 다시 확인하세요.</div></div></div>';return;}
   var d=I.date.split('-');
-  A.innerHTML='<div class="pub"><div style="text-align:center"><b style="font-size:22px">협정사 '+(PUB.k==='in'?'출근':PUB.k==='out'?'퇴근':'출퇴근')+'</b><div style="color:var(--sub);font-weight:700;margin-top:4px">T1 환경미화 · '+(+d[1])+'월 '+(+d[2])+'일 ('+dowOf(I.date)+')</div></div><div class="card"><h3 style="margin-top:0">회사</h3><div class="chips">'+I.companies.map(function(c){return '<span class="chip'+(PUB.co===c.id?' on':'')+'" style="font-size:17px;padding:12px 18px" onclick="PUB.co='+c.id+';pubRender()">'+esc(c.name)+'</span>';}).join('')+'</div><h3>이름</h3><input type="text" id="pubName" placeholder="이름을 입력하세요" maxlength="20" value="'+esc((document.getElementById('pubName')||{}).value||'')+'">'
+  A.innerHTML='<div class="pub"><div style="text-align:center"><b style="font-size:22px">협정사 '+(PUB.k==='in'?'출근':PUB.k==='out'?'퇴근':'출퇴근')+'</b><div style="color:var(--sub);font-weight:700;margin-top:4px">'+divShort()+' 환경미화 · '+(+d[1])+'월 '+(+d[2])+'일 ('+dowOf(I.date)+')</div></div><div class="card"><h3 style="margin-top:0">회사</h3><div class="chips">'+I.companies.map(function(c){return '<span class="chip'+(PUB.co===c.id?' on':'')+'" style="font-size:17px;padding:12px 18px" onclick="PUB.co='+c.id+';pubRender()">'+esc(c.name)+'</span>';}).join('')+'</div><h3>이름</h3><input type="text" id="pubName" placeholder="이름을 입력하세요" maxlength="20" value="'+esc((document.getElementById('pubName')||{}).value||'')+'">'
    +('<h3>휴대폰 번호 뒤 6자리</h3><div class="phw"><span>***-**</span><input type="tel" id="pubPh" inputmode="numeric" autocomplete="off" placeholder="00-0000" maxlength="7" oninput="pubPhFmt(this)" value="'+esc((document.getElementById('pubPh')||{}).value||'')+'"></div>')
    +'<h3>서명</h3><div class="sgw"><canvas id="pubSg" width="480" height="195"></canvas><span class="sgp" id="pubSgp">손가락으로 서명하세요</span><div class="sgc" onclick="pubSignClear()">지우기</div></div>'
    +'<div class="big"'+(PUB.busy?' style="opacity:.45;pointer-events:none"':'')+'>'+(PUB.k!=='out'?'<div style="background:linear-gradient(135deg,var(--teal),var(--teal2))" onclick="pubPunch(\'in\')">출근</div>':'')+(PUB.k!=='in'?'<div style="background:var(--navy)" onclick="pubPunch(\'out\')">퇴근</div>':'')+'</div>'
@@ -1374,7 +1374,7 @@ function a3Html(m){
   var e=function(x){return esc(String(x));},rc=function(r){return r==null?'#FFFFFF':r<.5?'#FBE3E0':r<.8?'#FFF1D6':'#DDF3E8';};
   var cw='<colgroup>'+A3W.map(function(w){return '<col style="width:'+(w/ A3W.reduce(function(a,b){return a+b;},0)*100)+'%">';}).join('')+'</colgroup>';
   var h='<!doctype html><html><head><meta charset="utf-8"><title>일일 근무현황</title><style>@page{size:A3 portrait;margin:8mm}*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}html,body{margin:0;background:#fff;font-family:"Malgun Gothic","Noto Sans CJK KR",sans-serif;color:#1B2A44}.p{width:100%;padding:0}table{border-collapse:collapse;width:100%;table-layout:fixed;height:1500px}td,th{border:1px solid #9AA7BD;text-align:center;vertical-align:middle;padding:3px 2px;font-size:15px;line-height:1.25}.t{background:#1F3A6E;color:#fff;font-size:34px;font-weight:800;padding:12px}.s{background:#EAF0F8;color:#44546A;font-size:14px}.sec{background:#3F6FC4;color:#fff;font-weight:800;font-size:19px;text-align:left;padding:7px 10px}.hd{background:#1F3A6E;color:#fff;font-weight:800;font-size:13px}.k1{color:#fff;font-weight:800;font-size:16px;padding:6px}.k2{font-size:38px;font-weight:800;background:#fff;padding:8px}.k3{background:#F3F5F9;color:#44546A;font-size:12.5px}.b{font-weight:800}.gap td{border:0;height:10px}.bl{color:#3F6FC4;font-weight:800}</style></head><body><div class="p"><table>'+cw;
-  h+='<tr><td class="t" colspan="12">T1 비정상상황 대응 근무 현황</td></tr><tr><td class="s" colspan="12">'+e(m.stamp)+'  |  정원 기준 '+e(m.basis)+'  |  투입 = 소속 근무 − 지원 나감 + 지원 받음 + 협정사 + 관리자 출근  |  투입률 = 투입 ÷ 정원</td></tr><tr class="gap"><td colspan="12"></td></tr>';
+  h+='<tr><td class="t" colspan="12">'+divShort()+' 비정상상황 대응 근무 현황</td></tr><tr><td class="s" colspan="12">'+e(m.stamp)+'  |  정원 기준 '+e(m.basis)+'  |  투입 = 소속 근무 − 지원 나감 + 지원 받음 + 협정사 + 관리자 출근  |  투입률 = 투입 ÷ 정원</td></tr><tr class="gap"><td colspan="12"></td></tr>';
   var cs=a3Cards(m);[0,3].forEach(function(i){var r=cs.slice(i,i+3);
     h+='<tr>'+r.map(function(c){return '<td class="k1" colspan="4" style="background:#'+c[3]+'">'+e(c[0])+'</td>';}).join('')+'</tr><tr>'+r.map(function(c){return '<td class="k2" colspan="4" style="color:#'+c[3]+'">'+e(c[1])+'</td>';}).join('')+'</tr><tr>'+r.map(function(c){return '<td class="k3" colspan="4">'+e(c[2])+'</td>';}).join('')+'</tr>';});
   h+='<tr class="gap"><td colspan="12"></td></tr><tr><td class="sec" colspan="12">① 시간대별 요약</td></tr><tr class="hd"><td colspan="2">시간대<td>정원<td>근무<br>(조원)<td>관리자<td>지원<br>(외부·행정)<td>협정사<td colspan="2">투입 합계<td>투입률<td>평소 근무<td>평소 대비</tr>';
@@ -1411,7 +1411,7 @@ async function a3Xlsx(){var m=a3Get();if(!m)return;
     for(var r=r1;r<=r2;r++)for(var c=c1;c<=c2;c++){var ce=ws.getCell(r,c);ce.border=BD;if(o.bg)ce.fill={type:'pattern',pattern:'solid',fgColor:{argb:'FF'+o.bg}};}
     var t=ws.getCell(r1,c1);t.value=v;t.font={name:FN,size:o.sz||12,bold:!!o.b,color:{argb:'FF'+(o.fg||'1B2A44')}};t.alignment={horizontal:o.h||'center',vertical:'middle',wrapText:true};if(o.fmt)t.numFmt=o.fmt;}
   var rcol=function(r){return r==null?'F3F5F9':r<.5?'FBE3E0':r<.8?'FFF1D6':'DDF3E8';};
-  put(1,1,1,12,'T1 비정상상황 대응 근무 현황',{sz:30,b:1,fg:'FFFFFF',bg:A3C.navy});ws.getRow(1).height=50;
+  put(1,1,1,12,divShort()+' 비정상상황 대응 근무 현황',{sz:30,b:1,fg:'FFFFFF',bg:A3C.navy});ws.getRow(1).height=50;
   put(2,1,2,12,m.stamp+'   |   정원 기준 '+m.basis+'   |   투입 = 소속 근무 − 지원 나감 + 지원 받음 + 협정사 + 관리자 출근   |   투입률 = 투입 ÷ 정원',{sz:11,fg:'44546A',bg:A3C.lb});ws.getRow(2).height=24;
   var cs=a3Cards(m);
   [[4,0],[7,3]].forEach(function(p){for(var k=0;k<3;k++){var c=cs[p[1]+k],c1=1+k*4;put(p[0],c1,p[0],c1+3,c[0],{sz:13,b:1,fg:'FFFFFF',bg:c[3]});put(p[0]+1,c1,p[0]+1,c1+3,c[1],{sz:30,b:1,fg:c[3]});put(p[0]+2,c1,p[0]+2,c1+3,c[2],{sz:10.5,fg:'44546A',bg:A3C.gr});}
@@ -1652,7 +1652,7 @@ function coTeamData(){var pl=(S.coop||[]).filter(function(p){return !p.out_at&&p
   return Object.keys(T).sort(function(a,b){return (parseInt(a,10)||0)-(parseInt(b,10)||0)||a.localeCompare(b,'ko');}).map(function(t){
     var zs=Object.keys(T[t]).sort(function(a,b){return String(zoneLabel(a)).localeCompare(String(zoneLabel(b)),'ko');}),n=0;
     zs.forEach(function(z){n+=T[t][z].length;});return {t:t,n:n,zs:zs.map(function(z){return {l:zoneLabel(z),ps:T[t][z].slice().sort(coKo)};})};});}
-function coTeamPage(g){return '<div class="cpa tpg"><div class="tph"><span>T1환경미화사업부 · 협정 배치 안내</span><span>'+coPrintDate()+'</span></div><div class="tpb"><div class="tpt"><b>'+esc(g.t)+'</b><span>협정 '+g.n+'명</span></div>'
+function coTeamPage(g){return '<div class="cpa tpg"><div class="tph"><span>'+divName()+' · 협정 배치 안내</span><span>'+coPrintDate()+'</span></div><div class="tpb"><div class="tpt"><b>'+esc(g.t)+'</b><span>협정 '+g.n+'명</span></div>'
   +g.zs.map(function(z){return '<div class="tpz"><div class="tpl">'+esc(z.l)+' <small>'+z.ps.length+'명</small></div><div class="tpn">'+z.ps.map(function(p){return '<span>'+esc(p.name)+'</span>';}).join('')+'</div></div>';}).join('')+'</div></div>';}
 function coTeamFit(){var l=document.querySelectorAll('.cpa.tpg');for(var i=0;i<l.length;i++){var pg=l[i],b=pg.querySelector('.tpb'),h=pg.querySelector('.tph');if(!b||!h)continue;b.style.zoom='';var cs=getComputedStyle(pg),av=pg.clientHeight-parseFloat(cs.paddingTop)-parseFloat(cs.paddingBottom)-h.offsetHeight-4,need=b.offsetHeight;if(need>av&&need>0)b.style.zoom=Math.max(.35,av/need*0.97);}}
 function coTeamPrintView(){var G=coTeamData();
@@ -1679,7 +1679,7 @@ function coApv(sh){var nm=cfNm(sh),tt=['총괄팀장','사업부장'],s=sh||'오
   return '<table class="tsa tsk"><tr><th rowspan="2" class="tsv">결<br>재</th>'+tt.map(function(t){return '<th>'+t+'</th>';}).join('')+'</tr><tr>'+nm.map(function(n,i){var k=s+tt[i];return '<td onclick="coStamp(\''+k+'\')">'+(CP.st[k]?'<span class="cstp">'+n+'</span>':'<span class="cfn">'+n+'</span>')+'</td>';}).join('')+'</tr></table>';}
 function coPrintDate(){var d=S.date.split('-');return (+d[1])+'.'+('0'+(+d[2])).slice(-2)+'.('+dowOf(S.date)+')';}
 function coPrintPage(pg){var fx=coFixedTimes(pg.sh),m1=CP.mode===1;
-  var h='<div class="cpa ts">'+((pg.pi||1)>1?'':'<div class="tsh"><div class="tst"><h1>단시간 근로자 출퇴근 현황</h1><p>(T1환경미화사업부)</p></div>'
+  var h='<div class="cpa ts">'+((pg.pi||1)>1?'':'<div class="tsh"><div class="tst"><h1>단시간 근로자 출퇴근 현황</h1><p>('+divName()+')</p></div>'
    +coApv(pg.sh)+'</div>')
    +'<div class="tsd"><span>'+coPrintDate()+(pg.sh&&coTm(pg.sh)?' <small>'+esc(pg.sh)+' '+esc(coTm(pg.sh))+'</small>':'')+'</span><span>'+(pg.sh?pg.sh+' '+pg.pi+'/'+pg.pn:'')+'</span></div>'
    +'<table class="tsx"><tr><th>NO.</th><th>성 명</th><th>출근 시간</th><th>서 명</th><th>성 명</th><th>퇴근 시간</th><th>서 명</th></tr>'
@@ -1897,7 +1897,7 @@ function tdtOpen(mode){S.sheet={type:'tdt',mode:mode||'all',team:'전체',st:'al
 function tdtMode(m){S.sheet.mode=m;S.sheet.team='전체';S.sheet.st='all';renderSheet();}
 function tdtTeam(t){S.sheet.team=t;renderSheet();}
 function tdtSt(k){S.sheet.st=k;renderSheet();}
-var TDT_NM={c:'출근',oh:'휴무',oa:'연차',ox:'기타',x:'결근',w:'대기'},TDT_CL={c:['#E6F6EF','#1F8F6A'],oh:['#EDF1F6','#475569'],oa:['#FEF3E2','#C2751A'],ox:['#F3EFE7','#8A6A3B'],x:['#FDECEC','#C0392B'],w:['#F1F4F9','#7B879A']},TDT_UC={'민노':['#FDECEF','#D9566B'],'한마음':['#E9F0FB','#6F8FC2']},TDT_HQ='T1환경미화사업부';
+var TDT_NM={c:'출근',oh:'휴무',oa:'연차',ox:'기타',x:'결근',w:'대기'},TDT_CL={c:['#E6F6EF','#1F8F6A'],oh:['#EDF1F6','#475569'],oa:['#FEF3E2','#C2751A'],ox:['#F3EFE7','#8A6A3B'],x:['#FDECEC','#C0392B'],w:['#F1F4F9','#7B879A']},TDT_UC={'민노':['#FDECEF','#D9566B'],'한마음':['#E9F0FB','#6F8FC2']},TDT_HQ=divName();
 function tdtRows(mode){var rows=[],un=mode==='union';
   function cls(e,closedKey,isM){var id=e.emp_no,ci=S.checkin[id],st,rs='';
     if(S.off[id]&&!ci){rs=S.off[id];var oc=offCat(id);st=oc==='휴무'?'oh':oc==='연차'?'oa':'ox';}

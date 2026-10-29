@@ -290,6 +290,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
     <button data-t="vh" role="tab">차량</button>
     <button data-t="fc" role="tab">청결예보</button>
     <button data-t="px" role="tab">여객</button>
+    <button data-t="hr" role="tab">인사·파견</button>
     <button data-t="ab" role="tab">비정상상황</button>
     <button data-t="rep" role="tab">리포트</button>
     <button data-t="adm" role="tab" id="tabAdm" style="display:none">관리</button>
@@ -308,6 +309,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
   <section class="pane" id="p-fc"></section>
   <section class="pane" id="p-px"></section>
   <section class="pane" id="p-adm"></section>
+  <section class="pane" id="p-hr"></section>
   <section class="pane" id="p-ab"></section>
   <section class="pane" id="p-rep"></section>
 </div>
@@ -501,13 +503,13 @@ var AT_OPS={'유준영':'사업부장','양민석':'총괄1팀장','조준희':'
 var AT_GRP={id:'ALL',short:'그룹',name:'그룹 소속 관리자',color:'#6B7280',soft:'#EEF0F4'};
 function admCanUse(){return state.role==='master'||state.role==='admin';}
 /* 기능 권한: 직급 기본값 + 개인 지정 (최고관리자가 관리 탭에서 지정) */
-var FEATS=[['now','현황판'],['div','사업부'],['at','근태'],['sp','특별근무'],['sc','일정'],['lb','자료실'],['stat','통계'],['vh','차량'],['fc','청결예보'],['px','여객'],['ab','비정상상황'],['rep','리포트']];
-function featOk(k){ if(k==='ab'&&(state.role==='master'||state.role==='group_viewer')) return true; return !state.feats||state.feats.indexOf(k)>=0; }
+var FEATS=[['now','현황판'],['div','사업부'],['at','근태'],['sp','특별근무'],['sc','일정'],['lb','자료실'],['stat','통계'],['vh','차량'],['fc','청결예보'],['px','여객'],['hr','인사·파견'],['ab','비정상상황'],['rep','리포트']];
+function featOk(k){ if((k==='ab'||k==='hr')&&(state.role==='master'||state.role==='group_viewer')) return true; return !state.feats||state.feats.indexOf(k)>=0; }
 function applyFeats(){
   document.querySelectorAll('.tabs button').forEach(function(b){ var k=b.dataset.t; if(k==='adm') return; b.style.display=featOk(k)?'':'none'; });
   if(!featOk(state.tab)){ var f=FEATS.filter(function(x){return featOk(x[0]);})[0]; state.tab=f?f[0]:'now'; }
   document.querySelectorAll('.tabs button').forEach(function(b){ b.classList.toggle('on',b.dataset.t===state.tab); });
-  ['now','div','at','sp','sc','lb','vh','fc','px','stat','ab','rep','adm'].forEach(function(k){ var e=$('p-'+k); if(e) e.classList.toggle('on',k===state.tab); });
+  ['now','div','at','sp','sc','lb','vh','fc','px','stat','hr','ab','rep','adm'].forEach(function(k){ var e=$('p-'+k); if(e) e.classList.toggle('on',k===state.tab); });
 }
 function atCanEdit(){return state.role==='master'||(state.role==='admin'&&state.myDiv==='ALL');}
 function atIsGroupMe(){return state.role!=='group_viewer'&&state.role!=='group_staff'&&(state.myDiv==='ALL'||state.role==='master');}
@@ -1746,6 +1748,97 @@ function loadNow(){var rg=dashRange();
     },function(){return rows;});
   }).then(renderNow);}
 
+
+/* ---------- 인사·파견 (사업부별 · 그룹앱에서 파견 직접 입력 / 인사발령 이력 / 이름 카드 배치 현황) ---------- */
+var HR={div:'',emps:[],list:[],orders:[],cards:{},src:'',picked:{},dst:'',dstGrp:'',from:'',to:'',note:'',busy:false};
+function hrCanEdit(){return state.role==='master'||(state.role==='admin'&&state.myDiv==='ALL');}
+function hrDivName(id){for(var i=0;i<divs.length;i++)if(divs[i].id===id)return divs[i].short;return id;}
+function loadHr(){
+  if(!divs.length){$('p-hr').innerHTML='<div class="card empty">등록된 사업부가 없어요.</div>';return Promise.resolve();}
+  if(!HR.div||!divs.some(function(d){return d.id===HR.div;}))HR.div=divs[0].id;
+  var D=HR.div;
+  return Promise.all([
+    rpc('group_asg_emps',{p_div:D}), rpc('group_asg_list',{p_div:D}),
+    sb.rpc('group_orders',{p_div:D}).then(function(r){return (r&&!r.error&&Array.isArray(r.data))?r.data:[];}).catch(function(){return [];}),
+    rpc('group_card_status',{p_date:null}).catch(function(){return [];})
+  ]).then(function(r){
+    HR.emps=r[0]||[];HR.list=r[1]||[];HR.orders=r[2]||[];HR.cards={};(r[3]||[]).forEach(function(x){HR.cards[x.division_id]=x;});
+    renderHr();
+  });
+}
+function hrEmp(no){for(var i=0;i<HR.emps.length;i++)if(HR.emps[i].emp_no===no)return HR.emps[i];return {emp_no:no,name:no,team:'-',group_name:''};}
+function hrStatus(a){var t=atToday(),f=String(a.from_date).slice(0,10),e=a.to_date?String(a.to_date).slice(0,10):'';if(f>t)return 'plan';if(e&&e<t)return 'end';return 'on';}
+function hrTeams(){var o={};HR.emps.forEach(function(e){if(/^\d+팀$/.test(e.team||''))o[e.team]=1;});return Object.keys(o).sort(function(a,b){return parseInt(a)-parseInt(b);});}
+function hrGroups(team){var o={};HR.emps.forEach(function(e){if(e.team===team&&e.group_name)o[e.group_name]=1;});var k=Object.keys(o).sort();return k.length?k:['A조','B조','C조'];}
+function hrSet(k,v){HR[k]=v;if(k==='src')HR.picked={};if(k==='dst')HR.dstGrp='';renderHr();}
+function hrIn(k,v){HR[k]=v;}
+function hrPick(no){if(HR.picked[no])delete HR.picked[no];else HR.picked[no]=1;renderHr();}
+function hrDiv(id){HR.div=id;HR.src='';HR.picked={};HR.dst='';HR.dstGrp='';loadHr().catch(function(e){alert('불러오지 못했어요: '+((e&&e.message)||''));});}
+function renderHr(){
+  var el=$('p-hr'),can=hrCanEdit(),today=atToday(),T=HR,fromV=T.from||today;
+  var chips='<div class="chips">'+divs.map(function(d){return '<button type="button" class="'+(d.id===T.div?'on':'')+'" onclick="hrDiv(\''+d.id+'\')">'+esc(d.short)+'</button>';}).join('')+'</div>';
+  // 이름 카드 배치 현황 (전체 사업부)
+  var card='<div class="card"><h3>이름 카드 배치 현황 <small>오늘 · 사업부 앱에서 입력</small></h3>'+divs.map(function(d){
+    var c=T.cards[d.id]||{teams:0,placed:0};
+    return '<div class="gl2"><i style="background:'+d.color+'"></i><b style="min-width:62px">'+esc(d.short)+'</b><span>'+(c.teams>0?'🟢 배치 입력 '+n0(c.teams)+'개 조 · '+n0(c.placed)+'명':'🟡 오늘 배치 입력 없음')+'</span></div>';}).join('')+'</div>';
+  var opt=function(arr,val,ph){return '<option value="">'+ph+'</option>'+arr.map(function(x){return '<option value="'+esc(x)+'"'+(x===val?' selected':'')+'>'+esc(x)+'</option>';}).join('');};
+  var sel=function(k,arr,val,ph){return '<select onchange="hrSet(\''+k+'\',this.value)" style="flex:1;min-width:0;padding:10px 8px;border:1px solid var(--line);border-radius:10px;font-size:14px;font-weight:700;background:#fff">'+opt(arr,val,ph)+'</select>';};
+  var active={};T.list.forEach(function(a){if(hrStatus(a)==='on')active[a.emp_no]=a;});
+  var srcEmps=T.src?T.emps.filter(function(x){return x.team===T.src;}):[];
+  var pk=Object.keys(T.picked).length;
+  var form='';
+  if(can){
+    form='<div class="card"><h3>파견 등록 <small>'+esc(hrDivName(T.div))+'</small></h3>'
+     +'<div style="font-size:12px;color:var(--mut);line-height:1.5;margin-bottom:8px">인사발령 없이 다른 팀에서 근무하는 인원을 등록합니다. 저장하면 사업부 앱의 작업일지·인력현황·비정상상황에 바로 반영됩니다.</div>'
+     +'<div style="font-weight:800;font-size:13px;margin:6px 0">1. 현재 소속 팀</div><div style="display:flex;gap:6px">'+sel('src',hrTeams(),T.src,'소속 팀 선택')+'</div>'
+     +'<div style="font-weight:800;font-size:13px;margin:12px 0 6px">2. 파견 보낼 직원 <span style="color:var(--mut);font-weight:600">'+(pk?pk+'명 선택':'여러 명 선택 가능')+'</span></div>'
+     +(T.src?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(78px,1fr));gap:6px">'+(srcEmps.map(function(x){var on=T.picked[x.emp_no],bz=active[x.emp_no];return '<div onclick="hrPick(\''+esc(x.emp_no)+'\')" style="text-align:center;padding:8px 2px;border-radius:10px;cursor:pointer;font-weight:800;font-size:13.5px;line-height:1.25;border:1.5px solid '+(on?'var(--ink)':'var(--line)')+';background:'+(on?'var(--ink)':'#fff')+';color:'+(on?'#fff':'var(--ink)')+'">'+esc(x.name)+'<div style="font-size:11px;font-weight:600;opacity:.75">'+esc(x.group_name||'')+(bz?' · 파견중':'')+'</div></div>';}).join('')||'<div class="empty" style="grid-column:1/-1">직원이 없습니다</div>')+'</div>':'<div class="empty" style="padding:8px 0">소속 팀을 먼저 선택하세요</div>')
+     +'<div style="font-weight:800;font-size:13px;margin:12px 0 6px">3. 근무할 팀·조</div><div style="display:flex;gap:6px">'+sel('dst',hrTeams().filter(function(t){return t!==T.src;}),T.dst,'근무 팀')+(T.dst?sel('dstGrp',hrGroups(T.dst),T.dstGrp,'원래 조'):'')+'</div>'
+     +'<div style="font-weight:800;font-size:13px;margin:12px 0 6px">4. 기간</div><div style="display:flex;gap:6px;align-items:center"><input type="date" value="'+fromV+'" onchange="hrIn(\'from\',this.value)" style="flex:1;min-width:0;padding:9px;border:1px solid var(--line);border-radius:10px;font-size:14px"><span>~</span><input type="date" value="'+esc(T.to||'')+'" onchange="hrIn(\'to\',this.value)" style="flex:1;min-width:0;padding:9px;border:1px solid var(--line);border-radius:10px;font-size:14px"></div>'
+     +'<div style="font-size:11.5px;color:var(--mut);margin-top:4px">종료일을 비워 두면 종료 처리할 때까지 계속 적용됩니다.</div>'
+     +'<div style="font-weight:800;font-size:13px;margin:12px 0 6px">5. 메모 <span style="color:var(--mut);font-weight:600">(선택)</span></div><input type="text" value="'+esc(T.note||'')+'" oninput="hrIn(\'note\',this.value)" placeholder="예: 인력 지원" style="width:100%;box-sizing:border-box;padding:10px;border:1px solid var(--line);border-radius:10px;font-size:14px">'
+     +'<button type="button" onclick="hrSave()" style="width:100%;margin-top:12px;padding:13px;border:0;border-radius:12px;background:var(--ink);color:#fff;font-weight:800;font-size:15px">파견 등록'+(pk?' ('+pk+'명)':'')+'</button></div>';
+  }else{
+    form='<div class="card"><div class="empty">파견 등록·종료는 최고관리자와 그룹 관리자만 할 수 있어요.<br>아래는 조회만 가능합니다.</div></div>';
+  }
+  var st={on:[],plan:[],end:[]};T.list.forEach(function(a){st[hrStatus(a)].push(a);});
+  var row=function(a,k){var e=hrEmp(a.emp_no),f=String(a.from_date).slice(0,10),t=a.to_date?String(a.to_date).slice(0,10):'';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:9px 0;border-top:1px solid var(--line)"><div style="flex:1;min-width:0"><div style="font-weight:800;font-size:14px">'+esc(e.name)+' <span style="font-size:12px;color:var(--mut);font-weight:600">'+esc(e.team||'-')+(e.group_name?' '+esc(e.group_name):'')+' → <b style="color:var(--ink)">'+esc(a.work_team)+(a.work_group?' '+esc(a.work_group):'')+'</b></span></div>'
+      +'<div style="font-size:11.5px;color:var(--mut)">'+f+' ~ '+(t||'종료일 없음')+(a.note?' · '+esc(a.note):'')+'</div></div>'
+      +(can&&k!=='end'?'<button type="button" onclick="hrEnd('+a.id+')" style="padding:7px 10px;border:0;border-radius:9px;background:#E3EEF8;color:#2A5B84;font-weight:800;font-size:12.5px">'+(k==='plan'?'취소':'종료')+'</button>':'')
+      +(can?'<button type="button" onclick="hrDel('+a.id+')" style="padding:7px 10px;border:0;border-radius:9px;background:#FDECEC;color:#B42318;font-weight:800;font-size:12.5px">삭제</button>':'')+'</div>';};
+  var sec=function(t,arr,k,empty){return '<div style="font-weight:800;font-size:13px;margin:10px 0 2px">'+t+' <span style="color:var(--mut)">'+arr.length+'건</span></div>'+(arr.length?arr.slice(0,k==='end'?15:50).map(function(a){return row(a,k);}).join(''):'<div class="empty" style="padding:8px 0">'+empty+'</div>');};
+  var asg='<div class="card"><h3>파견 현황 <small>'+esc(hrDivName(T.div))+'</small></h3>'+sec('진행 중',st.on,'on','진행 중인 파견이 없습니다')+(st.plan.length?sec('예정',st.plan,'plan',''):'')+sec('종료',st.end,'end','종료된 파견이 없습니다')+'</div>';
+  var ord='<div class="card"><h3>인사발령 이력 <small>'+esc(hrDivName(T.div))+' · 최근 50건</small></h3>'
+    +(T.orders.length?T.orders.map(function(o){var mv=(o.moves||[]).map(function(m){return '<div style="padding:2px 0"><b>'+esc(m.name)+'</b> <span style="color:var(--mut)">'+esc(m.from_team||'-')+' '+esc(m.from_role||'')+'</span> → <b>'+esc(m.to_team||'-')+' '+esc(m.to_role||'')+'</b></div>';}).join('');
+      return '<div style="padding:9px 0;border-top:1px solid var(--line)"><div style="font-weight:800;font-size:13.5px">'+esc(String(o.order_date).slice(0,10))+(o.note?' <span style="color:var(--mut);font-weight:600">'+esc(o.note)+'</span>':'')+'</div><div style="font-size:12.5px;margin-top:3px">'+(mv||'<span style="color:var(--mut)">내용 없음</span>')+'</div></div>';}).join(''):'<div class="empty" style="padding:10px 0">발령 이력이 없습니다</div>')
+    +(can?'<a href="index.html?app=1&div='+encodeURIComponent(T.div)+'" style="display:block;text-align:center;margin-top:10px;padding:11px;border-radius:12px;background:var(--soft);color:var(--ink);font-weight:800;font-size:13.5px;text-decoration:none">'+esc(hrDivName(T.div))+' 사업부 앱에서 인사발령 입력하기 →</a>':'')+'</div>';
+  el.innerHTML=chips+card+form+asg+ord;
+}
+function hrSave(){
+  var T=HR,nos=Object.keys(T.picked),from=T.from||atToday(),to=T.to||'';
+  if(!T.src||!nos.length){alert('소속 팀과 파견 보낼 직원을 선택해 주세요.');return;}
+  if(!T.dst){alert('근무할 팀을 선택해 주세요.');return;}
+  if(to&&to<from){alert('종료일이 시작일보다 앞입니다.');return;}
+  if(T.busy)return;
+  if(!confirm(hrDivName(T.div)+' '+nos.length+'명 파견을 등록할까요?\n\n'+nos.map(function(n){return hrEmp(n).name;}).join(', ')+'\n'+T.src+' → '+T.dst+(T.dstGrp?' '+T.dstGrp:' (원래 조)')+'\n'+from+' ~ '+(to||'종료일 없음')))return;
+  T.busy=true;
+  rpc('group_asg_save',{p_div:T.div,p_emps:nos,p_team:T.dst,p_group:T.dstGrp||'',p_from:from,p_to:to||null,p_note:T.note||''}).then(function(r){
+    T.busy=false;if(r&&r.ok===false){alert(r.error||'등록 실패');return;}
+    T.picked={};T.note='';T.to='';alert('파견 '+nos.length+'명을 등록했습니다.');loadHr();
+  }).catch(function(e){T.busy=false;alert('등록 실패: '+((e&&e.message)||''));});
+}
+function hrEnd(id){
+  var a=HR.list.filter(function(x){return x.id===id;})[0];if(!a)return;var e=hrEmp(a.emp_no),k=hrStatus(a);
+  if(k==='plan'){hrDel(id);return;}
+  if(!confirm(e.name+'님 파견을 오늘까지로 종료할까요?\n내일부터 원래 소속('+(e.team||'-')+')으로 돌아갑니다.'))return;
+  rpc('group_asg_end',{p_id:id}).then(function(r){if(r&&r.ok===false){alert(r.error||'종료 실패');return;}loadHr();}).catch(function(er){alert('종료 실패: '+((er&&er.message)||''));});
+}
+function hrDel(id){
+  var a=HR.list.filter(function(x){return x.id===id;})[0];if(!a)return;var e=hrEmp(a.emp_no);
+  if(!confirm(e.name+'님 파견 기록을 삭제할까요?\n삭제하면 시작일부터 원래 소속으로 집계됩니다.'))return;
+  rpc('group_asg_del',{p_id:id}).then(function(r){if(r&&r.ok===false){alert(r.error||'삭제 실패');return;}loadHr();}).catch(function(er){alert('삭제 실패: '+((er&&er.message)||''));});
+}
 /* ---------- 비정상상황 (3개 사업장 합산 · 사업장 화면이 저장한 스냅샷) ---------- */
 function loadAb(){return rpc('group_abnormal',{p_date:null}).then(renderAb);}
 function abAgo(t){if(!t)return '';var m=Math.max(0,Math.round((Date.now()-new Date(t).getTime())/60000));return m<1?'방금 전':(m<60?m+'분 전':Math.floor(m/60)+'시간 '+(m%60)+'분 전');}
@@ -1761,7 +1854,7 @@ function renderAb(rows){
     var rate=x.q?Math.round(x.in/x.q*100):0, old=(Date.now()-new Date(r.updated_at).getTime())>30*60000;
     T.q+=x.q;T.inn+=x.in;T.c+=x.c;T.mc+=x.mc;T.sup+=x.sup;T.xie+=x.xie;T.sh+=x.short||0;T.n++;
     var cl=rate>=90?'#1A7F37':(rate>=70?'#B45F06':'#C0392B');
-    return '<div class="card" style="border-left:5px solid '+d.color+'"><div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:16px"><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+d.color+';margin-right:6px"></i>'+esc(d.short)+'</b><small style="color:'+(old?'#C0392B':'var(--mut)')+';font-weight:700">'+(old?'⚠ ':'')+abAgo(r.updated_at)+' 갱신</small></div>'
+    return '<div class="card" style="cursor:pointer;border-left:5px solid '+d.color+'" onclick="location.href=\'abnormal.html?group=1&div='+d.id+'\'"><div style="display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:16px"><i style="display:inline-block;width:9px;height:9px;border-radius:50%;background:'+d.color+';margin-right:6px"></i>'+esc(d.short)+'</b><small style="color:'+(old?'#C0392B':'var(--mut)')+';font-weight:700">'+(old?'⚠ ':'')+abAgo(r.updated_at)+' 갱신</small></div>'
      +'<div style="display:flex;align-items:baseline;gap:6px;margin-top:6px"><b style="font-size:34px;line-height:1">'+n0(x.in)+'</b><span style="font-size:15px;font-weight:700">명 투입</span><span style="margin-left:auto;font-size:14px;color:var(--mut);font-weight:700">정원 '+n0(x.q)+'명</span></div>'
      +'<div style="height:10px;background:#EDEFF2;border-radius:6px;overflow:hidden;margin:8px 0 4px"><i style="display:block;height:100%;width:'+Math.min(100,rate)+'%;background:'+cl+'"></i></div>'
      +'<div style="display:flex;justify-content:space-between;font-size:13px;font-weight:800"><span style="color:'+cl+'">투입률 '+rate+'%</span><span style="color:'+((x.short||0)>0?'#C0392B':'#1A7F37')+'">부족 구역 '+(x.short||0)+'곳</span></div>'
@@ -1776,7 +1869,8 @@ function renderAb(rows){
     +'<div class="kg" style="margin-top:10px;grid-template-columns:repeat(4,minmax(0,1fr))">'+kcell('근무',n0(T.c),'명')+kcell('관리',n0(T.mc),'명')+kcell('지원',n0(T.sup),'명')+kcell('협정',n0(T.xie),'명')+'</div>'
     :'<div class="empty" style="padding:14px">아직 집계된 사업장이 없어요.</div>')
     +'<div style="font-size:11.5px;color:var(--mut)">합계에는 집계된 사업장만 포함됩니다. 각 사업장의 비정상상황 화면이 계산한 값을 그대로 모은 것이며, 그 화면이 열려 있을 때 1분마다 갱신됩니다.</div></div>';
-  el.innerHTML=hero+cards;
+  var go='<div class="card" style="cursor:pointer;border:2px solid #1E8C83" onclick="location.href=\'abnormal.html?group=1\'"><div style="display:flex;justify-content:space-between;align-items:center"><div><b style="font-size:16px">현황 · 상황판 전체 보기</b><div style="font-size:12.5px;color:var(--mut);margin-top:3px">TOPS와 같은 화면 · 3개 사업부 합산 / 사업부별 · 팀별 근태 목록까지</div></div><b style="font-size:22px;color:#1E8C83">›</b></div></div>';
+  el.innerHTML=go+hero+cards;
 }
 function loadStats(){
   var rg=state.repMode==='year'&&state.tab==='rep'?yearRange(+state.month.slice(0,4)):monthRange(state.month);
@@ -2618,7 +2712,7 @@ document.addEventListener('click',function(e){
 
 function load(){
   stamp(); wxLoad();
-  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : state.tab==='fc' ? loadFc() : state.tab==='px' ? loadPx() : state.tab==='ab' ? loadAb() : state.tab==='adm' ? loadAdm() : (state.tab==='stat' ? loadStat() : loadRep()));
+  var p = state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : state.tab==='fc' ? loadFc() : state.tab==='px' ? loadPx() : state.tab==='ab' ? loadAb() : state.tab==='hr' ? loadHr() : state.tab==='adm' ? loadAdm() : (state.tab==='stat' ? loadStat() : loadRep()));
   return p.catch(function(e){
     var msg=(e&&e.message)||'알 수 없는 오류';
     $('p-'+state.tab).innerHTML='<div class="card empty">데이터를 불러오지 못했어요.<br>'+esc(msg)+'<br>잠시 후 새로고침을 눌러 주세요.</div>';
@@ -2628,7 +2722,7 @@ function showTab(t){
   if(t!=='adm'&&!featOk(t)) return;
   state.tab=t;
   document.querySelectorAll('.tabs button').forEach(function(b){var on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
-  ['now','div','at','sp','sc','lb','vh','fc','px','stat','ab','rep','adm'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
+  ['now','div','at','sp','sc','lb','vh','fc','px','stat','hr','ab','rep','adm'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
   load();
 }
 

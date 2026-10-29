@@ -308,6 +308,12 @@ input[type=file]{display:none}
 .top{padding-top:calc(14px + env(safe-area-inset-top,0px))}body::before{content:"";position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0px);background:#6C89B4;z-index:20;pointer-events:none}.zk.has .tpp,.zk .tpp{border-radius:10px;padding:2px 12px;font-size:24px;font-weight:900;line-height:1.25}.zk .tpp small{font-size:15px;font-weight:800}.zk .tpp.ok{background:#DDF3E8;color:#14724F}.zk .tpp.lo{background:#FFE9C7;color:#C2570C}.zk .tpp.hi{background:#FBE0E0;color:#B23030}
 .tpsum{margin:8px 0 2px;padding:9px 12px;border-radius:10px;font-size:14px;font-weight:700;line-height:1.5}.tpsum b{font-weight:900}.tpsum.ok{background:#DDF3E8;color:#14724F}.tpsum.lo{background:#FFF1D6;color:#8A5200}.tpsum.hi{background:#FBE0E0;color:#B23030}
 @media(min-width:1000px){.bdx .kc2.ring2{grid-template-columns:auto minmax(0,1fr);gap:1.4vw;align-items:center}.bdx .ring2 .dn{height:min(12vh,7.6vw);width:min(12vh,7.6vw);max-height:none;align-self:center;justify-self:start}.bdx .rcol{gap:.8vh;min-width:0}.bdx .rcol .pt{font-size:min(1.15vw,2.1vh);white-space:nowrap}.bdx .rcol .pt b{font-size:min(1.15vw,2.1vh)}.bdx .rcol .lgx{display:grid;grid-template-columns:1fr 1fr;gap:1.4vh .6vw}.bdx .rcol .lgx div{display:flex;align-items:baseline;gap:.22vw;font-size:min(.95vw,1.8vh);white-space:nowrap;min-width:0}.bdx .rcol .lgx i{flex:none;width:.6vw;height:.6vw;min-width:8px;min-height:8px;border-radius:3px;align-self:center}.bdx .rcol .lgx b{margin-left:auto;font-size:min(1.35vw,2.5vh);line-height:1}.bdx .rcol .lgx em{flex:none;min-width:0;width:2.5em;text-align:right;font-size:min(.74vw,1.4vh)}}
+.gdh{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 14px;margin:16px 10px 0;padding:10px 14px;background:#fff;border:1px solid var(--line);border-left:7px solid #999;border-radius:10px;font-size:14px}.gdh>b{font-size:18px}.gdh small{margin-left:auto;color:var(--sub)}
+.gtop{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:0 4px;align-items:start}.gg2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 4px;align-items:start}
+table.gfl th,table.gfl td{text-align:center}table.gfl{width:100%;border-collapse:collapse;margin-top:10px;font-size:15px;text-align:center}table.gfl th,table.gfl td{padding:7px 3px;border-bottom:1px solid var(--line)}table.gfl th.gl{color:#1F8F6A;border-bottom:2px solid #2A9D6A}table.gfl th.ga{color:#B7791F;border-bottom:2px solid #D98A1E}table.gfl td.gz{color:#B8C0CC}table.gfl td.glo{color:var(--red);font-weight:800;background:#FDECEF}table.gfl td.glo small{display:block;font-size:10.5px;font-weight:700}table.gfl td.gt,table.gfl tr.gsm td{font-weight:800}table.gfl tr.gsm th,table.gfl tr.gsm td{border-top:2px solid var(--line);background:#F4F7FB}table.gfl.gbig{font-size:22px}table.gfl.gbig th{font-size:17px}
+table.gfl th.gdv{font-size:19px;text-align:left;padding-left:10px}table.gfl.gbig td.gbad{color:var(--red);font-weight:800}table.gfl.gbig td.gok{color:var(--grn);font-weight:800}table.gfl th.gk{color:var(--sub);font-weight:700}.gbf table.gfl.gbig tr.gl2 th,.gbf table.gfl.gbig tr.gl2 td{border-bottom:2px solid #CBD3DF}table.gfl.gun th{text-align:left}table.gfl.gun th i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:7px}
+@media(max-width:700px){table.gfl{font-size:12.5px}table.gfl th,table.gfl td{padding:5px 1px}table.gfl th{font-size:10.5px;letter-spacing:-.5px}table.gfl td.glo small{font-size:8.5px}}
+.gsp{margin-top:10px;font-size:14px;color:var(--ink)}.glo2{color:var(--red)}.gbu{border-left:5px solid #999;padding-left:10px;margin:10px 0}.gbu h4{margin:0 0 4px;font-size:18px}.gbf{margin-top:12px}table.un td i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
 </style></head><body>
 <div id="app"><div class="ld">불러오는 중…</div></div>
 <div id="toast"></div>
@@ -492,8 +498,31 @@ async function loadAll(quiet){
   S.loading=false;render();
 }
 // 그룹앱 합산용 스냅샷: 오늘·실시간 기준일 때만, 화면이 계산한 숫자를 그대로 저장 (1분 이상 간격, 같은 값은 10분에 한 번)
+function snapDetail(T,z){
+  var o={v:2},zz={},zxo={},av={},zx=S._zx||{};
+  Object.keys(z).forEach(function(k){if(z[k])zz[k]=z[k];});
+  Object.keys(zx).forEach(function(k){if(zx[k])zxo[k]=zx[k];});
+  Object.keys(S.avg||{}).forEach(function(k){var a=S.avg[k];if(a>=0.05)av[k]=Math.round(a*100)/100;});
+  var tk=['q','in','c','mc','sup','xie','xieA','xieP','ent','o','abs','pend','openG','mq','mo','mabs','cu','m','f'],t={};tk.forEach(function(k){t[k]=+T[k]||0;});
+  o.T=t;o.z=zz;o.zx=zxo;o.av=av;o.ad=S.avgDays||0;
+  var dw=dowAvg();o.dd=dw?dw.days:0;
+  o.U=(unionOn()&&Object.keys(S.union).length)?unionStats():null;
+  var tm=[];S.teamsList.forEach(function(t){var q=0,oo=0,c=0,a=0,p=0,has=false;['A','B','C'].forEach(function(L){var tc=t+L,g=S.grp[tc];if(!g||!inBase(g))return;has=true;var s=gstat(tc);q+=s.q;oo+=s.o;c+=s.c;a+=s.abs;p+=s.pend;});
+    if(!has||!q&&!c)return;var ti=0,tuse=false;['A','B','C'].forEach(function(L){var g=S.grp[t+L];if(!g||!inBase(g))return;var x=topsTeam(t+L);ti+=x;if(x>0)tuse=true;});
+    tm.push([t,q,oo,c,a,p,ti,tuse?1:0]);});
+  o.tm=tm;
+  var sm={};S.support.forEach(function(s){(sm[s.from_team]=sm[s.from_team]||[0,0])[0]++;(sm[s.to_team]=sm[s.to_team]||[0,0])[1]++;});o.sm=sm;
+  o.sl=S.support.map(function(s){var e=S.byNo[s.emp_no]||{};return [e.name||s.emp_no,s.from_team,s.to_team,zoneLabel(s.zone_key)];});
+  var pk=function(r){return [r.t,r.L,r.no,r.name,r.pos,r.un,r.st,r.rs,r.nb];},all=tdtRows('all'),have={};
+  o.rows=all.map(function(r){have[r.no]=1;return pk(r);});
+  o.ru=tdtRows('union').filter(function(r){return !have[r.no];}).map(pk);
+  var byT={};Object.keys(S.mgrOf).forEach(function(t){Object.keys(S.mgrOf[t]).forEach(function(id){var e=S.byNo[id];if(!e||!isMgrEmp(e)||!mgrCount(e))return;if(S.checkin[id]||S.mgrIn[id])(byT[t]=byT[t]||[]).push(e.name);});});o.mg=byT;
+  var mf=mgrField();o.mf={all:mf.all,ls:mf.ls,as:mf.as};
+  var ec={illegal:0,obstruct:0};(S.events||[]).forEach(function(x){if(ec[x.kind]!=null)ec[x.kind]++;});o.ev=ec;
+  var nt={};Object.keys(S.nsT||{}).forEach(function(tc){Object.keys(S.nsT[tc]).forEach(function(k){nt[k]=(nt[k]||0)+S.nsT[tc][k];});});o.nt=nt;
+  return o;}
 function snapSave(){try{if(S.date!==kst()||S.base!=='auto'||!S.acc||!S.acc.open)return;var T=totals(),z=zoneCounts(),n=0;ZKEYS.forEach(function(k){if(lowZ(z[k],k))n++;});
-  var dw=dowAvg(),d={q:T.q,in:T.in,c:T.c,mc:T.mc,sup:T.sup,xie:T.xie,ent:T.ent||0,o:T.o,abs:T.abs,pend:T.pend,short:n,base:baseLabel(),dowAvg:dw?dw.avg:null,dow:dw?dw.dow:null};
+  var dw=dowAvg(),d={q:T.q,in:T.in,c:T.c,mc:T.mc,sup:T.sup,xie:T.xie,ent:T.ent||0,o:T.o,abs:T.abs,pend:T.pend,short:n,base:baseLabel(),dowAvg:dw?dw.avg:null,dow:dw?dw.dow:null}; try{var x=snapDetail(T,z);Object.keys(x).forEach(function(k){d[k]=x[k];});}catch(e){}
   var js=JSON.stringify(d),now=Date.now(),st=snapSave._st||(snapSave._st={t:0,s:''});
   if(now-st.t<55000)return;if(st.s===js&&now-st.t<600000)return;st.t=now;st.s=js;
   rpc('ab_snapshot_save',{p_data:d}).catch(function(){});}catch(e){}}
@@ -1230,6 +1259,17 @@ function bMgr(){
   }
   return h+'</div>';
 }
+function bUnion(U){var h='';
+  h+='<div class="pn"><div class="pt">노조 현황<i>|</i><small>결근 = 근무 예정이었는데 출근하지 않은 파업 참여 인원</small></div>';
+  if(U){
+    var tot={n:0,o:0,w:0,c:0,p:0};['민노','한마음','비노조'].forEach(function(k){var s=U[k];tot.n+=s.n;tot.o+=s.o;tot.w+=s.w;tot.c+=s.c;tot.p+=s.p;});
+    var row=function(name,col,s,cls){return '<div class="ur '+(cls||'')+'" style="--uc:'+col+'"><h3><i></i>'+name+'</h3><div class="n">'+s.n+'</div><div class="n" style="color:var(--sub)">'+s.o+'</div><div class="n" style="color:var(--grn)">'+s.c+'</div><div class="n" style="color:var(--red)">'+s.p+'</div><div class="n rt" style="color:'+(s.p?'var(--red)':'var(--sub)')+'">'+pct(s.p,s.w)+'</div></div>';};
+    h+='<div class="ur hdr"><span></span><span>조합원</span><span>휴무외</span><span>투입<em>(출근)</em></span><span>결근<em>(파업 참여)</em></span><span>결근율</span></div>'
+     +row('민노','#D9566B',U['민노'])+row('한마음','#5B7FC4',U['한마음'])+row('비노조','#8E9AB0',U['비노조'],'non')+row('총원','var(--ink)',tot,'sum');
+  }else h+='<div class="ok" style="color:var(--sub)">노조 자료 없음</div>';
+  h+='</div>';
+  return h;}
+var _bUnion0=bUnion;
 function boardView(){
   var T=totals(),rate=T.q?Math.round(T.in/T.q*100):0,d=S.date.split('-'),tc=bTone(rate);
   var bs=baseLabel();
@@ -1248,14 +1288,7 @@ function boardView(){
    +'<div class="pn kc4"><div class="pt">이벤트<i>|</i><small>총 '+(ec.illegal+ec.obstruct)+'건</small></div><div class="evk"><div><span>불법행위</span><b>'+ec.illegal+'<small>건</small></b></div><div><span>업무방해</span><b>'+ec.obstruct+'<small>건</small></b></div></div></div></div>';
   h+=bMgr();
   h+=bFloors(z);
-  h+='<div class="pn"><div class="pt">노조 현황<i>|</i><small>결근 = 근무 예정이었는데 출근하지 않은 파업 참여 인원</small></div>';
-  if(U){
-    var tot={n:0,o:0,w:0,c:0,p:0};['민노','한마음','비노조'].forEach(function(k){var s=U[k];tot.n+=s.n;tot.o+=s.o;tot.w+=s.w;tot.c+=s.c;tot.p+=s.p;});
-    var row=function(name,col,s,cls){return '<div class="ur '+(cls||'')+'" style="--uc:'+col+'"><h3><i></i>'+name+'</h3><div class="n">'+s.n+'</div><div class="n" style="color:var(--sub)">'+s.o+'</div><div class="n" style="color:var(--grn)">'+s.c+'</div><div class="n" style="color:var(--red)">'+s.p+'</div><div class="n rt" style="color:'+(s.p?'var(--red)':'var(--sub)')+'">'+pct(s.p,s.w)+'</div></div>';};
-    h+='<div class="ur hdr"><span></span><span>조합원</span><span>휴무외</span><span>투입<em>(출근)</em></span><span>결근<em>(파업 참여)</em></span><span>결근율</span></div>'
-     +row('민노','#D9566B',U['민노'])+row('한마음','#5B7FC4',U['한마음'])+row('비노조','#8E9AB0',U['비노조'],'non')+row('총원','var(--ink)',tot,'sum');
-  }else h+='<div class="ok" style="color:var(--sub)">노조 자료 없음</div>';
-  h+='</div>';
+  h+=bUnion(U);
   return h+'<div class="ft">30초마다 자동 새로고침 · 출근 체크가 끝나기 전에는 결근이 적게 보일 수 있음</div></div>';
 }
 // ── 보고서 (A4 한 장 · 항목 선택 · PDF/엑셀/저장) ──
@@ -1935,26 +1968,27 @@ function tdtData(s){var all=tdtRows(s.mode),teams=[];all.forEach(function(r){if(
 function tdtTitle(s,d){return TDT_HQ+' 팀별 근태현황'+(s.mode==='union'?' (노조 조합원)':'')+' · '+(d.tm==='전체'?'전체 팀':d.tm)+(s.st!=='all'?' · '+TDT_NM[s.st]:'');}
 function tdtSheet(s){var un=s.mode==='union',d=tdtData(s),tm=d.tm,all=d.all,inT=d.inT,cnt=d.cnt,list=d.list,GR='';
   var h='<h3>팀별 근태현황 <small style="font-weight:700;color:var(--sub)">'+fmtDate(S.date)+' ('+dowOf(S.date)+')</small></h3><div class="chips" style="margin-bottom:6px"><span class="chip'+(!un?' on':'')+'" onclick="tdtMode(\'all\')">전체 직원</span><span class="chip'+(un?' on':'')+'" onclick="tdtMode(\'union\')">노조 조합원</span></div>';
+  if(typeof GR!=='undefined'&&GR.on)h+=grpDivChips();
   h+='<div class="chips" style="margin-bottom:8px"><span class="chip'+(tm==='전체'?' on':'')+'" onclick="tdtTeam(\'전체\')">전체 팀</span>'+d.teams.map(function(t){var bad=all.filter(function(r){return r.t===t&&r.st==='x';}).length;return '<span class="chip'+(tm===t?' on':'')+'" onclick="tdtTeam(\''+t+'\')">'+esc(t)+(bad?' <b style="color:var(--red)">'+bad+'</b>':'')+'</span>';}).join('')+'</div>';
   h+='<div class="chips" style="margin-bottom:6px"><span class="chip'+(s.st==='all'?' on':'')+'" onclick="tdtSt(\'all\')">전체 '+inT.length+'</span>'+['c','x','oh','oa','ox','w'].map(function(k){return '<span class="chip'+(s.st===k?' on':'')+'" onclick="tdtSt(\''+k+'\')">'+TDT_NM[k]+' '+cnt[k]+'</span>';}).join('')+'</div>';
   h+='<div class="btns" style="margin:0 0 8px"><div class="b2" onclick="tdtXlsx()">엑셀 다운로드</div><div class="b2" onclick="tdtPrint()">보고서 출력 (A4)</div></div>';
   h+='<div style="font-size:12.5px;margin:2px 0 6px;color:var(--sub)"><span style="color:#D9566B;font-weight:800">●</span> 민노 <span style="color:#6F8FC2;font-weight:800;margin-left:8px">●</span> 한마음 <span style="margin-left:8px">(조합원은 색상 카드로 표시) · 표시 중 '+list.length+'명</span></div><div style="overflow-x:auto"><div><div class="tdr" style="padding:6px 8px;font-weight:800;color:var(--sub);border-top:1.5px solid var(--line);border-bottom:1px solid var(--line)"><span>사업부</span><span>팀</span><span>조</span><span>사번</span><span>이름</span><span>근태</span><span>비고</span></div>';
   if(!list.length)h+='<div class="dim" style="padding:16px 4px">해당하는 인원이 없습니다</div>';
   list.forEach(function(r){var c=TDT_CL[r.st],u=TDT_UC[r.un];
-    h+='<div class="tdr" style="padding:8px 6px;margin:4px 0;border-radius:9px;'+(u?'background:'+u[0]+';border-left:5px solid '+u[1]:'border-left:5px solid #E4E8EF;border-bottom:1px solid var(--line)')+'"><span class="tdq">'+TDT_HQ+'</span><span>'+esc(String(r.t).replace('팀',''))+'<small>팀</small></span><span>'+esc(r.L||'-')+'</span><span>'+esc(r.no)+'</span><b>'+esc(r.name)+'</b>'
+    h+='<div class="tdr" style="padding:8px 6px;margin:4px 0;border-radius:9px;'+(u?'background:'+u[0]+';border-left:5px solid '+u[1]:'border-left:5px solid #E4E8EF;border-bottom:1px solid var(--line)')+'"><span class="tdq">'+(r.hq||TDT_HQ)+'</span><span>'+esc(String(r.t).replace('팀',''))+'<small>팀</small></span><span>'+esc(r.L||'-')+'</span><span>'+esc(r.no)+'</span><b>'+esc(r.name)+'</b>'
      +'<span class="tdb" style="background:'+c[0]+';color:'+c[1]+';border:1px solid '+c[1]+'66">'+esc(tdtLabel(r))+'</span><span class="tdn">'+esc(r.nb||'')+'</span></div>';});
   h+='</div></div><p class="note" style="margin-top:8px">결근 = 팀 체크 마감 후 미출근 + 작업일지 결근(예상) · 대기 = 아직 체크 전 · 팀 옆 빨간 숫자 = 결근 인원 · 엑셀·보고서는 지금 선택한 팀·상태·구분 그대로 내려받습니다 · 오전/오후 기준은 현황 화면의 선택을 따릅니다</p><div class="btns"><div class="b0" onclick="sheetClose()">닫기</div></div>';
   return h;}
 function tdtXlsx(){var s=S.sheet;if(!s||s.type!=='tdt')return;if(typeof XLSX==='undefined'){toast('엑셀 라이브러리를 불러오지 못했습니다');return;}
   var d=tdtData(s),wb=XLSX.utils.book_new();
-  var rows=[['날짜','사업부','팀','조','사번','이름','직위','구분(노조)','근태','비고']].concat(d.list.map(function(r){return [S.date,TDT_HQ,r.t,r.L?r.L+'조':'',r.no,r.name,r.pos,r.un,tdtLabel(r),r.nb];}));
+  var rows=[['날짜','사업부','팀','조','사번','이름','직위','구분(노조)','근태','비고']].concat(d.list.map(function(r){return [S.date,(r.hq||TDT_HQ),r.t,r.L?r.L+'조':'',r.no,r.name,r.pos,r.un,tdtLabel(r),r.nb];}));
   var ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=[{wch:12},{wch:18},{wch:8},{wch:6},{wch:10},{wch:10},{wch:8},{wch:11},{wch:9},{wch:22}];XLSX.utils.book_append_sheet(wb,ws,'근태 명단');
   var sm=[['팀','인원','출근','휴무','연차','기타','결근','대기']];var tot={n:0,c:0,oh:0,oa:0,ox:0,x:0,w:0};
   d.teams.forEach(function(t){var r=d.all.filter(function(x){return x.t===t;}),o={n:r.length};['c','oh','oa','ox','x','w'].forEach(function(k){o[k]=r.filter(function(x){return x.st===k;}).length;});['n','c','oh','oa','ox','x','w'].forEach(function(k){tot[k]+=o[k];});sm.push([t,o.n,o.c,o.oh,o.oa,o.ox,o.x,o.w]);});
   sm.push(['합계',tot.n,tot.c,tot.oh,tot.oa,tot.ox,tot.x,tot.w]);var w2=XLSX.utils.aoa_to_sheet(sm);w2['!cols']=sm[0].map(function(){return {wch:9};});XLSX.utils.book_append_sheet(wb,w2,'팀별 요약');
   XLSX.writeFile(wb,'팀별근태현황_'+S.date+(s.mode==='union'?'_조합원':'')+(d.tm!=='전체'?'_'+d.tm:'')+(s.st!=='all'?'_'+TDT_NM[s.st]:'')+'.xlsx');toast('엑셀을 저장했습니다');}
 function tdtPrint(){var s=S.sheet;if(!s||s.type!=='tdt')return;var d=tdtData(s),f=document.createElement('iframe');
-  var body=d.list.map(function(r,i){var c=TDT_CL[r.st],u=TDT_UC[r.un];return '<tr style="'+(u?'background:'+u[0]+';':'')+'"><td class="n">'+(i+1)+'</td><td>'+TDT_HQ+'</td><td>'+esc(r.t)+'</td><td>'+esc(r.L?r.L+'조':'')+'</td><td>'+esc(r.no)+'</td><td><b>'+esc(r.name)+'</b></td><td style="color:'+c[1]+';font-weight:800">'+esc(tdtLabel(r))+'</td><td>'+esc((r.un&&r.un!=='비노조'?'['+r.un+'] ':'')+(r.nb||''))+'</td></tr>';}).join('');
+  var body=d.list.map(function(r,i){var c=TDT_CL[r.st],u=TDT_UC[r.un];return '<tr style="'+(u?'background:'+u[0]+';':'')+'"><td class="n">'+(i+1)+'</td><td>'+(r.hq||TDT_HQ)+'</td><td>'+esc(r.t)+'</td><td>'+esc(r.L?r.L+'조':'')+'</td><td>'+esc(r.no)+'</td><td><b>'+esc(r.name)+'</b></td><td style="color:'+c[1]+';font-weight:800">'+esc(tdtLabel(r))+'</td><td>'+esc((r.un&&r.un!=='비노조'?'['+r.un+'] ':'')+(r.nb||''))+'</td></tr>';}).join('');
   var sum=['c','x','oh','oa','ox','w'].map(function(k){return TDT_NM[k]+' '+d.cnt[k];}).join(' · ');
   var html='<!doctype html><html><head><meta charset="utf-8"><title>'+esc(tdtTitle(s,d))+'</title><style>@page{size:A4;margin:12mm 10mm}*{box-sizing:border-box}body{margin:0;font-family:"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif;color:#1B2A44;-webkit-print-color-adjust:exact;print-color-adjust:exact}h1{font-size:17px;margin:0 0 3px}.m{font-size:11.5px;color:#55627A;margin-bottom:8px;display:flex;justify-content:space-between}table{width:100%;border-collapse:collapse;font-size:11px}th,td{border:1px solid #8794AB;padding:4px 5px;text-align:center}th{background:#E8EEF7;font-size:11px}td.n{width:28px;color:#6B7A93}thead{display:table-header-group}tr{page-break-inside:avoid}td:last-child{text-align:left}</style></head><body><h1>'+esc(tdtTitle(s,d))+'</h1><div class="m"><span>'+fmtDate(S.date)+' ('+dowOf(S.date)+') · '+esc(sum)+' · 표시 '+d.list.length+'명</span><span>'+(s.mode==='union'?'민노 ■ 연한 빨강 / 한마음 ■ 연한 파랑':'조합원 행은 색상 표시(민노 빨강 · 한마음 파랑)')+'</span></div><table><thead><tr><th>No</th><th>사업부</th><th>팀</th><th>조</th><th>사번</th><th>이름</th><th>근태</th><th>비고</th></tr></thead><tbody>'+(body||'<tr><td colspan="8">해당하는 인원이 없습니다</td></tr>')+'</tbody></table></body></html>';
   f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(f);var w=f.contentWindow.document;w.open();w.write(html);w.close();
@@ -2060,8 +2094,240 @@ function genderView(){var t=S.ck.team,ed=teamEditable(t),h='<div class="card"><h
 function gRow(e,ed){var g=S.gender[e.emp_no];return '<div class="rl"><div class="t"><b>'+esc(e.name)+'</b><small>'+esc(e.group_name||'관리자')+' · '+esc(e.emp_no)+'</small></div><div class="chips"><span class="chip'+(g==='남'?' on':'')+(ed?'':' dis')+'" onclick="setGender(\''+esc(e.emp_no)+'\',\'남\')">남</span><span class="chip'+(g==='여'?' on':'')+(ed?'':' dis')+'" onclick="setGender(\''+esc(e.emp_no)+'\',\'여\')">여</span></div></div>';}
 async function setGender(id,g){try{var r=await sbFetch('/worklog_emp_ext?on_conflict=emp_no',{method:'POST',headers:{'Prefer':'resolution=merge-duplicates,return=minimal'},body:[{emp_no:id,gender:g,updated_by:(S.me&&S.me.name)||''}]});if(!r.ok){var j=await r.json();throw new Error(j.message||'저장 실패');}S.gender[id]=g;render();}catch(e){toast('저장 실패: '+e.message);}}
 
+// ── 그룹 보기 (?group=1): 각 사업부 화면이 저장한 스냅샷을 합산해 같은 화면(현황·상황판)으로 보여 줍니다 ──
+var GR={on:false,view:'all',by:{},m:null,loading:false,err:''};
+var GDIV=[['T1','T1'],['T2','T2'],['BD','부대건물']];
+function grpMode(){return /[?&]group=1/.test(location.search);}
+function grpAgo(t){if(!t)return '';var m=Math.max(0,Math.round((Date.now()-new Date(t).getTime())/60000));return m<1?'방금 전':(m<60?m+'분 전':Math.floor(m/60)+'시간 '+(m%60)+'분 전');}
+function grpPick(only){var o=[];GDIV.forEach(function(d){if(only?only!==d[0]:(GR.view!=='all'&&GR.view!==d[0]))return;var r=GR.by[d[0]];if(r&&!r.dormant&&r.data&&r.data.v===2)o.push({id:d[0],short:d[1],x:r.data,at:r.updated_at});});return o;}
+function grpCompute(only){
+  var P=grpPick(only),T={q:0,in:0,c:0,mc:0,sup:0,xie:0,xieA:0,xieP:0,ent:0,o:0,abs:0,pend:0,openG:0,mq:0,mo:0,mabs:0,cu:0,m:0,f:0};
+  var m={n:P.length,T:T,z:{},zx:{},av:{},U:null,rows:[],ru:[],tm:[],sm:[],sl:[],mg:{},mf:{all:[],ls:[],as:[],n:0},ev:{illegal:0,obstruct:0},dw:null,base:'',ad:0,nt:{}};
+  ZKEYS.forEach(function(k){m.z[k]=0;});NSITEMS.forEach(function(x){m.z[nsKey(x[0])]=0;});
+  var dsum=0,ddays=0,dn=0,dow='';
+  P.forEach(function(p){var x=p.x,hq=p.short;
+    Object.keys(T).forEach(function(k){T[k]+=+((x.T||{})[k])||0;});
+    Object.keys(x.z||{}).forEach(function(k){m.z[k]=(m.z[k]||0)+x.z[k];});
+    Object.keys(x.zx||{}).forEach(function(k){m.zx[k]=(m.zx[k]||0)+x.zx[k];});
+    Object.keys(x.av||{}).forEach(function(k){m.av[k]=(m.av[k]||0)+x.av[k];});
+    Object.keys(x.nt||{}).forEach(function(k){m.nt[k]=(m.nt[k]||0)+x.nt[k];});
+    if(x.U){if(!m.U){m.U={};['민노','한마음','비노조'].forEach(function(k){m.U[k]={n:0,o:0,w:0,c:0,p:0,k:0,x:0};});}
+      ['민노','한마음','비노조'].forEach(function(k){var s=x.U[k]||{};Object.keys(m.U[k]).forEach(function(f){m.U[k][f]+=+s[f]||0;});});}
+    (x.rows||[]).forEach(function(a){m.rows.push({t:a[0],L:a[1],no:a[2],name:a[3],pos:a[4],un:a[5],st:a[6],rs:a[7],nb:a[8],hq:hq,div:p.id});});
+    (x.ru||[]).forEach(function(a){m.ru.push({t:a[0],L:a[1],no:a[2],name:a[3],pos:a[4],un:a[5],st:a[6],rs:a[7],nb:a[8],hq:hq,div:p.id});});
+    (x.tm||[]).forEach(function(a){m.tm.push({d:p.short,t:a[0],q:a[1],o:a[2],c:a[3],a:a[4],p:a[5],ti:a[6],tuse:!!a[7]});});
+    Object.keys(x.sm||{}).forEach(function(t){m.sm.push({d:p.short,t:t,out:x.sm[t][0],inn:x.sm[t][1]});});
+    (x.sl||[]).forEach(function(a){m.sl.push({d:p.short,n:a[0],f:a[1],t:a[2],z:a[3]});});
+    Object.keys(x.mg||{}).forEach(function(t){var key=(P.length>1?p.short+' ':'')+t;m.mg[key]=(x.mg[t]||[]).slice();});
+    ['all','ls','as'].forEach(function(k){((x.mf||{})[k]||[]).forEach(function(nm){m.mf[k].push(nm);});});
+    m.ev.illegal+=((x.ev||{}).illegal)||0;m.ev.obstruct+=((x.ev||{}).obstruct)||0;
+    if(x.dowAvg!=null){dsum+=x.dowAvg;dn++;ddays=ddays?Math.min(ddays,x.dd||0):(x.dd||0);dow=x.dow||dow;}
+    if(!m.base)m.base=x.base||'';m.ad=Math.max(m.ad,x.ad||0);});
+  m.mf.n=m.mf.all.length+m.mf.ls.length+m.mf.as.length;
+  m.dw=dn?{avg:dsum,days:ddays,dow:dow}:null;
+  m.nd=P.length;m.at=P.length?P[0].at:null;
+  return m;
+}
+function grpApply(m){
+  GR.m=m;S.avg=m.av;S.avgDays=m.ad;S.nsT={g:m.nt};
+  S.acc={open:true,union:!!m.U};S.union=m.U?{_:1}:{};
+  S.events=[];for(var i=0;i<m.ev.illegal;i++)S.events.push({kind:'illegal',status:'new'});for(var j=0;j<m.ev.obstruct;j++)S.events.push({kind:'obstruct',status:'new'});
+  TDT_HQ=GR.view==='all'?'3개 사업부':(DIV_NAMES[GR.view]||GR.view);
+}
+function grpBuild(){grpApply(grpCompute());GR.parts={};GDIV.forEach(function(d){GR.parts[d[0]]=grpCompute(d[0]);});}
+function grpWith(id,fn){var keep=GR.m,v=GR.view,a=S.avg,ad=S.avgDays,nt=S.nsT,un=S.union,acc=S.acc;GR.view=id;try{var m=GR.parts[id];if(!m||!m.n)return '';grpApply(m);return fn(m);}finally{GR.view=v;GR.m=keep;S.avg=a;S.avgDays=ad;S.nsT=nt;S.union=un;S.acc=acc;}}
+function grpSet(v){GR.view=v;if(S.sheet)S.sheet=null;grpBuild();render();}
+function tdtDiv(d){S.sheet.div=d;S.sheet.team='전체';S.sheet.st='all';renderSheet();}
+function grpTdtRows(mode){
+  var sel=(S.sheet&&S.sheet.div)||'전체',un=mode==='union';
+  var all=GR.m.rows.filter(function(r){return sel==='전체'||r.div===sel;});
+  if(!un)return all;
+  var o=all.filter(function(r){return r.un==='민노'||r.un==='한마음';});
+  GR.m.ru.forEach(function(r){if(sel==='전체'||r.div===sel)o.push(r);});
+  return o;}
+function grpDivChips(){
+  var ds=GDIV.filter(function(d){return GR.view==='all'||GR.view===d[0];});
+  return '<div class="chips" style="margin-bottom:6px"><span class="chip'+(((S.sheet&&S.sheet.div)||'전체')==='전체'?' on':'')+'" onclick="tdtDiv(\'전체\')">전체 사업부</span>'+ds.map(function(d){return '<span class="chip'+((S.sheet&&S.sheet.div)===d[0]?' on':'')+'" onclick="tdtDiv(\''+d[0]+'\')">'+d[1]+'</span>';}).join('')+'</div>';}
+function gTeams(noSup){
+  var multi=GR.view==='all'&&GR.m.nd>1,Tt={q:0,o:0,c:0,a:0,p:0,ti:0},TM=GR.m.T;
+  var h='<div class="card"><h2>팀별 현황 <span style="font-size:12.5px;color:var(--sub);font-weight:700">조별 정원 기준</span></h2><table><tr><th>팀<th>정원<th>DopS입력<th>출근체크<th>휴무외<th>결근</tr>';
+  GR.m.tm.forEach(function(r){var df=r.tuse&&r.c>0&&!r.p&&r.ti!==r.c;Tt.q+=r.q;Tt.o+=r.o;Tt.c+=r.c;Tt.a+=r.a;Tt.p+=r.p;Tt.ti+=r.ti;
+    h+='<tr'+(df?' style="background:#FFF4DB"':'')+'><td>'+(multi?'<small style="color:var(--sub)">'+esc(r.d)+'</small> ':'')+esc(r.t)+'<td>'+r.q+'<td style="font-weight:800">'+(r.tuse?r.ti:'-')+'<td>'+r.c+(df?' <b style="color:#B45F06">⚠'+(r.ti>r.c?'+':'−')+Math.abs(r.ti-r.c)+'</b>':'')+'<td>'+r.o+'<td class="bad">'+(r.p?(r.a?r.a+' <small style="color:#B45F06">(대기 '+r.p+')</small>':'('+r.p+')'):r.a);});
+  if(TM.mq){h+='<tr><td>관리자<td>'+TM.mq+'<td>'+TM.mc+'<td>'+TM.mc+'<td>'+(TM.mo||'-')+'<td class="bad">'+(TM.mabs||'-');Tt.q+=TM.mq;Tt.c+=TM.mc;Tt.a+=TM.mabs||0;Tt.o+=TM.mo||0;Tt.ti+=TM.mc;}
+  h+='<tr class="sum"><td>합계<td>'+Tt.q+'<td>'+Tt.ti+'<td>'+Tt.c+'<td>'+Tt.o+'<td class="bad">'+(Tt.p?(Tt.a?Tt.a+' <small style="color:#B45F06">(대기 '+Tt.p+')</small>':'('+Tt.p+')'):Tt.a)+'</tr></table><p class="note">'+(multi?'팀 앞의 작은 글자 = 사업부 · ':'')+'관리자 = 총괄·사업부장·팀장·조장 · 휴무외·결근에 관리자 포함 · 괄호 = 마감 전 체크 대기 인원 · DopS입력 = 조장 입력 · ⚠ = DopS 입력과 출근 체크 인원이 달라 조장 확인 필요(노란 줄)</p>';
+  if(noSup)return h+'</div>';
+  var ks=GR.m.sm;
+  h+='<h3>지원 보냄 / 받음</h3>'+(ks.length?'<table><tr><th>팀<th>보냄<th>받음</tr>'+ks.map(function(k){return '<tr><td>'+(multi?'<small style="color:var(--sub)">'+esc(k.d)+'</small> ':'')+esc(k.t)+'<td class="'+(k.out?'bad':'')+'">'+(k.out?'-'+k.out:'0')+'<td>'+(k.inn?'+'+k.inn:'0');}).join('')+'</table>':'<div class="dim" style="padding:6px 0">오늘 팀 간 지원 없음</div>');
+  return h+'</div>';}
+function gSup(inCol){
+  var multi=GR.view==='all'&&GR.m.nd>1,L=GR.m.sl;
+  var h='<div class="card'+(inCol?'':' wide')+'"><h2>오늘 지원 내역 <span style="font-size:12.5px;color:var(--sub);font-weight:700">'+L.length+'건</span></h2>';
+  if(!L.length)return h+'<div class="dim">오늘 등록된 팀 간 지원이 없습니다</div></div>';
+  h+='<table><tr>'+(multi?'<th>사업부':'')+'<th>이름<th>보낸 조<th>받은 조<th>구역</tr>';
+  L.forEach(function(s){h+='<tr>'+(multi?'<td>'+esc(s.d):'')+'<td>'+esc(s.n)+'<td>'+esc(s.f)+'<td>'+esc(s.t)+'<td style="font-weight:600">'+esc(s.z);});
+  return h+'</table></div>';}
+function gBMgr(){
+  var by=GR.m.mg,ts=Object.keys(by).filter(function(t){return by[t].length;}),inn=0;ts.forEach(function(t){inn+=by[t].length;});
+  var mk=function(t){var m=t.match(/^(?:(T1|T2|부대건물) )?(.*)$/);return m;};
+  ts.sort(function(a,b){var x=mk(a),y=mk(b);var dx=GDIV.map(function(d){return d[1];}).indexOf(x[1]||''),dy=GDIV.map(function(d){return d[1];}).indexOf(y[1]||'');if(dx!==dy)return dx-dy;var p=parseInt(x[2]),q=parseInt(y[2]);if(isNaN(p)&&isNaN(q))return x[2]<y[2]?-1:1;if(isNaN(p))return 1;if(isNaN(q))return -1;return p-q;});
+  var h='<div class="pn mgx"><div class="pt">관리자 출근<i>|</i><small>총괄·팀장·조장·사업부장</small><b>'+inn+'<small>명</small></b></div>';
+  if(isPC())h+='<div class="mgl">'+ts.map(function(t){return '<div class="mgt"><h4>'+esc(t)+'</h4>'+by[t].slice().sort(function(a,b){return String(a).localeCompare(String(b),'ko');}).map(function(n){return '<span class="on">'+esc(n)+'</span>';}).join('')+'</div>';}).join('')+'</div>';
+  else h+='<div class="mgp">'+ts.map(function(t){return '<div><span>'+esc(t)+'</span><b>'+by[t].length+'<small>명</small></b></div>';}).join('')+'</div>';
+  return h+'</div>';}
+
+var GCOL={T1:'#2A9D6A',T2:'#5B7FC4',BD:'#D98A1E'};
+function gFloorHTML(big){
+  var z=zoneCounts(),av=S.avg||{};
+  var cell=function(pref,k,f){var n=0,a=0;AREAS.forEach(function(ar){if(ar[0].indexOf(pref)!==0)return;var key=ar[0]+'_'+k+'_'+f;n+=z[key]||0;a+=av[key]||0;});a=Math.round(a);return {n:n,a:a};};
+  var fl=FLOORS.filter(function(f){return ['ls','as'].some(function(pr){return KINDS.some(function(k){var c=cell(pr,k[0],f[0]);return c.n>0||c.a>0;});});});
+  if(!fl.length)fl=FLOORS.slice(0,4);
+  var td=function(c){return '<td class="'+(!c.n&&!c.a?'gz':(c.a&&c.n<c.a*0.8?'glo':''))+'">'+(!c.n&&!c.a?'-':c.n)+(c.a&&c.n<c.a*0.8?'<small>평소 '+c.a+'</small>':'')+'</td>';};
+  var h='<table class="gfl'+(big?' gbig':'')+'"><tr><th rowspan="2">층</th><th colspan="5" class="gl">L/S (랜드)</th><th colspan="5" class="ga">A/S (에어)</th></tr><tr>'+['ls','as'].map(function(){return KINDS.map(function(k){return '<th>'+k[1]+'</th>';}).join('')+'<th>계</th>';}).join('')+'</tr>';
+  var col={ls:[0,0,0,0,0],as:[0,0,0,0,0]};
+  fl.forEach(function(f){h+='<tr><th>'+f[1]+'</th>';['ls','as'].forEach(function(pr){var t=0;KINDS.forEach(function(k,i){var c=cell(pr,k[0],f[0]);t+=c.n;col[pr][i]+=c.n;h+=td(c);});col[pr][4]+=t;h+='<td class="gt">'+t+'</td>';});h+='</tr>';});
+  h+='<tr class="gsm"><th>계</th>'+['ls','as'].map(function(pr){return col[pr].map(function(n,i){return '<td class="'+(i===4?'gt':'')+'">'+n+'</td>';}).join('');}).join('')+'</tr></table>';
+  var sp=SPECIALS.map(function(x){return x[1]+' <b>'+(z[x[0]]||0)+'</b>';}).join(' · ');
+  var ns=0;NSITEMS.forEach(function(x){ns+=z[nsKey(x[0])]||0;});
+  h+='<div class="gsp">'+sp+(ns?' · 야간 작업 <b>'+ns+'</b>':'')+'</div>'+mgrFieldHTML()+'<div style="display:flex;gap:12px;font-size:12.5px;margin-top:8px;font-weight:700"><span class="glo2">■ 평소 대비 20% 이상 부족</span><span class="dim">- 해당 없음</span></div>';
+  return h;}
+function gDivHead(id){
+  var m=GR.parts[id],nm=DIV_NAMES[id]||id;
+  if(!m||!m.n)return '<div class="gdh" style="border-left-color:'+GCOL[id]+'"><b>'+esc(nm)+'</b><span class="dim">집계 전 · 해당 사업부 비정상상황 화면을 한 번 열어 주세요</span></div>';
+  var T=m.T,rate=T.q?Math.round(T.in/T.q*100):0;
+  return '<div class="gdh" style="border-left-color:'+GCOL[id]+'"><b>'+esc(nm)+'</b><span>투입 <b>'+T.in+'</b> / 정원 '+T.q+'명 · <b>'+rate+'%</b> · 근무 '+T.c+' · 관리 '+T.mc+' · 지원 '+T.sup+' · 협정 '+T.xie+' · 결근 <b style="color:var(--red)">'+T.abs+'</b></span><small>'+grpAgo(m.at)+'</small></div>';}
+function gUnionCmp(){
+  var rows=[],tot={n:0,o:0,w:0,c:0,p:0},any=false;
+  GDIV.forEach(function(d){var m=GR.parts[d[0]];if(!m||!m.n||!m.U)return;any=true;var s={n:0,o:0,w:0,c:0,p:0};['민노','한마음'].forEach(function(k){['n','o','w','c','p'].forEach(function(f){s[f]+=m.U[k][f]||0;});});['n','o','w','c','p'].forEach(function(f){tot[f]+=s[f];});rows.push([d[0],d[1],s]);});
+  if(!any)return '';
+  var tr=function(nm,s,cls,col){return '<tr class="'+(cls||'')+'"><td>'+(col?'<i style="background:'+col+'"></i>':'')+nm+'<td>'+s.n+'<td>'+s.o+'<td>'+s.w+'<td>'+s.c+'<td class="'+(s.p?'bad':'')+'">'+s.p+'<td class="'+(s.p?'bad':'')+'">'+pct(s.p,s.w);};
+  return '<div class="card wide"><h2>노조 결근 현황 <span class="stg" style="background:var(--redbg);color:var(--red)">3개 사업부 · 조합원(민노+한마음) 기준 결근율 '+pct(tot.p,tot.w)+'</span></h2><table class="un"><tr><th>사업부<th>조합원<th>휴무외<th>근무예정<th>출근<th>결근<th>결근율</tr>'+rows.map(function(r){return tr(r[1],r[2],'',GCOL[r[0]]);}).join('')+tr('합계',tot,'sum')+'</table><p class="note">사업부별 세부(민노·한마음·비노조)는 아래 각 사업부 영역에 있습니다.</p></div>';}
+function gHomeAll(){
+  var T=totals(),pc=isPC();
+  var h=(pc?'<div class="gtop"><div>'+cFlip(T)+'</div><div>'+cWork(T)+'</div></div>':cFlip(T)+cWork(T))+gUnionCmp();
+  GDIV.forEach(function(d){var id=d[0];h+='<div class="gsec">'+gDivHead(id);
+    var body=grpWith(id,function(){var fl='<div class="card"><h2>층별 배치 현황 <span style="font-size:12.5px;color:var(--sub);font-weight:700">L/S · A/S</span></h2>'+gFloorHTML()+'</div>';
+      var un=cUnion(),tm=gTeams(true);
+      return pc?fl+'<div class="gg2"><div>'+un+'</div><div>'+tm+'</div></div>':fl+un+tm;});
+    h+=body+'</div>';});
+  h+=gSup(false);
+  return h+'<p class="note" style="margin:10px 16px">숫자는 각 사업부 비정상상황 화면이 계산한 값을 그대로 모은 것입니다. 사업부 이름을 눌러 보려면 위쪽 사업부 버튼을 사용하세요.</p>';}
+function bUnionAll(){
+  var h='<div class="pn"><div class="pt">노조 현황<i>|</i><small>사업부별 · 결근 = 근무 예정이었는데 출근하지 않은 파업 참여 인원</small></div>';
+  var rows='',all={n:0,o:0,w:0,c:0,p:0,pm:0,ph:0},any=false;
+  var tr=function(nm,col,t,cls){return '<tr class="'+(cls||'')+'"><th>'+(col?'<i style="background:'+col+'"></i>':'')+nm+'</th><td>'+t.n+'</td><td class="dim">'+t.o+'</td><td class="gok">'+t.c+'</td><td class="gbad">'+t.p+'</td><td class="gbad">'+pct(t.p,t.w)+'</td><td>'+t.pm+'</td><td>'+t.ph+'</td></tr>';};
+  GDIV.forEach(function(d){var m=GR.parts[d[0]];if(!m||!m.n||!m.U)return;any=true;var U=m.U,t={n:0,o:0,w:0,c:0,p:0,pm:U['민노'].p||0,ph:U['한마음'].p||0};['민노','한마음'].forEach(function(k){['n','o','w','c','p'].forEach(function(f){t[f]+=U[k][f]||0;});});
+    ['n','o','w','c','p','pm','ph'].forEach(function(f){all[f]+=t[f];});rows+=tr(d[1],GCOL[d[0]],t);});
+  if(!any)return h+'<div class="ok" style="color:var(--sub)">노조 자료 없음</div></div>';
+  return h+'<table class="gfl gbig gun"><tr><th>사업부</th><th>조합원</th><th>휴무외</th><th>투입(출근)</th><th>결근(파업 참여)</th><th>결근율</th><th>민노 결근</th><th>한마음 결근</th></tr>'+rows+tr('3개 사업부 합계','',all,'gsm')+'</table><div class="gsp">조합원 = 민노 + 한마음 · 사업부별 민노·한마음·비노조 세부는 각 사업부 화면에서 확인</div></div>';}
+function bFloorsAll(){
+  var h='<div class="pn gbf"><div class="pt">층별 투입<i>|</i><small>사업부별 · L/S(랜드) · A/S(에어) · 빨강 = 월평균 대비 20% 이상 부족</small></div><table class="gfl gbig"><tr><th>사업부</th><th></th>'+FLOORS.map(function(f){return '<th>'+f[1]+'</th>';}).join('')+'<th>계</th>'+KINDS.map(function(k){return '<th class="gk">'+k[1]+'</th>';}).join('')+'</tr>';
+  var all={ls:FLOORS.map(function(){return 0;}),as:FLOORS.map(function(){return 0;})},tk={ls:[0,0,0,0],as:[0,0,0,0]};
+  GDIV.forEach(function(d){var m=GR.parts[d[0]];if(!m||!m.n)return;
+    ['ls','as'].forEach(function(pr,pi){
+      h+='<tr class="'+(pi?'gl2':'')+'">'+(pi?'':'<th rowspan="2" class="gdv" style="border-left:6px solid '+GCOL[d[0]]+'">'+esc(d[1])+'</th>')+'<th class="'+(pr==='ls'?'gl':'ga')+'">'+(pr==='ls'?'L/S':'A/S')+'</th>';
+      var tot=0;FLOORS.forEach(function(f,fi){var n=0,a=0;AREAS.forEach(function(ar){if(ar[0].indexOf(pr)!==0)return;KINDS.forEach(function(k){var key=ar[0]+'_'+k[0]+'_'+f[0];n+=m.z[key]||0;a+=m.av[key]||0;});});a=Math.round(a);tot+=n;all[pr][fi]+=n;
+        h+='<td class="'+(!n&&!a?'gz':(a&&n<a*0.8?'glo':''))+'">'+(!n&&!a?'-':n)+'</td>';});
+      h+='<td class="gt">'+tot+'</td>';
+      KINDS.forEach(function(k,ki){var n=0;AREAS.forEach(function(ar){if(ar[0].indexOf(pr)!==0)return;FLOORS.forEach(function(f){n+=m.z[ar[0]+'_'+k[0]+'_'+f[0]]||0;});});tk[pr][ki]+=n;h+='<td>'+(n||'-')+'</td>';});
+      h+='</tr>';});});
+  ['ls','as'].forEach(function(pr){var t=all[pr].reduce(function(a,b){return a+b;},0);h+='<tr class="gsm"><th colspan="2">3개 사업부 '+(pr==='ls'?'L/S':'A/S')+'</th>'+all[pr].map(function(n){return '<td>'+n+'</td>';}).join('')+'<td class="gt">'+t+'</td>'+tk[pr].map(function(n){return '<td>'+n+'</td>';}).join('')+'</tr>';});
+  return h+'</table></div>';}
+
+// ── 그룹 업로드: 노조 명단 · ERP 출근 (사번으로 사업부를 찾아 사업부별로 저장) ──
+var GU={un:null,erp:null,busy:false};
+function grpUpOpen(){GR.upv=true;GU.un=null;GU.erp=null;render();window.scrollTo(0,0);}
+function grpUpClose(){GR.upv=false;render();}
+function grpPerTxt(per){var o=[];GDIV.forEach(function(d){if(per&&per[d[0]]!=null)o.push(d[1]+' <b>'+per[d[0]]+'</b>명');});return o.length?o.join(' · '):'연결된 사번 없음';}
+async function grpCall(name,body){var r=await sbFetch('/rpc/'+name,{method:'POST',body:body});var t=await r.text();var j=null;try{j=t?JSON.parse(t):null;}catch(e){}if(!r.ok)throw new Error((j&&(j.message||j.hint))||('실패 '+r.status));return j;}
+function grpUnionFile(f){if(!f)return;var rd=new FileReader();rd.onload=async function(ev){try{
+    var wb=XLSX.read(ev.target.result,{type:'array'}),ws=wb.Sheets[wb.SheetNames[0]],a=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+    var hi=-1,ci=-1,ui=-1;for(var i=0;i<Math.min(a.length,15)&&hi<0;i++){a[i].forEach(function(c,j){var s=String(c).replace(/\s/g,'');if(ci<0&&/사번|사원번호/.test(s))ci=j;});if(ci>=0){hi=i;a[i].forEach(function(c,j){var s=String(c).replace(/\s/g,'');if(ui<0&&/노조|조합|소속|구분/.test(s)&&j!==ci)ui=j;});}}
+    if(hi<0||ui<0){toast('사번·노조 열을 찾지 못했습니다');return;}
+    var seen={},rows=[],unk=0,dup=0,cnt={};
+    for(var r=hi+1;r<a.length;r++){var no=String(a[r][ci]).trim().replace(/\.0$/,'');if(!no)continue;var un=normUnion(a[r][ui]);if(!un){unk++;continue;}if(seen[no]){dup++;continue;}seen[no]=1;rows.push({emp_no:no,union_name:un});cnt[un]=(cnt[un]||0)+1;}
+    var res=await grpCall('group_import_union',{p_rows:rows,p_file:f.name,p_dry:true});
+    GU.un={name:f.name,rows:rows,res:res,unk:unk,dup:dup,cnt:cnt,done:false};render();
+  }catch(e){toast('파일 검사 실패: '+e.message);}};rd.readAsArrayBuffer(f);}
+async function grpUnionSave(){var u=GU.un;if(!u||GU.busy)return;
+  if(!confirm('노조 명단을 저장합니다.\n\n파일에 사번이 있는 사업부는 기존 명단이 새 명단으로 교체됩니다.\n('+u.res.matched+'명 연결)'))return;
+  GU.busy=true;try{var r=await grpCall('group_import_union',{p_rows:u.rows,p_file:u.name,p_dry:false});u.res=r;u.done=true;toast('저장 완료 · '+r.matched+'명');}catch(e){toast('저장 실패: '+e.message);}GU.busy=false;render();}
+async function grpErpFile(f){if(!f)return;
+  try{if(typeof XLSX==='undefined')throw new Error('엑셀 라이브러리를 불러오지 못했습니다');
+    var wb=XLSX.read(await f.arrayBuffer(),{type:'array'}),ws=wb.Sheets[wb.SheetNames[0]],rows=XLSX.utils.sheet_to_json(ws,{defval:null,raw:true});
+    if(!rows.length||rows[0]['사원번호']===undefined||rows[0]['근태']===undefined)throw new Error('ERP 출퇴근 엑셀 형식이 아닙니다 (사원번호·근태 열 필요)');
+    var dates={},by={};
+    rows.forEach(function(r){var d=erpDateStr(r['근태일']);if(d)dates[d]=1;var id=String(r['사원번호']||'').trim();if(!id)return;var o=by[id]=by[id]||{inT:null};if(r['근태']==='출근'){var t=String(r['근무시간']||'');if(!o.inT||t<o.inT)o.inT=t;}});
+    var ds=Object.keys(dates),ins=[];Object.keys(by).forEach(function(id){if(by[id].inT)ins.push({emp_no:id,in_time:by[id].inT});});
+    var bad=!(ds.length===1&&ds[0]===kst());
+    var res=bad?null:await grpCall('group_erp_upload',{p_date:ds[0],p_rows:ins,p_dry:true});
+    GU.erp={name:f.name,dates:ds,rows:ins,res:res,bad:bad,done:false};render();
+  }catch(e){toast('파일 검사 실패: '+e.message);}}
+async function grpErpSave(){var u=GU.erp;if(!u||u.bad||GU.busy)return;
+  GU.busy=true;try{var r=await grpCall('group_erp_upload',{p_date:u.dates[0],p_rows:u.rows,p_dry:false});u.res=r;u.done=true;toast('출근 '+r.matched+'명을 반영했습니다');}catch(e){toast('저장 실패: '+e.message);}GU.busy=false;render();}
+function grpUpView(){
+  var h='<div class="top"><div><b>비정상상황 · 그룹</b><small>노조 명단 · ERP 출근 올리기</small></div><div style="display:flex;gap:6px"><div class="pill" onclick="grpUpClose()">← 돌아가기</div></div></div>';
+  var fileBtn=function(fn){return '<label class="b2" style="display:inline-block;padding:12px 16px;border-radius:10px;font-weight:800;cursor:pointer">엑셀 파일 선택<input type="file" accept=".xlsx,.xls,.csv" style="display:none" onchange="'+fn+'(this.files[0])"></label>';};
+  var u=GU.un,e=GU.erp;
+  h+='<div class="card"><h2>노조 명단 올리기 <span style="font-size:12.5px;color:var(--sub);font-weight:700">3개 사업부 한 번에</span></h2><div class="info" style="margin-top:0">엑셀에 <b>사번</b>과 <b>노조</b>(민노 / 한마음 / 비노조) 열이 있으면 됩니다. <b>사번으로 사업부를 찾아 사업부별로 저장</b>되며, 파일에 사번이 있는 사업부는 기존 명단이 새 명단으로 교체됩니다. 사업부 화면과 그룹 화면에 모두 반영됩니다.</div><div class="btns">'+fileBtn('grpUnionFile')+'</div>';
+  if(u){h+='<h3>'+esc(u.name)+' 검사 결과'+(u.done?' · 저장 완료':'')+'</h3><div class="kp"><div class="k1"><b>'+u.rows.length+'</b><span>읽은 사번</span></div><div class="k6"><b>'+u.res.matched+'</b><span>연결 성공</span></div><div class="k5"><b>'+(u.res.unmatched||[]).length+'</b><span>연결 실패</span></div><div class="k4"><b>'+u.dup+'</b><span>중복</span></div></div>'
+    +'<div class="note" style="font-size:14px;color:var(--ink)">사업부별 연결: '+grpPerTxt(u.res.per)+'</div>'
+    +'<table class="un" style="margin-top:8px"><tr><th>구분<th>인원</tr>'+['민노','한마음','비노조'].map(function(k){return '<tr><td>'+k+'<td>'+(u.cnt[k]||0);}).join('')+'</table>'
+    +(u.unk?'<p class="note bad">노조 이름을 읽지 못한 행 '+u.unk+'개는 제외됩니다</p>':'')
+    +((u.res.unmatched||[]).length?'<h3>연결 실패 사번 (어느 사업부에도 없음)</h3><div class="note" style="color:var(--red);font-weight:700">'+u.res.unmatched.slice(0,40).map(esc).join(', ')+'</div>':'')
+    +(u.done?'':'<div class="btns"><div class="b3" onclick="grpUnionSave()">'+u.res.matched+'명 저장 (사업부별 명단 교체)</div></div>');}
+  h+='</div>';
+  h+='<div class="card"><h2>ERP 출근 올리기 <span style="font-size:12.5px;color:var(--sub);font-weight:700">오늘 · 3개 사업부 한 번에</span></h2><div class="info" style="margin-top:0">ERP 출퇴근 엑셀(<b>사원번호·근태·근태일·근무시간</b> 열)을 올리면 사번으로 사업부를 찾아 <b>사업부별 ERP 출근</b>으로 저장됩니다. 오늘 날짜 파일만 올릴 수 있습니다.</div><div class="btns">'+fileBtn('grpErpFile')+'</div>';
+  if(e){h+='<h3>'+esc(e.name)+' 검사 결과'+(e.done?' · 저장 완료':'')+'</h3>'
+    +(e.bad?'<div class="alert"><b>오늘 날짜 파일이 아닙니다</b> 파일 날짜: '+esc(e.dates.join(', ')||'없음')+' · 오늘: '+kst()+'</div>'
+     :'<div class="kp"><div class="k1"><b>'+e.rows.length+'</b><span>출근 사번</span></div><div class="k6"><b>'+e.res.matched+'</b><span>연결 성공</span></div><div class="k5"><b>'+(e.res.unmatched||[]).length+'</b><span>연결 실패</span></div></div><div class="note" style="font-size:14px;color:var(--ink)">사업부별 출근: '+grpPerTxt(e.res.per)+'</div>'
+      +((e.res.unmatched||[]).length?'<h3>연결 실패 사번</h3><div class="note" style="color:var(--red);font-weight:700">'+e.res.unmatched.slice(0,40).map(esc).join(', ')+'</div>':'')
+      +(e.done?'':'<div class="btns"><div class="b3" onclick="grpErpSave()">'+e.res.matched+'명 출근 반영</div></div>'));}
+  h+='</div><p class="note" style="margin:10px 16px">저장한 값은 사업부 비정상상황 화면에 바로 반영되고, 그룹 합산 화면은 각 사업부 화면이 열려 있을 때 1분 안에 새 값으로 바뀝니다.</p>';
+  return h;}
+function gRender0(){
+  var A=APP();if(!A)return;
+  if(GR.upv){A.innerHTML=grpUpView();return;}
+  if(S.board&&GR.m){A.innerHTML=boardView();return;}
+  var h='<div class="top"><div><b>비정상상황 · 그룹</b><small>'+(GR.view==='all'?'3개 사업부 합산':esc(DIV_NAMES[GR.view]||GR.view))+'</small></div><div style="display:flex;gap:6px"><div class="pill" onclick="grpLoad()">새로고침</div>'+(GR.m&&GR.m.n?'<div class="pill" onclick="boardOpen()">상황판</div>':'')+(S.me&&S.me.role==='master'?'<div class="pill" onclick="grpUpOpen()">명단·ERP 올리기</div>':'')+'<div class="pill" onclick="location.href=\'group.html\'">← 그룹앱</div></div></div>';
+  h+='<div class="card"><div class="chips"><span class="chip'+(GR.view==='all'?' on':'')+'" onclick="grpSet(\'all\')">3개 사업부 합산</span>'+GDIV.map(function(d){return '<span class="chip'+(GR.view===d[0]?' on':'')+'" onclick="grpSet(\''+d[0]+'\')">'+d[1]+'</span>';}).join('')+'</div>'
+    +'<div style="font-size:12px;color:var(--sub);margin-top:8px;line-height:1.6">'+GDIV.map(function(d){var r=GR.by[d[0]];var st;
+      if(!r)st='<b style="color:#C0392B">자료 없음</b>';
+      else if(r.dormant)st='<b style="color:var(--sub)">휴면</b>';
+      else if(!r.data||r.data.v!==2)st='<b style="color:#B45F06">'+(r.data&&r.data.q!=null?'상세 저장 전':'집계 전')+'</b>';
+      else{var old=(Date.now()-new Date(r.updated_at).getTime())>30*60000;st='<b style="color:'+(old?'#C0392B':'#1A7F37')+'">'+grpAgo(r.updated_at)+'</b>'+(old?' (오래됨)':'');}
+      return d[1]+' '+st;}).join(' · ')+'</div>'
+    +'<div style="font-size:11.5px;color:var(--sub);margin-top:4px">각 사업부 비정상상황 화면이 열려 있을 때 1분마다 갱신된 값입니다. 숫자는 사업부 화면과 같은 계산 결과를 그대로 모았습니다.</div></div>';
+  if(GR.err)h+='<div class="card"><div class="alert"><b>불러오기 실패</b> '+esc(GR.err)+'</div></div>';
+  if(GR.loading&&!GR.m)h+='<div class="ld">불러오는 중…</div>';
+  else if(!GR.m||!GR.m.n)h+='<div class="card"><div class="empty">표시할 집계가 아직 없습니다.<br>해당 사업부에서 비정상상황 화면을 한 번 열면 자동으로 저장됩니다.</div></div>';
+  else h+=(GR.view==='all'?gHomeAll():homeView());
+  A.innerHTML=h;renderSheet();}
+async function grpLoad(quiet){
+  if(!quiet){GR.loading=true;render();}
+  try{var r=await sbFetch('/rpc/group_abnormal',{method:'POST',body:{p_date:null}});var j=await r.json();if(!r.ok)throw new Error((j&&j.message)||'불러오기 실패');
+    GR.by={};(j||[]).forEach(function(x){GR.by[x.division_id]=x;});GR.err='';}catch(e){GR.err=e.message||String(e);}
+  GR.loading=false;grpBuild();render();}
+function grpInit(){
+  GR.on=true;S.me=loadMe();
+  if(!S.me||(S.me.role!=='master'&&S.me.role!=='group_viewer')){location.href='index.html';return;}
+  var mm=location.search.match(/[?&]div=(T1|T2|BD)/);if(mm)GR.view=mm[1];
+  S.loading=false;S.date=kst();S.tab='home';S.base='auto';
+  totals=function(){return GR.m.T;};
+  zoneCounts=function(){S._zx=GR.m.zx;return GR.m.z;};
+  unionStats=function(){return GR.m.U;};
+  dowAvg=function(){return GR.m.dw;};
+  baseLabel=function(){return GR.m.base||'전체';};
+  mgrField=function(){return GR.m.mf;};
+  divName=function(){return GR.view==='all'?'3개 사업부 합산':(DIV_NAMES[GR.view]||GR.view);};
+  setBase=function(){};
+  isMaster=function(){return false;};
+  bUnion=function(U){return GR.view==='all'?bUnionAll():_bUnion0(U);};var _bF0=bFloors;bFloors=function(z){return GR.view==='all'?bFloorsAll():_bF0(z);};tdtRows=grpTdtRows;cTeams=gTeams;cSupList=gSup;bMgr=gBMgr;render0=gRender0;loadAll=function(q){return grpLoad(q);};
+  window.addEventListener('resize',function(){if(!GR.loading)render();});
+  setInterval(function(){if(!document.hidden&&!GR.loading&&!S.board)grpLoad(true);},60000);
+  grpBuild();grpLoad();}
+
 // ── 시작 ──
-(function(){if(/[?&]coop=/.test(location.search)){pubInit();return;}S.me=loadMe();if(!S.me){location.href='index.html';return;}
+(function(){if(/[?&]coop=/.test(location.search)){pubInit();return;}if(grpMode()){grpInit();return;}S.me=loadMe();if(!S.me){location.href='index.html';return;}
   var wasPC=isPC();window.addEventListener('resize',function(){if(RP.open||CP.on)fitA4();var p=isPC();if(p!==wasPC){wasPC=p;if(!S.loading)render();}});
   loadAll();})();
 </script></body></html>

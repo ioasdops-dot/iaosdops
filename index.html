@@ -12260,7 +12260,7 @@ async function mpAttCompute(team,D){
   var home=await msFetchAll(function(){ return sb.from('wf_employees').select('emp_no,name,position,group_name,team,resign_date').eq('team',T); });
   var emps=(home.data||[]).filter(function(e){ return wfActiveOn(e,D); });
   try{ emps=(await wfApplyAssignToRoster(T,D,emps)).emps; }catch(e){}
-  var mine=emps.filter(function(e){ return e.group_name===grp; });
+  var mine=emps.filter(function(e){ return String(e.group_name||'').replace(/\s/g,'').charAt(0).toUpperCase()===m[2]; }); // 조 표기가 'A조'·'A'·'A 조'여도 같은 조로 봄
   var ids=mine.map(function(e){return e.emp_no;});
   var res={D:D,team:team,T:T,grp:grp,total:mine.length,work:0,half:0,off:0,leave:0,sick:0,hold:0,etc:0,edu:0,mgrWork:0,mgrAll:0,etcTxt:[],names:{'휴무':[],'연차':[],'병가':[],'휴직':[],'기타':[],'교육·출장':[]},ok:true};
   if(!ids.length){ res.ok=false; return res; }
@@ -12503,7 +12503,12 @@ function mpcRender(){
   var d=prep?MPC.prepD:MPA.data, zone=getTeamZone(team);
   if(!led&&!prep){ if(!night){ var nb=document.getElementById('nsCardArea'), nt=document.getElementById('nsTable'); if(nb) nb.style.display='none'; if(nt) nt.style.display=''; }
   else { var db0=document.getElementById('mpCardArea'); if(db0) db0.style.display='none'; } }
-  if((shift==='야간'&&!night)||!zone||!d||!d.ok||d.team!==team||!d.people||!d.people.length){ box.style.display='none'; if(inp) inp.style.display=(cardOnly&&d&&!d.ok&&zone&&!(shift==='야간'&&!night))?'none':''; return; }
+  if((shift==='야간'&&!night)||!zone||!d||!d.ok||d.team!==team||!d.people||!d.people.length){ box.style.display='none'; if(inp) inp.style.display=(cardOnly&&d&&!d.ok&&zone&&!(shift==='야간'&&!night))?'none':'';
+    // 카드가 안 나오는 이유를 화면에 표시 (조용히 사라지지 않게)
+    try{ if(!(shift==='야간'&&!night)&&team&&d&&d.team===team&&(!zone||!d.ok||!d.people||!d.people.length)){
+      var why=!zone?(team+'는 구역(동편·서편·집하장)이 정해져 있지 않아 이름 카드 배치를 쓰지 않습니다. 아래 숫자 입력을 사용하세요.'):(((d&&d.T)||team)+' '+((d&&d.grp)||'')+' 인원을 직원 명부에서 찾지 못했습니다. 직원 등록의 팀·조 값(예: 3팀 / A조)을 확인하세요.');
+      box.style.display='block'; box.innerHTML='<div style="margin:0 0 10px;padding:10px 12px;border-radius:10px;background:#FFF4D6;border:1.5px solid #F0B429;font-size:13px;font-weight:800;color:#8A5A00;line-height:1.5">🪪 이름 카드 배치를 사용할 수 없습니다<br><span style="font-weight:600">'+why+'</span></div>'; if(inp&&cardOnly===false) inp.style.display=''; } }catch(e){}
+    return; }
   var k=d.D+'|'+team+'|'+shift, fresh=false;
   if(MPC.k!==k){ MPC.k=k; MPC.D=d.D; MPC.team=team; MPC.sel={}; MPC.attSel={}; MPC.att=false; MPC.tab='own'; MPC.to=''; MPC.other=false; MPC.supOk=false; MPC.sentRows=[]; MPC.recvRows=[]; MPC.sentCells={}; MPC.autoMgr=[]; MPC.autoSet={}; MPC.prev=null; MPC.prevAt=0; MPC.prevN=0; MPC.notice=''; MPC.draftDone=false; mpcLoad(); fresh=true; if(!prep) mpcLoadPrev();
     if(prep){ MPC.pm=Object.assign({},MPC.ext); d.people.forEach(function(p){ MPC.pm[p.emp_no]=p; }); mpcPrepLoadDraft(); }

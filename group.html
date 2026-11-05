@@ -326,6 +326,44 @@ details.anad .card{border:0;padding:0 0 10px;margin:0}
 .pk-dc .ok{background:#E3F6EE}.pk-dc .wn{background:#FFF1D6}.pk-dc .dg{background:#FDE3DF}
 .sv-tbl{font-size:14px}.sv-h,.sv-r{display:grid;grid-template-columns:50px repeat(5,1fr);gap:4px;padding:8px 0;text-align:center;align-items:center}.sv-h{font-size:12px;color:var(--mut);font-weight:700;border-bottom:1px solid var(--line)}.sv-r{border-bottom:1px solid #F0F1F4}.sv-r b{text-align:left}
 .sv-tx{padding:10px 0;border-bottom:1px solid #F0F1F4;font-size:14px;line-height:1.5}.sv-tx small{display:block;color:var(--mut);font-size:12px}
+
+/* 홈: 인력 / 기타 구분 */
+.hm-h{font-size:18px;font-weight:800;margin:6px 2px 10px;color:var(--ink)}
+.hm-r .hm-h{margin-top:22px}
+#gside{display:none}
+@media (min-width:900px){
+  .hm-r .hm-h{margin-top:6px}
+  .hm-grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:22px;align-items:start}
+  .hm-l .dgrid{grid-template-columns:repeat(auto-fit,minmax(250px,1fr))}
+  .hm-r .al{grid-template-columns:1fr}
+  #gnav{display:none!important}
+  #gside{display:block;position:fixed;left:0;top:0;bottom:0;width:210px;background:#fff;border-right:1px solid var(--line);padding:18px 12px;overflow-y:auto;z-index:30}
+  #gside .gs-brand{padding:4px 8px 14px}#gside .gs-brand b{display:block;font-size:20px;font-weight:800}#gside .gs-brand small{color:var(--mut);font-size:11.5px}
+  #gside .gs-t{font-size:11.5px;color:var(--mut);font-weight:800;margin:14px 8px 5px;letter-spacing:.3px}
+  #gside button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;border-radius:12px;padding:11px 12px;font-size:15px;font-weight:700;color:var(--ink);text-align:left}
+  #gside button span{font-size:18px;width:24px;text-align:center}
+  #gside button:hover{background:#F3F4F7}
+  #gside button.on{background:#2B2F36;color:#fff}
+  #app .wrap,.wrap{max-width:none;margin:0;padding:0 28px 24px 238px}
+  body{padding-bottom:0}
+}
+
+/* 폰: 좌측 서랍 메뉴 (☰ 버튼 / 왼쪽 가장자리에서 오른쪽으로 스와이프) */
+#gburger{border:0;background:#fff;border:1px solid var(--line);border-radius:12px;width:40px;height:40px;font-size:20px;color:var(--ink);flex:none;margin-right:2px}
+#gscrim{display:none;position:fixed;inset:0;background:#14181f66;z-index:55}
+#gscrim.on{display:block}
+@media (max-width:899px){
+  #gnav{display:none!important}
+  body{padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+  #gside{display:block;position:fixed;left:0;top:0;bottom:0;width:272px;max-width:82vw;background:#fff;padding:calc(18px + env(safe-area-inset-top)) 12px 18px;overflow-y:auto;z-index:60;transform:translateX(-102%);transition:transform .22s ease;box-shadow:6px 0 24px #14181f30}
+  #gside.open{transform:none}
+  #gside .gs-brand{padding:4px 8px 14px}#gside .gs-brand b{display:block;font-size:20px;font-weight:800}#gside .gs-brand small{color:var(--mut);font-size:11.5px}
+  #gside .gs-t{font-size:11.5px;color:var(--mut);font-weight:800;margin:14px 8px 5px}
+  #gside button{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;border-radius:12px;padding:12px;font-size:16px;font-weight:700;color:var(--ink);text-align:left}
+  #gside button span{font-size:19px;width:26px;text-align:center}
+  #gside button.on{background:#2B2F36;color:#fff}
+}
+@media (min-width:900px){#gburger{display:none}#gscrim{display:none!important}}
 </style>
 </head>
 <body>
@@ -351,7 +389,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
 
 <div id="app" class="wrap hide">
   <div class="hd">
-    <div class="bn"><img src="logo.png" alt="환경미화운영그룹" width="38" height="38"><div><h1>ON_이음</h1><small id="stamp">불러오는 중…</small></div></div>
+    <div class="bn"><button type="button" id="gburger" aria-label="메뉴">☰</button><img src="logo.png" alt="환경미화운영그룹" width="38" height="38"><div><h1>ON_이음</h1><small id="stamp">불러오는 중…</small></div></div>
     <div style="display:flex;gap:6px;align-items:center">
       <button class="live" id="refresh" type="button" aria-label="새로고침"><i></i>실시간</button>
       <button class="sm" id="logout" type="button">로그아웃</button>
@@ -376,6 +414,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
     <button data-t="adm" role="tab" id="tabAdm" style="display:none">관리</button>
   </div>
   <nav id="gnav" aria-label="주 메뉴"><div class="in"></div></nav>
+  <aside id="gside" aria-label="좌측 메뉴"></aside><div id="gscrim"></div>
   <div id="gmore"><div class="sh"><h4>전체 메뉴<button type="button" id="gmoreX" aria-label="닫기">✕</button></h4><div class="gr"></div></div></div>
 
   <div id="wxAlert"></div>
@@ -568,9 +607,10 @@ function renderNow(rows){
     +'<div style="font-size:14px;font-weight:800;margin:14px 0 4px">시설물 고장 유형</div>'+hbars(sumObj(o,'fac'),'#6FA0EC','시설물 고장 없음')
     +'<div style="font-size:14px;font-weight:800;margin:14px 0 4px">민원 유형</div>'+hbars(sumObj(o,'vcat'),'#B69AE8','민원 없음')
     +'<div style="font-size:14px;font-weight:800;margin:14px 0 4px">안전사고 재해형태</div>'+hbars(sumObj(o,'atype'),'#E2705F','✅ 이상 없음')+'</div></details>';
-  el.innerHTML=nav+hero+alerts+'<div id="mgrAttCard"></div><div class="sec2">사업부별 현황 <small>카드를 누르면 사업부 앱으로 이동</small></div>'+cards+'<div style="height:6px"></div>'+ana
+  el.innerHTML=nav+'<div class="hm-grid"><div class="hm-l"><div class="hm-h">👥 인력 현황</div>'+hero+'<div id="mgrAttCard"></div><div class="sec2">사업부별 인력 <small>카드를 누르면 사업부 앱으로 이동</small></div>'+cards+'</div>'
+    +'<div class="hm-r"><div class="hm-h">📌 기타 현황</div>'+alerts+ana
     +'<button class="dl" id="dashXl" type="button">📥 엑셀 다운로드 (사업부별)</button>'
-    +'<div class="note">근무율 = 근무인원 ÷ 사업부 정원(정원 미등록 사업부는 –). 월간·연간은 일평균 기준입니다.</div>';
+    +'<div class="note">근무율 = 근무인원 ÷ 사업부 정원(정원 미등록 사업부는 –). 월간·연간은 일평균 기준입니다.</div></div></div>';
   var xb=$('dashXl'); if(xb) xb.onclick=dashExcel;
   loadMgrAtt();
 }
@@ -2873,8 +2913,21 @@ function gnavDraw(){
   var h=GNAV_MAIN.filter(function(x){return gnavOk(x[0]);}).map(function(x){return '<button type="button" data-g="'+x[0]+'" class="'+(state.tab===x[0]?'on':'')+'"><span>'+x[2]+'</span>'+x[1]+'</button>';}).join('');
   var moreOn=GNAV_MORE.some(function(x){return x[0]===state.tab;});
   h+='<button type="button" data-g="more" class="'+(moreOn?'on':'')+'"><span>☰</span>더보기</button>';
+  gsideDraw();
   box.innerHTML=h;
   box.querySelectorAll('button').forEach(function(b){b.onclick=function(){ if(b.dataset.g==='more') gmoreOpen(); else showTab(b.dataset.g); };});
+}
+var GSIDE=[['인력·근태',['now','div','at','sp','hr']],['운영',['ab','vh','fc','px','pk','stat','rep']],['기타',['sc','lb','sv','adm']]];
+function gsideDraw(){
+  var box=$('gside'); if(!box) return;
+  var all={}; GNAV_MAIN.concat(GNAV_MORE).forEach(function(x){all[x[0]]=x;});
+  var h='<div class="gs-brand"><b>ON_이음</b><small>환경미화운영그룹</small></div>';
+  GSIDE.forEach(function(g){
+    var items=g[1].filter(function(k){return all[k]&&gnavOk(k);}); if(!items.length) return;
+    h+='<div class="gs-t">'+g[0]+'</div>'+items.map(function(k){var x=all[k];return '<button type="button" data-g="'+k+'" class="'+(state.tab===k?'on':'')+'"><span>'+x[2]+'</span>'+x[1]+'</button>';}).join('');
+  });
+  box.innerHTML=h;
+  box.querySelectorAll('button').forEach(function(b){b.onclick=function(){showTab(b.dataset.g);};});
 }
 function gmoreOpen(){
   var g=document.querySelector('#gmore .gr');
@@ -2986,6 +3039,22 @@ function init(){
     writeShared(r.data.session); enter();
   });
 }
+
+(function(){
+  var sd=$('gside'), sc=$('gscrim'), bg=$('gburger');
+  function open(){sd.classList.add('open');sc.classList.add('on');}
+  function close(){sd.classList.remove('open');sc.classList.remove('on');}
+  window.gdrawerClose=close;
+  if(bg) bg.onclick=function(){sd.classList.contains('open')?close():open();};
+  if(sc) sc.onclick=close;
+  sd.addEventListener('click',function(e){if(e.target.closest('button'))close();});
+  var x0=null,y0=null,from=false;
+  document.addEventListener('touchstart',function(e){var t=e.touches[0];x0=t.clientX;y0=t.clientY;from=sd.classList.contains('open')||x0<28;},{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(x0==null||window.innerWidth>=900)return; var t=e.changedTouches[0],dx=t.clientX-x0,dy=Math.abs(t.clientY-y0);
+    if(from&&dy<60){ if(!sd.classList.contains('open')&&dx>60) open(); else if(sd.classList.contains('open')&&dx<-60) close(); }
+    x0=null;},{passive:true});
+})();
 init();
 })();
 </script>

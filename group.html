@@ -479,6 +479,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
     <button data-t="fa" role="tab">시설 현황</button>
     <button data-t="eq" role="tab">장비 현황</button>
     <button data-t="sv" role="tab">이용 설문</button>
+    <button data-t="mn" role="tab">메뉴 권한</button>
     <button data-t="adm" role="tab" id="tabAdm" style="display:none">관리</button>
   </div>
   <nav id="gnav" aria-label="주 메뉴"><div class="in"></div></nav>
@@ -507,6 +508,7 @@ const SUPABASE_ANON_KEY = 'sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
   <section class="pane" id="p-fa"></section>
   <section class="pane" id="p-eq"></section>
   <section class="pane" id="p-sv"></section>
+  <section class="pane" id="p-mn"></section>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -700,7 +702,7 @@ var AT_GRP={id:'ALL',short:'그룹',name:'그룹 소속 관리자',color:'#6B728
 function admCanUse(){return state.role==='master'||state.role==='admin';}
 /* 기능 권한: 직급 기본값 + 개인 지정 (최고관리자가 관리 탭에서 지정) */
 var FEATS=[['now','현황판'],['div','사업부'],['at','근태'],['sp','특별근무'],['sc','일정'],['lb','자료실'],['stat','통계'],['vh','차량'],['fc','청결예보'],['px','여객'],['hr','인사·파견'],['ab','비정상상황'],['rep','리포트']];
-function featOk(k){ if((k==='ab'||k==='hr'||k==='pk'||k==='dc'||k==='tr'||k==='fa'||k==='eq'||k==='sv')&&(state.role==='master'||state.role==='group_viewer')) return true; return !state.feats||state.feats.indexOf(k)>=0; }
+function featOk(k){ if(k==='mn') return state.role==='master'; if((k==='ab'||k==='hr'||k==='pk'||k==='dc'||k==='tr'||k==='fa'||k==='eq'||k==='sv')&&(state.role==='master'||state.role==='group_viewer')) return true; return !state.feats||state.feats.indexOf(k)>=0; }
 function applyFeats(){
   document.querySelectorAll('.tabs button').forEach(function(b){ var k=b.dataset.t; if(k==='adm') return; b.style.display=featOk(k)?'':'none'; });
   if(!featOk(state.tab)){ var f=FEATS.filter(function(x){return featOk(x[0]);})[0]; state.tab=f?f[0]:'now'; }
@@ -2908,7 +2910,7 @@ document.addEventListener('click',function(e){
 
 function load(){
   stamp(); wxLoad();
-  var p = state.tab==='pk' ? loadPk() : state.tab==='dc' ? loadDc() : state.tab==='fa' ? loadFa() : state.tab==='eq' ? loadEq() : state.tab==='tr' ? loadTr() : state.tab==='sv' ? loadSv() : state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : state.tab==='fc' ? loadFc() : state.tab==='px' ? loadPx() : state.tab==='ab' ? loadAb() : state.tab==='hr' ? loadHr() : state.tab==='adm' ? loadAdm() : (state.tab==='stat' ? loadStat() : loadRep()));
+  var p = state.tab==='pk' ? loadPk() : state.tab==='dc' ? loadDc() : state.tab==='fa' ? loadFa() : state.tab==='eq' ? loadEq() : state.tab==='tr' ? loadTr() : state.tab==='sv' ? loadSv() : state.tab==='mn' ? loadMn() : state.tab==='now' ? loadNow() : (state.tab==='div' ? loadDiv() : state.tab==='at' ? loadAt() : state.tab==='sp' ? loadSp() : state.tab==='sc' ? loadSc() : state.tab==='lb' ? loadLb() : state.tab==='vh' ? loadVh() : state.tab==='fc' ? loadFc() : state.tab==='px' ? loadPx() : state.tab==='ab' ? loadAb() : state.tab==='hr' ? loadHr() : state.tab==='adm' ? loadAdm() : (state.tab==='stat' ? loadStat() : loadRep()));
   return p.catch(function(e){
     var msg=(e&&e.message)||'알 수 없는 오류';
     $('p-'+state.tab).innerHTML='<div class="card empty">데이터를 불러오지 못했어요.<br>'+esc(msg)+'<br>잠시 후 새로고침을 눌러 주세요.</div>';
@@ -2918,7 +2920,7 @@ function showTab(t){
   if(t!=='adm'&&!featOk(t)) return;
   state.tab=t;
   document.querySelectorAll('.tabs button').forEach(function(b){var on=b.dataset.t===t;b.classList.toggle('on',on);b.setAttribute('aria-selected',on);});
-  ['now','div','at','sp','sc','lb','vh','fc','px','stat','hr','ab','rep','pk','dc','tr','fa','eq','sv','adm'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
+  ['now','div','at','sp','sc','lb','vh','fc','px','stat','hr','ab','rep','pk','dc','tr','fa','eq','sv','mn','adm'].forEach(function(k){$('p-'+k).classList.toggle('on',k===t);});
   load();
 }
 
@@ -2976,9 +2978,129 @@ function loadSv(){
   });
 }
 
+
+/* ---------- 메뉴 권한 (최고관리자 전용 · 3개 사업부에 한 번에 적용) ---------- */
+var T1CFG_DEF={cache:{voc:5,lost:5,acc:5,quota:5,slothist:5},poll:{notif:30,mpfix:180,acct:30,dash:60,fc:180,beat:60},chat:false,num:{leader:false,manager:false,admin:false},pre:{stats:false},xteam:false,menu:{execdash:{on:true,roles:['admin','manager','leader']},forecast:{on:true,roles:['admin','manager','leader','acting_leader']},floorrpt:{on:true,roles:['admin','manager','leader'],am:true,pm:true},pax:{on:true,roles:['admin','manager','leader','acting_leader']},statsdash:{on:true,roles:['admin','manager','leader','acting_leader','group_leader','division_head','other']},mreport:{on:true,roles:['admin','manager','leader','acting_leader','group_leader','division_head','other']},park:{on:true,roles:[]},cong:{on:true,roles:[]},traffic:{on:true,roles:[]}}}; // menu=마스터가 정하는 메뉴 사용 여부·역할(기본값=기존 동작) / pre.stats=메인 진입 시 월간 통계 미리 조회(기본 끔, 마스터가 켬) / cache=분, poll=초 / num=숫자 직접 입력 허용(마스터 설정)
+var RC=null, MN_DIFF=false;
+var ALL_MENU_ITEMS=[{"key": "execdash", "icon": "👑", "title": "현황판"}, {"key": "statsdash", "icon": "📊", "title": "통계 대시보드"}, {"key": "forecast", "icon": "🌤️", "title": "T1청결예보"}, {"key": "pax", "icon": "✈️", "title": "항공 여객"}, {"key": "park", "icon": "🅿️", "title": "주차현황"}, {"key": "cong", "icon": "🛃", "title": "출국장 혼잡도"}, {"key": "traffic_rail", "icon": "🚆", "title": "공항철도"}, {"key": "traffic_bus", "icon": "🚌", "title": "공항버스"}, {"key": "traffic_shuttle", "icon": "🚐", "title": "공항셔틀"}, {"key": "mp", "icon": "👥", "title": "인력현황"}, {"key": "workschedule", "icon": "📅", "title": "휴무계획"}, {"key": "specialwork", "icon": "📌", "title": "특별근무"}, {"key": "worklog", "icon": "📝", "title": "현장작업일지"}, {"key": "ho", "icon": "🔄", "title": "인수인계"}, {"key": "jointwork", "icon": "🤝", "title": "공동작업"}, {"key": "voc", "icon": "📞", "title": "민원(서비스응대)"}, {"key": "lost", "icon": "🎒", "title": "습득물 관리"}, {"key": "accident", "icon": "🚑", "title": "안전사고"}, {"key": "kpi", "icon": "📊", "title": "과업평가지표"}, {"key": "veh", "icon": "🚗", "title": "차량운행기록"}, {"key": "workveh", "icon": "🚛", "title": "공사업무용차량 운행일지"}, {"key": "facility", "icon": "🏢", "title": "시설현황"}, {"key": "toilet", "icon": "🚻", "title": "화장실 관리"}, {"key": "shower", "icon": "🚿", "title": "샤워실 관리"}, {"key": "smoking", "icon": "🚬", "title": "흡연실 관리"}, {"key": "rest", "icon": "😴", "title": "휴게시설 관리"}, {"key": "storage", "icon": "📦", "title": "창고 관리"}, {"key": "baby", "icon": "👶", "title": "유아휴게실 관리"}, {"key": "office", "icon": "💻", "title": "사무실 관리"}, {"key": "inspect", "icon": "📝", "title": "현장점검"}, {"key": "waste", "icon": "♻️", "title": "폐기물 처리현황"}, {"key": "warehouse", "icon": "📦", "title": "창고 재고관리"}, {"key": "abnormal", "icon": "🚨", "title": "비정상상황"}, {"key": "equipment", "icon": "🔧", "title": "장비현황"}, {"key": "notice", "icon": "📢", "title": "공지사항"}, {"key": "chat", "icon": "📋", "title": "사규 열람"}, {"key": "iso9001", "icon": "📘", "title": "ISO9001"}, {"key": "news", "icon": "📰", "title": "회사소식"}, {"key": "safety", "icon": "⛑️", "title": "안전작업절차서"}, {"key": "manual", "icon": "📗", "title": "운영매뉴얼"}, {"key": "downloadcenter", "icon": "📥", "title": "전체 다운로드"}, {"key": "admin", "icon": "⚙️", "title": "관리자"}];
+function toast(m){var t=$('mnToast');if(!t){t=document.createElement('div');t.id='mnToast';t.style.cssText='position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#1F2937;color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;font-weight:700;z-index:99999;max-width:88%;text-align:center';document.body.appendChild(t);}t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(function(){t.style.display='none';},2600);}
+function rcSeg(opts,cur,fn,fmt){ return '<div style="display:flex;gap:6px;margin-top:8px">'+opts.map(function(o){ var on=(o===cur); return '<div onclick="'+fn(o)+'" style="flex:1;text-align:center;padding:11px 0;border-radius:10px;font-size:14px;font-weight:800;cursor:pointer;background:'+(on?'#0F766E':'#F1F3F6')+';color:'+(on?'#fff':'#4B5563')+'">'+fmt(o)+'</div>'; }).join('')+'</div>'; }
+function rcRow(name,sub,seg){ return '<div style="padding:11px 0;border-top:1px solid #EEF1F4"><div style="font-size:15px;font-weight:800;color:#111827">'+name+'</div><div style="font-size:12px;color:#6B7280">'+sub+'</div>'+seg+'</div>'; }
+var RCM_ALL=['admin','manager','leader','acting_leader','group_leader','division_head','other'];
+var RCM_COLS=[['admin','총괄',['admin']],['manager','팀장',['manager']],['leader','조장',['leader']],['acting_leader','교육생',['acting_leader']],['exec','임원',['group_leader','division_head']],['other','기타',['other']]];
+var RCM_GROUPS=[
+ {id:'core',n:'① 핵심 업무',k:['notice','mp','ho','voc','lost','accident']},
+ {id:'ref',n:'② 열람·자료',k:['chat','safety','manual','iso9001','news']},
+ {id:'field',n:'③ 현장 작업',k:['jointwork','worklog','inspect','abnormal','equipment']},
+ {id:'fac',n:'④ 시설 관리',k:['facility','toilet','shower','smoking','rest','storage','baby','office']},
+ {id:'ops',n:'⑤ 운영 관리',k:['workschedule','specialwork','waste','warehouse','veh','workveh']},
+ {id:'rep',n:'⑥ 보고·분석',k:['kpi','downloadcenter']}
+];
+var RCM_OPEN={};
+var RCM_BASE={notice:'111110',mp:'111110',ho:'111110',voc:'111110',lost:'111110',accident:'111110',chat:'111111',safety:'111111',manual:'111111',iso9001:'111111',news:'111111',jointwork:'111110',worklog:'111010',inspect:'111100',abnormal:'111110',equipment:'111110',facility:'111110',toilet:'111111',shower:'111111',smoking:'111111',rest:'111110',storage:'111110',baby:'111111',office:'111110',workschedule:'111100',specialwork:'111100',waste:'111110',warehouse:'111100',veh:'111111',workveh:'111001',kpi:'111110',downloadcenter:'100000'}; // 현재 앱에서 역할별로 실제 쓸 수 있는 메뉴(순서: 총괄·팀장·조장·교육생·임원·기타). 1=사용 가능, 0=원래 사용 불가(잠금)
+var RCM_PRESET={
+ leader:{off:['workschedule','specialwork','waste','warehouse','veh','workveh','kpi','downloadcenter']},
+ acting_leader:{off:['inspect','abnormal','equipment','facility','toilet','shower','smoking','rest','storage','baby','office','workschedule','specialwork','waste','warehouse','veh','workveh','kpi','downloadcenter']}
+};
+function rcmItem(k){ return ALL_MENU_ITEMS.find(function(x){ return x.key===k; })||{icon:'',title:k}; }
+function rcmKeys(){ var a=[]; RCM_GROUPS.forEach(function(g){ g.k.forEach(function(k){ a.push(k); }); }); return a; }
+function rcmFill(){ if(!RC) return; rcmKeys().forEach(function(k){ if(!RC.menu[k]) RC.menu[k]={on:true,roles:RCM_ALL.slice()}; }); }
+function rcmCol(id){ return RCM_COLS.find(function(c){ return c[0]===id; }); }
+function rcmCanUse(k,col){ var b=RCM_BASE[k]; return !b||b.charAt(RCM_COLS.indexOf(col))==='1'; }
+function rcmOn(k,col){ if(!rcmCanUse(k,col)) return false; var r=RC.menu[k].roles; return col[2].every(function(x){ return r.indexOf(x)!==-1; }); }
+function rcmSet(k,col,on){ if(!rcmCanUse(k,col)) return; var r=RC.menu[k].roles; col[2].forEach(function(x){ var i=r.indexOf(x); if(on&&i===-1) r.push(x); if(!on&&i!==-1) r.splice(i,1); }); }
+function rcmCell(k,id){ if(!RC) return; var c=rcmCol(id); rcmSet(k,c,!rcmOn(k,c)); rcRender(); }
+function rcmGroup(gid,id){ if(!RC) return; var g=RCM_GROUPS.find(function(x){ return x.id===gid; }), c=rcmCol(id); var ks=g.k.filter(function(k){ return rcmCanUse(k,c); }); if(!ks.length) return; var all=ks.every(function(k){ return rcmOn(k,c); }); ks.forEach(function(k){ rcmSet(k,c,!all); }); rcRender(); }
+function rcmOpen(gid){ RCM_OPEN[gid]=!RCM_OPEN[gid]; rcRender(); }
+function rcmPreset(id){
+  if(!RC) return;
+  var cols=id==='all'?RCM_COLS.filter(function(c){ return ['admin','manager','exec'].indexOf(c[0])!==-1; }):[rcmCol(id)];
+  cols.forEach(function(c){ rcmKeys().forEach(function(k){ rcmSet(k,c,true); }); var p=RCM_PRESET[c[0]]; if(p) p.off.forEach(function(k){ if(RC.menu[k]) rcmSet(k,c,false); }); });
+  rcRender(); toast('표에 적용했습니다 — 저장을 눌러야 반영됩니다');
+}
+function rcmSaveMenu(){
+  var out={}, keys=rcmKeys();
+  Object.keys(RC.menu).forEach(function(k){
+    if(keys.indexOf(k)===-1){ out[k]=RC.menu[k]; return; }
+    var m=RC.menu[k]; var full=RCM_ALL.every(function(r){ return m.roles.indexOf(r)!==-1; });
+    if(!full) out[k]={on:true,roles:m.roles};
+  });
+  return out;
+}
+function rcmHtml(card){
+  if(!RC) return '';
+  var keys=rcmKeys();
+  var lock='<div style="width:36px;height:34px;border-radius:9px;border:1.5px dashed #D5DAE0;background:#fff;color:#CBD2DA;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex:none">×</div>';
+  var cell=function(on,part,fn){ return '<div onclick="'+fn+'" style="width:36px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:'+(part?'12':'16')+'px;font-weight:900;cursor:pointer;flex:none;'+(on?'background:#0F766E;color:#fff':(part?'background:#CFE9E5;color:#0F766E':'background:#F1F3F6;color:#B4BCC6'))+'">'+(on?'✓':(part?part:'–'))+'</div>'; };
+  var head='<div style="display:flex;gap:3px;align-items:center;padding:6px 0"><div style="flex:1;font-size:12px;color:#6B7280;font-weight:800">메뉴</div>'+RCM_COLS.map(function(c){ return '<div style="width:36px;text-align:center;font-size:12.5px;font-weight:900;color:#374151;flex:none">'+c[1]+'</div>'; }).join('')+'</div>';
+  var cnt='<div style="display:flex;gap:3px;align-items:center;padding:6px 0;border-top:1px solid #EEF1F4;border-bottom:1px solid #EEF1F4"><div style="flex:1;font-size:12px;color:#6B7280;font-weight:800">보이는 메뉴 수</div>'+RCM_COLS.map(function(c){ var n=keys.filter(function(k){ return rcmOn(k,c); }).length, m=keys.filter(function(k){ return rcmCanUse(k,c); }).length; return '<div style="width:36px;text-align:center;font-size:12.5px;font-weight:900;color:'+(n===m?'#0F766E':'#C2410C')+';flex:none;line-height:1.1">'+n+'<div style="font-size:10.5px;font-weight:700;color:#9AA4B2">/'+m+'</div></div>'; }).join('')+'</div>';
+  var rows='';
+  RCM_GROUPS.forEach(function(g){
+    var open=!!RCM_OPEN[g.id];
+    rows+='<div style="display:flex;gap:3px;align-items:center;padding:7px 0;border-top:1px solid #EEF1F4"><div onclick="rcmOpen(\''+g.id+'\')" style="flex:1;min-width:0;cursor:pointer"><div style="font-size:14px;font-weight:900;color:#111827;white-space:nowrap">'+g.n+'</div><div style="font-size:11.5px;color:#6B7280">'+g.k.length+'개 '+(open?'▲ 접기':'▼ 펼치기')+'</div></div>'
+      +RCM_COLS.map(function(c){ var ks=g.k.filter(function(k){ return rcmCanUse(k,c); }); if(!ks.length) return lock; var n=ks.filter(function(k){ return rcmOn(k,c); }).length; return cell(n===ks.length,(n>0&&n<ks.length)?(n+'/'+ks.length):'',"rcmGroup('"+g.id+"','"+c[0]+"')"); }).join('')+'</div>';
+    if(open) rows+='<div style="display:flex;gap:3px;align-items:center;padding:5px 0 5px 8px;background:#E6F5F3;border-radius:8px;margin-bottom:2px"><div style="flex:1;font-size:12px;font-weight:800;color:#0F766E">'+g.n.replace(/^\S+\s*/,'')+' · 메뉴별 설정</div>'+RCM_COLS.map(function(c){ return '<div style="width:36px;text-align:center;font-size:12.5px;font-weight:900;color:#0F766E;flex:none">'+c[1]+'</div>'; }).join('')+'</div>';
+    if(open) g.k.forEach(function(k){ var it=rcmItem(k);
+      rows+='<div style="display:flex;gap:3px;align-items:center;padding:4px 0 4px 8px;background:#F8FAFB;border-radius:8px;margin-bottom:2px"><div style="flex:1;min-width:0;font-size:13px;font-weight:700;color:#374151;line-height:1.25">'+it.icon+' '+it.title+'</div>'+RCM_COLS.map(function(c){ return rcmCanUse(k,c)?cell(rcmOn(k,c),'',"rcmCell('"+k+"','"+c[0]+"')"):lock; }).join('')+'</div>'; });
+  });
+  var btn=function(t,id,bg){ return '<div onclick="rcmPreset(\''+id+'\')" style="padding:9px 12px;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer;background:'+bg+';color:#0F766E;margin:0 6px 6px 0">'+t+'</div>'; };
+  return '<div style="'+card+'"><div style="font-size:16px;font-weight:900;color:#1F2937">전체 메뉴 권한 (역할별 보이기·숨기기)</div>'
+    +'<div style="font-size:12.5px;color:#6B7280;margin:2px 0 8px;line-height:1.45">칸을 누르면 그 역할에게 메뉴가 보이거나(✓) 숨겨집니다(–). 숨기면 홈 메뉴·탭·즐겨찾기·직접 진입이 모두 막힙니다. 최고관리자는 항상 전체가 보입니다. 사원·차량 계정은 「기타」입니다. 점선 칸(×)은 원래 그 역할이 쓸 수 없는 메뉴라 바꿀 수 없습니다. 처음 상태는 현재 앱에서 실제로 쓰는 그대로입니다.</div>'
+    +'<div style="font-size:12.5px;font-weight:800;color:#374151;margin-bottom:6px">기본 구성 적용 (해당 역할 열만 바뀝니다)</div><div style="display:flex;flex-wrap:wrap">'+btn('조장용','leader','#E6F5F3')+btn('교육생용','acting_leader','#E6F5F3')+btn('팀장·총괄·임원 전체','all','#F1F3F6')+'</div>'
+    +head+cnt+rows
+    +'<div style="font-size:11.5px;color:#6B7280;margin-top:8px;line-height:1.45">현황판·통계·청결예보·항공여객·주차·출국장·교통정보는 아래쪽 「통계·현황 메뉴 사용 설정」에서 정합니다. 「팀장·총괄·임원 전체」는 해당 열을 모두 켭니다.</div></div>';
+}
+var RC_MENU=[['execdash','현황판','경영진 실시간 운영 현황판 (기존과 같이 관리자·팀장·조장만 선택 가능)',['admin','manager','leader']],['forecast','T1청결예보','민원 기반 청소수요 예보 (앱을 열 때 1회 팝업)',['admin','manager','leader','acting_leader']],['floorrpt','층별 인력현황 리포트','매일 08:20·14:00 전체화면 팝업과 푸시 알림. 끄면 팝업만 멈추고 누적 기록은 계속 쌓입니다.',['admin','manager','leader']],['pax','항공 여객','공항 엑셀 업로드·여객 통계',['admin','manager','leader','acting_leader']],['statsdash','통계 대시보드','일간·월간·연간 운영 통계',null],['mreport','월간·연간 리포트','항목별 종합 리포트',null],['park','주차현황','T1·T2 주차 현황과 청결예보 "지금 현황"의 주차 카드 (처음에는 마스터만)',['admin','manager','leader','acting_leader']],['cong','출국장 혼잡도','T1·T2 출국장 대기 현황과 청결예보 "지금 현황"의 출국장 카드 (처음에는 마스터만)',['admin','manager','leader','acting_leader']],['traffic','직원 교통정보','공항철도·공항버스·셔틀버스 시간 정보 (처음에는 마스터만)',null]];
+var RC_ROLES=[['admin','관리자'],['manager','팀장'],['leader','조장'],['acting_leader','조장대행'],['group_leader','그룹장'],['division_head','본부장'],['other','기타 계정']];
+function rcFrSlot(k,on){ if(!RC) return; RC.menu.floorrpt[k]=!!on; rcRender(); }
+function rcMenuOn(k,on){ if(!RC) return; RC.menu[k].on=!!on; rcRender(); }
+function rcMenuRole(k,r){ if(!RC) return; var a=RC.menu[k].roles, i=a.indexOf(r); if(i===-1) a.push(r); else a.splice(i,1); rcRender(); }
+function rcRender(){
+  var b=$('p-mn'); if(!b||!RC) return;
+  var card='background:#fff;border-radius:14px;padding:14px;margin-bottom:12px;box-shadow:0 1px 4px rgba(0,0,0,.06)';
+  var h='<div style="'+card+'"><div style="font-size:16px;font-weight:900;color:#1F2937">메뉴 권한 · 전 사업부 일괄 적용</div><div style="font-size:12.5px;color:#6B7280;margin:4px 0 0;line-height:1.5">여기서 정하고 저장하면 T1·T2·부대건물 사업부 앱에 모두 똑같이 적용됩니다. 사업부 앱 관리자 화면에서는 더 이상 설정하지 않습니다.'+(MN_DIFF?'<br><b style="color:#B45309">지금 사업부마다 설정이 서로 달랐습니다. 화면에는 첫 번째 사업부 값이 나오며, 저장하면 모두 이 화면 값으로 통일됩니다.</b>':'')+'</div></div>';
+h+=rcmHtml(card);
+    h+='<div style="'+card+'"><div style="font-size:16px;font-weight:900;color:#1F2937">통계·현황 메뉴 사용 설정</div><div style="font-size:12.5px;color:#6B7280;margin:2px 0 4px;line-height:1.45">메뉴마다 사용 여부와 볼 수 있는 역할을 정합니다. 끄면 메뉴·즐겨찾기·직접 진입이 모두 막히고, 최고관리자는 항상 볼 수 있습니다.</div>';
+  RC_MENU.forEach(function(x){ var c=RC.menu[x[0]]; var chips=RC_ROLES.filter(function(r){ return !x[3]||x[3].indexOf(r[0])!==-1; }).map(function(r){ var on=c.roles.indexOf(r[0])!==-1; return '<span onclick="rcMenuRole(\''+x[0]+'\',\''+r[0]+'\')" style="display:inline-block;margin:4px 6px 0 0;padding:8px 11px;border-radius:10px;font-size:13.5px;font-weight:800;cursor:pointer;'+(on?'background:#0F766E;color:#fff':'background:#F3F4F6;color:#6B7280')+(c.on?'':';opacity:.45')+'">'+(on?'✓ ':'')+r[1]+'</span>'; }).join('');
+    var _sub=''; if(x[0]==='floorrpt'&&c.on){ _sub='<div style="margin-top:12px;padding:10px;background:#F7F9FB;border-radius:10px"><div style="font-size:13px;font-weight:800;color:#374151">표시 시각</div><div style="font-size:12px;color:#6B7280">끈 시각은 팝업이 뜨지 않습니다 (기록은 계속 저장)</div><div style="font-size:14px;font-weight:800;margin-top:8px">08:20 리포트</div>'+rcSeg([true,false],c.am!==false,function(o){ return "rcFrSlot('am',"+o+")"; },function(o){ return o?'사용':'끔'; })+'<div style="font-size:14px;font-weight:800;margin-top:10px">14:00 리포트</div>'+rcSeg([true,false],c.pm!==false,function(o){ return "rcFrSlot('pm',"+o+")"; },function(o){ return o?'사용':'끔'; })+'</div>'; }
+    h+=rcRow(x[1],x[2],rcSeg([true,false],!!c.on,function(o){ return "rcMenuOn('"+x[0]+"',"+o+")"; },function(o){ return o?'사용':'끔'; })+'<div style="margin-top:6px">'+chips+'</div>'+_sub); });
+  h+='</div>';
+  
+  h+='<div style="display:flex;gap:8px"><div onclick="rcReset()" style="flex:1;text-align:center;padding:14px 0;border-radius:12px;font-weight:900;font-size:15px;background:#fff;color:#4B5563;border:1.5px solid #D5DAE0;cursor:pointer">기본값으로</div><div onclick="rcSave()" style="flex:1;text-align:center;padding:14px 0;border-radius:12px;font-weight:900;font-size:15px;background:#0F766E;color:#fff;cursor:pointer">저장 (전 사업부 적용)</div></div>';
+  h=h.replace(/onclick="(?!__mn)([a-zA-Z]+)\(/g,'onclick="__mn.$1(');
+  b.innerHTML=h;
+}
+function rcReset(){ RC={menu:JSON.parse(JSON.stringify(T1CFG_DEF.menu))}; rcmFill(); rcRender(); toast('기본값으로 되돌렸습니다 — 저장을 눌러야 적용됩니다'); }
+function loadMn(){
+  var el=$('p-mn');
+  if(state.role!=='master'){ el.innerHTML='<div class="card empty">최고관리자만 설정할 수 있어요.</div>'; return Promise.resolve(); }
+  return sb.from('app_settings').select('division_id,value').eq('key','refresh').then(function(r){
+    if(r.error) throw r.error;
+    var by={}; (r.data||[]).forEach(function(x){ by[x.division_id]=x.value||{}; });
+    var ms=divs.map(function(d){ return JSON.stringify((by[d.id]&&by[d.id].menu)||{}); });
+    MN_DIFF=ms.some(function(x){ return x!==ms[0]; });
+    var base=(divs[0]&&by[divs[0].id]&&by[divs[0].id].menu)||{};
+    RC={menu:Object.assign(JSON.parse(JSON.stringify(T1CFG_DEF.menu)),JSON.parse(JSON.stringify(base)))}; rcmFill(); rcRender();
+  });
+}
+function rcSave(){
+  if(state.role!=='master'){ toast('최고관리자만 저장할 수 있습니다'); return; }
+  var menu=rcmSaveMenu();
+  sb.from('app_settings').select('division_id,value').eq('key','refresh').then(function(r){
+    if(r.error) throw r.error;
+    var by={}; (r.data||[]).forEach(function(x){ by[x.division_id]=x.value||{}; });
+    var rows=divs.map(function(d){ var v=Object.assign({},by[d.id]||{}); v.menu=menu; return {division_id:d.id,key:'refresh',value:v,updated_by:state.myName||'',updated_at:new Date().toISOString()}; });
+    return sb.from('app_settings').upsert(rows,{onConflict:'division_id,key'});
+  }).then(function(r){
+    if(r&&r.error){ toast('저장 실패: '+(r.error.message||'오류')); return; }
+    MN_DIFF=false; rcRender(); toast('✓ '+divs.length+'개 사업부에 저장했습니다 — 앱을 다시 열면 적용됩니다');
+  }).catch(function(e){ toast('저장 실패: '+((e&&e.message)||e)); });
+}
+window.__mn={rcmCell:rcmCell,rcmGroup:rcmGroup,rcmOpen:rcmOpen,rcmPreset:rcmPreset,rcMenuOn:rcMenuOn,rcMenuRole:rcMenuRole,rcFrSlot:rcFrSlot,rcReset:rcReset,rcSave:rcSave};
+
 /* ===== 하단 메뉴 + 더보기 ===== */
 var GNAV_MAIN=[['now','현황판','🏠'],['div','사업부','🏢'],['at','근태','🗓️'],['ab','비정상상황','🚨']];
-var GNAV_MORE=[['sp','특별근무','⏰'],['sc','일정','📅'],['lb','자료실','📁'],['stat','통계','📈'],['vh','차량','🚗'],['fc','청결예보','🧹'],['px','여객','🛫'],['hr','인사·파견','👥'],['rep','리포트','📝'],['pk','주차 현황','🅿️'],['dc','출국장 혼잡도','🛃'],['tr','교통정보','🚆'],['fa','시설 현황','🏢'],['eq','장비 현황','🔧'],['sv','이용 설문','🗳️'],['adm','관리','⚙️']];
+var GNAV_MORE=[['mn','메뉴 권한','🔐'],['sp','특별근무','⏰'],['sc','일정','📅'],['lb','자료실','📁'],['stat','통계','📈'],['vh','차량','🚗'],['fc','청결예보','🧹'],['px','여객','🛫'],['hr','인사·파견','👥'],['rep','리포트','📝'],['pk','주차 현황','🅿️'],['dc','출국장 혼잡도','🛃'],['tr','교통정보','🚆'],['fa','시설 현황','🏢'],['eq','장비 현황','🔧'],['sv','이용 설문','🗳️'],['adm','관리','⚙️']];
 function gnavOk(k){ if(k==='adm'){var b=$('tabAdm');return !!b&&b.style.display!=='none';} return featOk(k); }
 function gnavDraw(){
   var box=document.querySelector('#gnav .in'); if(!box) return;
@@ -2989,7 +3111,7 @@ function gnavDraw(){
   box.innerHTML=h;
   box.querySelectorAll('button').forEach(function(b){b.onclick=function(){ if(b.dataset.g==='more') gmoreOpen(); else showTab(b.dataset.g); };});
 }
-var GSIDE=[['인력·근태',['now','div','at','sp','hr']],['운영',['ab','vh','fc','px','pk','dc','tr','fa','eq','stat','rep']],['기타',['sc','lb','sv','adm']]];
+var GSIDE=[['인력·근태',['now','div','at','sp','hr']],['운영',['ab','vh','fc','px','pk','dc','tr','fa','eq','stat','rep']],['기타',['sc','lb','sv','mn','adm']]];
 function gsideDraw(){
   var box=$('gside'); if(!box) return;
   var all={}; GNAV_MAIN.concat(GNAV_MORE).forEach(function(x){all[x[0]]=x;});

@@ -38851,12 +38851,7 @@ function rcRender(){
     +[['leader','조장 · 대리조장'],['manager','팀장'],['admin','어드민']].map(function(x){ return rcRow(x[1],'숫자 직접 입력',rcSeg([true,false],!!RC.num[x[0]],function(o){ return "rcNum('"+x[0]+"',"+o+")"; },function(o){ return o?'허용':'카드만'; })); }).join('')+'</div>';
   h+='<div style="'+card+'"><div style="font-size:16px;font-weight:900;color:#1F2937">팀간 지원</div><div style="font-size:12.5px;color:#6B7280;margin:2px 0 0;line-height:1.45">끔: 지원은 같은 팀의 다른 조끼리만 가능합니다. 사용: 같은 근무조(오전·오후·야간)의 다른 팀 조로도 지원 보내기가 가능합니다. 켜고 끄는 것은 최고관리자만 할 수 있고, 이미 입력된 지원 내역은 그대로 유지됩니다.</div>'
     +rcSeg([true,false],!!RC.xteam,function(o){ return 'rcXteam('+o+')'; },function(o){ return o?'사용':'끔'; })+'</div>';
-  h+='<div style="'+card+'"><div style="font-size:16px;font-weight:900;color:#1F2937">통계·현황 메뉴 사용 설정</div><div style="font-size:12.5px;color:#6B7280;margin:2px 0 4px;line-height:1.45">메뉴마다 사용 여부와 볼 수 있는 역할을 정합니다. 끄면 메뉴·즐겨찾기·직접 진입이 모두 막히고, 최고관리자는 항상 볼 수 있습니다.</div>';
-  RC_MENU.forEach(function(x){ var c=RC.menu[x[0]]; var chips=RC_ROLES.filter(function(r){ return !x[3]||x[3].indexOf(r[0])!==-1; }).map(function(r){ var on=c.roles.indexOf(r[0])!==-1; return '<span onclick="rcMenuRole(\''+x[0]+'\',\''+r[0]+'\')" style="display:inline-block;margin:4px 6px 0 0;padding:8px 11px;border-radius:10px;font-size:13.5px;font-weight:800;cursor:pointer;'+(on?'background:#0F766E;color:#fff':'background:#F3F4F6;color:#6B7280')+(c.on?'':';opacity:.45')+'">'+(on?'✓ ':'')+r[1]+'</span>'; }).join('');
-    var _sub=''; if(x[0]==='floorrpt'&&c.on){ _sub='<div style="margin-top:12px;padding:10px;background:#F7F9FB;border-radius:10px"><div style="font-size:13px;font-weight:800;color:#374151">표시 시각</div><div style="font-size:12px;color:#6B7280">끈 시각은 팝업이 뜨지 않습니다 (기록은 계속 저장)</div><div style="font-size:14px;font-weight:800;margin-top:8px">08:20 리포트</div>'+rcSeg([true,false],c.am!==false,function(o){ return "rcFrSlot('am',"+o+")"; },function(o){ return o?'사용':'끔'; })+'<div style="font-size:14px;font-weight:800;margin-top:10px">14:00 리포트</div>'+rcSeg([true,false],c.pm!==false,function(o){ return "rcFrSlot('pm',"+o+")"; },function(o){ return o?'사용':'끔'; })+'</div>'; }
-    h+=rcRow(x[1],x[2],rcSeg([true,false],!!c.on,function(o){ return "rcMenuOn('"+x[0]+"',"+o+")"; },function(o){ return o?'사용':'끔'; })+'<div style="margin-top:6px">'+chips+'</div>'+_sub); });
-  h+='</div>';
-  h+=rcmHtml(card);
+  h+='<div style="'+card+'"><div style="font-size:16px;font-weight:900;color:#1F2937">메뉴 보이기·숨기기</div><div style="font-size:12.5px;color:#6B7280;margin:4px 0 0;line-height:1.5">메뉴 권한은 그룹 앱(ON_이음)의 「메뉴 권한」 화면에서 한 번에 설정합니다. 저장하면 이 사업부 앱에도 그대로 적용됩니다.</div></div>';
   h+='<div style="'+card+'"><div style="font-size:16px;font-weight:900;color:#1F2937">메인 화면 통계 미리 불러오기</div><div style="font-size:12.5px;color:#6B7280;margin:2px 0 0;line-height:1.45">켜면 메인 화면에 들어올 때마다 월간 통계(두 달치 데이터)를 미리 받아 둡니다. 끄면 통계 화면을 열 때만 받아 데이터 사용량이 크게 줄어듭니다.</div>'
     +rcSeg([true,false],!!(RC.pre&&RC.pre.stats),function(o){ return 'rcPre('+o+')'; },function(o){ return o?'켬':'끔'; })+'</div>';
   h+='<div style="padding:11px 13px;border-radius:12px;background:#E6F5F3;color:#0F766E;font-weight:800;font-size:13.5px;margin-bottom:12px">변경 내용은 저장 후 앱을 다시 열면 모든 기기에 적용됩니다</div>'
@@ -38938,7 +38933,7 @@ function rcFrSlot(k,on){ if(!RC) return; RC.menu.floorrpt[k]=!!on; rcRender(); }
 function rcMenuOn(k,on){ if(!RC) return; RC.menu[k].on=!!on; rcRender(); }
 function rcMenuRole(k,r){ if(!RC) return; var a=RC.menu[k].roles, i=a.indexOf(r); if(i===-1) a.push(r); else a.splice(i,1); rcRender(); }
 function rcPre(on){ if(!RC) return; if(!RC.pre) RC.pre={}; RC.pre.stats=!!on; rcRender(); }
-function rcReset(){ RC=JSON.parse(JSON.stringify(T1CFG_DEF)); rcmFill(); rcRender(); toast('기본값으로 되돌렸습니다 — 저장을 눌러야 적용됩니다'); }
+function rcReset(){ var _m=RC&&RC.menu; RC=JSON.parse(JSON.stringify(T1CFG_DEF)); if(_m) RC.menu=_m; rcmFill(); rcRender(); toast('기본값으로 되돌렸습니다 — 저장을 눌러야 적용됩니다'); }
 async function rcSave(){
   if(!me||me.role!=='master'){ toast('⚠️ 최고관리자만 저장할 수 있습니다'); return; }
   var val={cache:RC.cache,poll:RC.poll,chat:!!RC.chat,num:{leader:!!(RC.num&&RC.num.leader),manager:!!(RC.num&&RC.num.manager),admin:!!(RC.num&&RC.num.admin)},pre:{stats:!!(RC.pre&&RC.pre.stats)},xteam:!!RC.xteam,menu:rcmSaveMenu()};

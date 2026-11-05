@@ -6,7 +6,7 @@
 <meta http-equiv="Expires" content="0">
 
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#5D7DA3">
 <title>IAOS 현장점검</title>
 <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.min.js"></script>
@@ -42,7 +42,7 @@ textarea:focus{border-color:var(--sky)}
 .mod-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}
 .mod-card{background:#fff;border:1px solid var(--g2);border-radius:var(--r3);padding:15px 13px;cursor:pointer;text-align:left;transition:transform .1s;position:relative}
 .mod-card:active{transform:scale(.97)}
-.mod-icon{font-size:24px;display:block;margin-bottom:7px}
+.mod-icon{width:46px;height:46px;border-radius:13px;background:#E6F3F0;color:#0F766E;display:flex;align-items:center;justify-content:center;margin-bottom:9px}.mod-icon svg,.icon-chip svg{fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}.mod-icon svg{width:27px;height:27px}.icon-chip svg{width:19px;height:19px}.icon-chip{color:#0F766E}
 .mod-name{font-size:13.5px;font-weight:800;letter-spacing:-.3px}
 .mod-desc{font-size:10.5px;color:var(--g3);margin-top:3px;line-height:1.4}
 .mod-cnt{display:inline-block;margin-top:7px;background:var(--g1);color:var(--sky3);border-radius:99px;padding:2px 9px;font-size:10.5px;font-weight:800}
@@ -120,7 +120,7 @@ textarea:focus{border-color:var(--sky)}
 .sub-back{background:var(--g1);border:none;border-radius:var(--r1);padding:7px 13px;font-size:12px;font-weight:700;color:var(--g4);cursor:pointer;margin-bottom:10px}
 #toast{position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--g5);color:#fff;padding:10px 18px;border-radius:99px;font-size:12.5px;font-weight:600;opacity:0;transition:.25s;pointer-events:none;z-index:99;white-space:nowrap;max-width:92vw;overflow:hidden;text-overflow:ellipsis}
 /* 출력 미리보기 */
-.prev-scroll{background:#fff;border:1px solid var(--g2);border-radius:var(--r2);overflow:auto;padding:10px;-webkit-overflow-scrolling:touch}
+.pv-fit{margin:0 auto;position:relative;overflow:hidden;box-shadow:0 0 0 1px #cfd6de,0 6px 18px rgba(0,0,0,.12);background:#fff}.pv-page{transform-origin:0 0;padding:8mm;box-sizing:border-box;background:#fff;overflow:hidden}.prev-scroll{background:#eef2f6;border:1px solid var(--g2);border-radius:var(--r2);overflow:auto;padding:10px;-webkit-overflow-scrolling:touch}
 .prn table{border-collapse:collapse;font-family:'Malgun Gothic','Noto Sans KR',sans-serif}
 .prn td{border:1px solid #333;font-size:9pt;padding:2px 3px;text-align:center;word-break:keep-all;overflow:hidden}
 .prn .tt{font-size:16pt;font-weight:800;letter-spacing:4px;border:none;padding:6px 0 10px}
@@ -239,6 +239,7 @@ textarea:focus{border-color:var(--sky)}
   .wrap{max-width:1100px}
 }
 </style>
+<style id="noZoomFix">html,body,button,.st-btn,.chk-row,.chk-btns,.chip,.gate-chip,select,label{touch-action:manipulation;-webkit-tap-highlight-color:transparent}button,.st-btn{-webkit-user-select:none;user-select:none}input,select,textarea{font-size:16px!important}</style>
 </head>
 <body>
 
@@ -265,64 +266,64 @@ textarea:focus{border-color:var(--sky)}
     <div class="sec-title">점검 모듈</div>
     <div class="mod-grid">
       <button class="mod-card" onclick="openMod('toilet')">
-        <span class="mod-icon">🚻</span>
+        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="4.5" r="1.8"/><path d="M4.6 21v-6.5H3.4l1.3-5.1a1.6 1.6 0 0 1 1.5-1.2h1.6a1.6 1.6 0 0 1 1.5 1.2l1.3 5.1H9.4V21"/><circle cx="17" cy="4.5" r="1.8"/><path d="M17 8.2c.9 0 1.7.6 1.9 1.4L20.5 15h-2.2v6h-2.6v-6H13.5l1.6-5.4c.2-.8 1-1.4 1.9-1.4z"/></svg></span>
         <div class="mod-name">화장실 점검</div>
         <div class="mod-desc">교대별 7항목 ○△X</div>
         <span class="mod-cnt" id="cntToilet">-</span>
       </button>
       <button class="mod-card" onclick="openMod('rest')">
-        <span class="mod-icon">🛋️</span>
+        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/><path d="M3 13a2 2 0 0 1 4 0v2h10v-2a2 2 0 0 1 4 0v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M6 18v2M18 18v2"/></svg></span>
         <div class="mod-name">휴게시설 점검</div>
         <div class="mod-desc">관리상태 6항목 ○△×－</div>
         <span class="mod-cnt" id="cntRest">-</span>
       </button>
       <button class="mod-card" onclick="openMod('equip')">
-        <span class="mod-icon">🔧</span>
+        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z"/></svg></span>
         <div class="mod-name">장비점검</div>
         <div class="mod-desc">사용·점검 일지 누적</div>
         <span class="mod-cnt" id="cntEquip">-</span>
       </button>
       <button class="mod-card" onclick="emOpen()">
-        <span class="mod-icon">🗓️</span>
+        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h2M12 14h2M16 14h.01M8 18h2M12 18h2"/></svg></span>
         <div class="mod-name">장비 월 입력</div>
         <div class="mod-desc">달력·패턴으로 한 달 한번에</div>
         <span class="mod-cnt">조장 간편 입력</span>
       </button>
       <button class="mod-card" onclick="openMod('pbb')">
-        <span class="mod-icon">✈️</span>
+        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></span>
         <div class="mod-name">게이트 관리 일지</div>
         <div class="mod-desc">브릿지·E/L·방화문 등 10항목</div>
         <span class="mod-cnt">GATE 1~50</span>
       </button>
       <button class="mod-card" onclick="openMod('common')">
-        <span class="mod-icon">🧹</span>
+        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M19 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg></span>
         <div class="mod-name">공용구역 점검</div>
         <div class="mod-desc">층별 · L/S · A/S 6항목</div>
         <span class="mod-cnt">전 구역</span>
       </button>
       <button class="mod-card" onclick="openMod('baby')">
-        <span class="mod-icon">👶</span>
+        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 10.5h.01M15 10.5h.01M9.6 14.6a3.3 3.3 0 0 0 4.8 0M12 3c-.9 1.6.1 2.9 1.6 2.6"/></svg></span>
         <div class="mod-name">유아휴게실 점검</div>
         <div class="mod-desc">바닥·선반·정수기 등 6항목</div>
         <span class="mod-cnt" id="cntBaby">-</span>
       </button>
       <button class="mod-card" onclick="openSmoking()">
-        <span class="mod-icon">🚬</span>
+        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16h13v3H3z"/><path d="M19 16v3M22 16v3"/><path d="M18 12c0-1.6 1.6-1.9 1.6-3.5S18 6.9 18 5.3"/></svg></span>
         <div class="mod-name">흡연실 점검</div>
         <div class="mod-desc">월간 점검표 (재떨이·바닥 등)</div>
         <span class="mod-cnt" id="cntSmoking">-</span>
       </button>
     </div>
     <button class="dash-btn" onclick="openDash()">
-      <span style="font-size:18px">📊</span> 실시간 현황
+      <svg viewBox="0 0 24 24" style="width:22px;height:22px;vertical-align:-5px;fill:none;stroke:#0F766E;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg> 실시간 현황
       <span class="arrow">오늘 완료율·불량 보기 →</span>
     </button>
     <button class="dash-btn" onclick="openPrint()">
-      <span style="font-size:18px">🖨️</span> 출력 / 다운로드
+      <svg viewBox="0 0 24 24" style="width:22px;height:22px;vertical-align:-5px;fill:none;stroke:#0F766E;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg> 출력 / 다운로드
       <span class="arrow">월간 양식 엑셀·A4 인쇄 →</span>
     </button>
     <button class="dash-btn" id="resetMenuBtn" style="display:none;border-color:var(--danger);color:var(--danger)" onclick="openReset()">
-      <span style="font-size:18px">🗑️</span> 데이터 초기화 <span style="font-weight:400;color:var(--g3);font-size:11px">(테스트 기간 전용)</span>
+      <svg viewBox="0 0 24 24" style="width:22px;height:22px;vertical-align:-5px;fill:none;stroke:#DC2626;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg> 데이터 초기화 <span style="font-weight:400;color:var(--g3);font-size:11px">(테스트 기간 전용)</span>
       <span class="arrow" style="color:var(--danger)">관리 →</span>
     </button>
     <div class="db-banner">
@@ -575,37 +576,37 @@ textarea:focus{border-color:var(--sky)}
     </div>
     <div class="stat-grid">
       <div class="stat-card" style="--ac:#0d9488;--acbg:#ccfbf1">
-        <div class="stat-hd"><span class="icon-chip">🚻</span><span class="stat-lb">화장실</span></div>
+        <div class="stat-hd"><span class="icon-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="4.5" r="1.8"/><path d="M4.6 21v-6.5H3.4l1.3-5.1a1.6 1.6 0 0 1 1.5-1.2h1.6a1.6 1.6 0 0 1 1.5 1.2l1.3 5.1H9.4V21"/><circle cx="17" cy="4.5" r="1.8"/><path d="M17 8.2c.9 0 1.7.6 1.9 1.4L20.5 15h-2.2v6h-2.6v-6H13.5l1.6-5.4c.2-.8 1-1.4 1.9-1.4z"/></svg></span><span class="stat-lb">화장실</span></div>
         <div class="stat-v" id="dToilet">-<small></small></div>
         <div class="stat-sub" id="dToiletSub"></div>
       </div>
       <div class="stat-card" style="--ac:#2563eb;--acbg:#dbeafe">
-        <div class="stat-hd"><span class="icon-chip">🛋️</span><span class="stat-lb">휴게시설</span></div>
+        <div class="stat-hd"><span class="icon-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/><path d="M3 13a2 2 0 0 1 4 0v2h10v-2a2 2 0 0 1 4 0v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M6 18v2M18 18v2"/></svg></span><span class="stat-lb">휴게시설</span></div>
         <div class="stat-v" id="dRest">-<small></small></div>
         <div class="stat-sub" id="dRestSub"></div>
       </div>
       <div class="stat-card" style="--ac:#d97706;--acbg:#fef3c7">
-        <div class="stat-hd"><span class="icon-chip">🔧</span><span class="stat-lb">장비</span></div>
+        <div class="stat-hd"><span class="icon-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z"/></svg></span><span class="stat-lb">장비</span></div>
         <div class="stat-v" id="dEquip">-<small></small></div>
         <div class="stat-sub" id="dEquipSub"></div>
       </div>
       <div class="stat-card" style="--ac:#16a34a;--acbg:#dcfce7">
-        <div class="stat-hd"><span class="icon-chip">✈️</span><span class="stat-lb">PBB</span></div>
+        <div class="stat-hd"><span class="icon-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></span><span class="stat-lb">PBB</span></div>
         <div class="stat-v" id="dPbb">-<small></small></div>
         <div class="stat-sub" id="dPbbSub"></div>
       </div>
       <div class="stat-card" style="--ac:#7c3aed;--acbg:#ede9fe">
-        <div class="stat-hd"><span class="icon-chip">🧹</span><span class="stat-lb">공용구역</span></div>
+        <div class="stat-hd"><span class="icon-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M19 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg></span><span class="stat-lb">공용구역</span></div>
         <div class="stat-v" id="dCommon">-<small></small></div>
         <div class="stat-sub" id="dCommonSub"></div>
       </div>
       <div class="stat-card" style="--ac:#db2777;--acbg:#fce7f3">
-        <div class="stat-hd"><span class="icon-chip">👶</span><span class="stat-lb">유아휴게실</span></div>
+        <div class="stat-hd"><span class="icon-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 10.5h.01M15 10.5h.01M9.6 14.6a3.3 3.3 0 0 0 4.8 0M12 3c-.9 1.6.1 2.9 1.6 2.6"/></svg></span><span class="stat-lb">유아휴게실</span></div>
         <div class="stat-v" id="dBaby">-<small></small></div>
         <div class="stat-sub" id="dBabySub"></div>
       </div>
       <div class="stat-card" style="--ac:#57534e;--acbg:#f5f5f4">
-        <div class="stat-hd"><span class="icon-chip">🚬</span><span class="stat-lb">흡연실</span></div>
+        <div class="stat-hd"><span class="icon-chip"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16h13v3H3z"/><path d="M19 16v3M22 16v3"/><path d="M18 12c0-1.6 1.6-1.9 1.6-3.5S18 6.9 18 5.3"/></svg></span><span class="stat-lb">흡연실</span></div>
         <div class="stat-v" id="dSmoking">-<small></small></div>
         <div class="stat-sub" id="dSmokingSub"></div>
       </div>
@@ -664,13 +665,14 @@ textarea:focus{border-color:var(--sky)}
         </div>
         <div>
           <div class="f-label">월</div>
-          <select id="prMonth" onchange="if(document.getElementById('prMod').value==='pbb')fillPrDays()"></select>
+          <select id="prMonth" onchange="if(document.getElementById('prMod').value==='pbb')fillPrDays();fillPrTargets()"></select>
         </div>
       </div>
       <div class="f-row one" id="prTargetRow">
         <div>
           <div class="f-label">대상</div>
           <select id="prTarget"></select>
+          <div id="prCnt" style="font-size:11px;color:var(--g3);margin-top:4px"></div>
         </div>
       </div>
       <div class="f-row one" id="prDayRow" style="display:none">
@@ -783,7 +785,7 @@ var MOD_META = {
   rest:   { name:'🛋️ 휴게시설 점검', items:['청소·청결, 목적 외 이용금지','온도·습도·조명·환기 적정','비품·설비 이상 여부','화기 단속','문단속','점검자 확인'], states:4 },
   equip:  { name:'🔧 장비점검', items:[], states:3 },
   pbb:    { name:'✈️ 게이트 관리 일지', items:['이동브릿지 관리여부','고정브릿지','하단 디퓨저','2단 창틀','E/L 내부','E/L 1층','E/S','계단','2층 방화문','3층 방화문'], states:4 },
-  common: { name:'🧹 공용구역 점검', items:['바닥 청소 상태(오염물·얼룩)','쓰레기통 수거 상태','유리·거울·스테인리스 청결','시설물(벤치·안내데스크 등) 청결','청소도구 정리·보관','안전 위해요소 없음(물기·장애물)'], states:3 },
+  common: { name:'🧹 공용구역 점검', items:['바닥 청소 상태(오염물·얼룩)','쓰레기통 수거 상태','시설물 스테인리스 청결','시설물(벤치·안내데스크 등) 청결','청소도구 정리·보관','안전 위해요소 없음(물기·장애물)'], states:3 },
   baby: { name:'👶 유아휴게실 점검', items:['바닥','선반','정수기','침대','쇼파','세면대'], states:3 }
 };
 
@@ -964,6 +966,7 @@ function loadMasters(){
   Promise.all(jobs).then(function(){
     dot.className='dot ok'; msg.textContent='데이터 연결 정상 · 화장실 '+TOILETS.length+' · 장비 '+EQUIPS.length+' · 휴게시설 '+RESTS.length;
     handleEquipDeepLink();
+    handleLocDeepLink();
   }).catch(function(e){
     dot.className='dot err'; msg.textContent='데이터 로드 실패 — 네트워크 확인';
   });
@@ -987,6 +990,37 @@ function handleEquipDeepLink(){
   }catch(err){}
 }
 
+// index.html 청결예보·출국장 혼잡도에서 넘어온 경우: 위치·팀·조·시작시간을 채운 채로 점검 화면 열기
+// 주소 예: inspect.html?go=common&floor=3F&zone=A/S 동편&detail=...  /  ?go=toilet&floor=3F&zone=A/S
+function handleLocDeepLink(){
+  try{
+    var q=new URLSearchParams(location.search), go=q.get('go');
+    if(go!=='common'&&go!=='toilet') return;
+    var floor=q.get('floor')||'', zone=q.get('zone')||'', detail=q.get('detail')||'';
+    openMod(go);
+    if(curMod!==go) return; // 입력 권한 없으면 현황만 조회 (openMod 안내 그대로)
+    if(go==='common'){
+      var cf=document.getElementById('cFloor'), cz=document.getElementById('cZone');
+      if(floor) cf.value=floor; if(zone) cz.value=zone;
+      document.getElementById('cDetail').value=detail;
+    } else {
+      var fl=floor.replace(/^B(\d)F$/,'지하$1층').replace(/^(\d)F$/,'$1층');
+      var tf=document.getElementById('tFloor'), tz=document.getElementById('tZone');
+      if(fl) tf.value=fl;
+      var zz=(zone==='A/S'||/^Air/i.test(zone))?'Airside':((zone==='L/S'||/^Land/i.test(zone))?'Landside':'');
+      tz.value=zz;
+      fillToiletList();
+    }
+    // 점검 시작시간 = 넘어온 시각 (30분 단위로 내림)
+    var d=new Date(), hh=String(d.getHours()).padStart(2,'0'), mm=d.getMinutes()<30?'00':'30';
+    var t1=document.getElementById('iT1'); if(t1) t1.value=hh+':'+mm;
+    // 조: 로그인 계정에 조가 있으면 자동 입력 (팀은 openMod/fillTeams가 계정 기준으로 이미 선택)
+    var jo=loginJo(); if(jo) setJoChip(jo);
+    try{ history.replaceState(null,'',location.pathname); }catch(e){}
+    toast('위치·팀·시간이 자동으로 채워졌습니다. 확인 후 점검하세요');
+  }catch(err){}
+}
+
 // ─ 공통 폼 채우기 ─
 function fillTeams(){
   var sel=document.getElementById('selTeam'); sel.innerHTML='';
@@ -995,8 +1029,9 @@ function fillTeams(){
     var o=document.createElement('option'); o.value=teams[i]; o.textContent=teams[i]; sel.appendChild(o);
   }
   if(me&&me.team){
-    for(var j=0;j<teams.length;j++){ if(String(me.team).indexOf(teams[j].replace('팀',''))===0||me.team===teams[j]){sel.value=teams[j];break;} }
-    if(teams.indexOf(me.team)>=0)sel.value=me.team;
+    var mt=String(me.team).trim(), mm=mt.match(/^(\d+)\s*팀/);
+    if(mm&&teams.indexOf(mm[1]+'팀')>=0) sel.value=mm[1]+'팀';
+    else sel.value='관리팀';
   }
 }
 function autoShift(){
@@ -2014,7 +2049,26 @@ function fillPrMonths(){
     var o=document.createElement('option'); o.value=v; o.textContent=d.getFullYear()+'년 '+(d.getMonth()+1)+'월'; sel.appendChild(o);
   }
 }
-function fillPrTargets(){
+function fillPrTargets(){ fillPrTargetsRaw(); prFilterTargets(); }
+// 점검 기록이 있는 대상(그 달)만 남김
+function prHasTarget(){var mod=document.getElementById('prMod').value;var v=document.getElementById(mod==='pbb'?'prDay':'prTarget').value;if(!v){toast('점검 기록이 있는 대상이 없습니다');return false;}return true;}
+function prFilterTargets(){
+  var mod=document.getElementById('prMod').value, mi=monthInfo();
+  var note=document.getElementById('prCnt'); if(note)note.textContent='점검 기록 확인 중…';
+  sbFetch('/rpc/print_targets',{method:'POST',body:{p_mod:mod,p_from:mi.from,p_to:mi.to}}).then(function(r){return r.json();}).then(function(rows){
+    if(!Array.isArray(rows)) throw new Error('x');
+    var has={}; rows.forEach(function(x){has[String(x.tid)]=1;});
+    var sel=document.getElementById(mod==='pbb'?'prDay':'prTarget'); if(!sel)return;
+    Array.prototype.slice.call(sel.querySelectorAll('option')).forEach(function(o){ if(!has[o.value]) o.remove(); });
+    Array.prototype.slice.call(sel.querySelectorAll('optgroup')).forEach(function(g){ if(!g.children.length) g.remove(); });
+    var n=sel.querySelectorAll('option').length;
+    if(!n){ var o=document.createElement('option'); o.value=''; o.textContent=mi.m+'월 점검 기록 없음'; sel.appendChild(o); }
+    else sel.selectedIndex=0;
+    if(mod==='pbb'&&n){ var td=new Date(); if(td.getFullYear()===mi.y&&td.getMonth()+1===mi.m&&has[String(td.getDate())]) sel.value=String(td.getDate()); }
+    if(note)note.textContent=n?(mod==='pbb'?'점검 기록 있는 날 '+n+'일':'점검 기록 있는 곳 '+n+'곳')+' (기록 없는 곳은 숨김)':'이 달에는 점검 기록이 없습니다';
+  }).catch(function(){ if(note)note.textContent=''; });
+}
+function fillPrTargetsRaw(){
   var mod=document.getElementById('prMod').value;
   var sel=document.getElementById('prTarget'); sel.innerHTML='';
   document.getElementById('prTargetRow').style.display = mod==='pbb' ? 'none' : 'block';
@@ -2156,32 +2210,26 @@ function sigCellText(appr){
 function buildGridDoc(title, locLabel, items, legend, records, mi, appr){
   var byDay={}; records.forEach(function(r){ (byDay[dayOf(r)]=byDay[dayOf(r)]||[]).push(r); });
   var rows=[];
-  var half1=16, totalCols=2+half1; // No+항목+16일
+  var ND=31, totalCols=2+ND; // No+항목+31일 (가로 한 장)
   rows.push([{v:title+' ('+mi.label+')',cs:totalCols,cls:'tt'}]);
   rows.push([
-    {v:'위치',cls:'hd'},{v:locLabel,cs:9,cls:'lf'},
-    {v:'범례',cls:'hd'},{v:legend,cs:5,cls:'lf'},{v:sigCellText(appr),cs:2,cls:appr?'ok':'lf'}
+    {v:'위치',cs:2,cls:'hd'},{v:locLabel,cs:12,cls:'lf'},
+    {v:'범례',cs:2,cls:'hd'},{v:legend,cs:10,cls:'lf'},{v:sigCellText(appr),cs:7,cls:appr?'ok':'lf'}
   ]);
-  function block(d1,d2){
-    var hd=[{v:'No',cls:'hd'},{v:'점검항목',cls:'hd'}];
-    for(var d=d1;d<=d2;d++)hd.push({v:String(d),cls:'hd'});
-    for(var pad=d2-d1+1;pad<half1;pad++)hd.push({v:'',cls:'hd'});
-    rows.push(hd);
-    items.forEach(function(it,i){
-      var row=[{v:String(i+1)},{v:it,cls:'lf'}];
-      for(var d=d1;d<=d2;d++){
-        var w=byDay[d]?worstOf(byDay[d],it):null;
-        row.push({v:w?SYM[w]:'',cls:w==='X'?'bx':''});
-      }
-      for(var pad=d2-d1+1;pad<half1;pad++)row.push({v:''});
-      rows.push(row);
-    });
-  }
-  block(1,16);
-  block(17,mi.days);
+  var hd=[{v:'No',cls:'hd'},{v:'점검항목',cls:'hd'}];
+  for(var d=1;d<=ND;d++)hd.push({v:d<=mi.days?String(d):'',cls:'hd'});
+  rows.push(hd);
+  items.forEach(function(it,i){
+    var row=[{v:String(i+1)},{v:it,cls:'lf'}];
+    for(var d=1;d<=ND;d++){
+      var w=(d<=mi.days&&byDay[d])?worstOf(byDay[d],it):null;
+      row.push({v:w?SYM[w]:'',cls:w==='X'?'bx':''});
+    }
+    rows.push(row);
+  });
   rows.push([{v:'특이사항',cs:2,cls:'hd'},{v:collectNotes(records)||'-',cs:totalCols-2,cls:'lf'}]);
-  var cols=[3.5,20]; for(var c=0;c<half1;c++)cols.push(3.1);
-  return {rows:rows, cols:cols, orient:'portrait', title:title, fname:title.replace(/\s/g,'')+'_'+locLabel.replace(/[\/\s]/g,'')+'_'+mi.y+'-'+String(mi.m).padStart(2,'0')};
+  var cols=[3.5,24]; for(var c=0;c<ND;c++)cols.push(3.0);
+  return {rows:rows, cols:cols, orient:'landscape', title:title, fname:title.replace(/\s/g,'')+'_'+locLabel.replace(/[\/\s]/g,'')+'_'+mi.y+'-'+String(mi.m).padStart(2,'0')};
 }
 // ─ 유아휴게실 점검 체크리스트 (종이양식과 동일: 일자=행, 항목=열) ─
 function buildBabyDoc(records, locLabel, mi, appr){
@@ -2378,7 +2426,7 @@ function docToHTML(doc){
   // A4 높이 채움: 행 높이(mm) 배분
   var usableMM = doc.orient==='landscape' ? 190 : 278;
   var n=doc.rows.length;
-  var rowMM = Math.max(6, Math.min(15, Math.floor((usableMM-12)/(n-1))));
+  var rowMM = Math.max(6, Math.min(24, Math.floor((usableMM-16)/(n-1))));
   // 열 너비 고정(colgroup): 일자 칸 균일 정렬
   var sumW=0; for(var i=0;i<doc.cols.length;i++)sumW+=doc.cols[i];
   var cg='<colgroup>';
@@ -2499,6 +2547,7 @@ function writeXlsxSmart(wb, doc){
   }catch(e){ XLSX.writeFile(wb, doc.fname+'.xlsx'); }
 }
 function prExcel(){
+  if(!prHasTarget())return;
   fetchMonth(function(records,mod,tid,mi){
     if(typeof XLSX==='undefined'){ toast('엑셀 모듈 로드 실패 — 네트워크 확인'); return; }
     var ctx=approvalCtx(mod,tid,mi);
@@ -2536,7 +2585,23 @@ function previewSmoking(){
   showScr('scrPreview');
   prPreview();
 }
+var PV_HTML='';
+function pvShow(orient){
+  var box=document.getElementById('prevScroll');
+  var W=orient==='landscape'?297:210, H=orient==='landscape'?210:297;
+  box.innerHTML='<div class="pv-fit"><div class="pv-page" style="width:'+W+'mm;min-height:'+H+'mm">'+PV_HTML+'</div></div>';
+  pvFit();
+}
+function pvFit(){
+  var box=document.getElementById('prevScroll'); if(!box)return;
+  var fit=box.querySelector('.pv-fit'), pg=box.querySelector('.pv-page'); if(!pg)return;
+  var avail=box.clientWidth-20; if(avail<=0)return;
+  var pw=pg.offsetWidth, ph=pg.offsetHeight, sc=Math.min(1,avail/pw);
+  pg.style.transform='scale('+sc+')'; fit.style.width=(pw*sc)+'px'; fit.style.height=(ph*sc)+'px';
+}
+window.addEventListener('resize',pvFit);
 function prPreview(){
+  if(!prHasTarget())return;
   fetchMonth(function(records,mod,tid,mi){
     var ctx=approvalCtx(mod,tid,mi);
     curApprCtx=ctx;
@@ -2544,10 +2609,10 @@ function prPreview(){
     fetchApproval(ctx, function(appr){
       var doc=buildDoc(records,mod,tid,mi,appr,worker);
       PR_ORIENT=doc.orient;
-      document.getElementById('prevScroll').innerHTML=docToHTML(doc);
+      PV_HTML=docToHTML(doc);pvShow(doc.orient);
       document.getElementById('pvTitle').textContent='A4 '+(doc.orient==='landscape'?'가로':'세로')+' 미리보기 — '+doc.title+(records.length?'':' (기록 없음)');
       renderSignBox(appr);
-      showScr('scrPreview');
+      showScr('scrPreview'); setTimeout(pvFit,0);
     });
   });
 }
@@ -2582,7 +2647,7 @@ function doApprove(){
 }
 function doPrint(){
   var pa=document.getElementById('printArea');
-  pa.innerHTML=document.getElementById('prevScroll').innerHTML;
+  pa.innerHTML=PV_HTML;
   var st=document.getElementById('pageStyle');
   if(!st){ st=document.createElement('style'); st.id='pageStyle'; document.head.appendChild(st); }
   st.textContent='@page{size:A4 '+PR_ORIENT+';margin:8mm} @media print{ .prn table{width:100%} }';
@@ -3324,5 +3389,11 @@ function emRepPrint(){
   window.print();
 }
 </script>
+<style id="pcWideCss">
+@media (min-width:1100px){
+.wrap{max-width:none!important;padding:18px 32px!important}
+.mod-grid{grid-template-columns:repeat(4,1fr)!important;gap:14px}
+}
+</style>
 </body>
 </html>

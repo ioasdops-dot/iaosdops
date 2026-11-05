@@ -2362,4 +2362,9 @@ function grpInit(){
 (function(){if(/[?&]coop=/.test(location.search)){pubInit();return;}if(grpMode()){grpInit();return;}S.me=loadMe();if(!S.me){location.href='index.html';return;}
   var wasPC=isPC();window.addEventListener('resize',function(){if(RP.open||CP.on)fitA4();var p=isPC();if(p!==wasPC){wasPC=p;if(!S.loading)render();}});
   loadAll();})();
-</script></body></html>
+</script><style id="pcWideCss">
+@media (min-width:1100px){
+#app{max-width:none!important;padding-left:24px;padding-right:24px;box-sizing:border-box}
+}
+</style>
+</body></html>

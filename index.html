@@ -1414,7 +1414,7 @@ function t1CClear(name){ try{ for(var i=localStorage.length-1;i>=0;i--){ var key
       <button class="menu-btn" id="paxMenuBtn" onclick="go('pax')" style="display:none">
         <span class="menu-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.2.4c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></span>
         <div class="menu-title">항공 여객</div>
-        <div class="menu-desc">제1·제2여객터미널 시간대별 여객과 T1·T2 비교 (청결예보에 자동 반영)</div>
+        <div class="menu-desc">T1·T2 시간대별 여객과 비교 (청결예보에 자동 반영)</div>
         <span class="menu-arrow">보기 →</span>
       </button>
       <button class="menu-btn" id="congMenuBtn" onclick="go('cong')" style="display:none">
@@ -5234,7 +5234,7 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
 <!-- ══ 항공 여객 (업로드·수정 + 통계) ══ -->
 <div id="sPax" class="scr">
   <div class="pg-hd">
-    <div><h1>✈️ 항공 여객</h1><small id="paxSub" style="font-size:13px">제1·제2여객터미널 예상 여객 · T1·T2 비교</small></div>
+    <div><h1>✈️ 항공 여객</h1><small id="paxSub" style="font-size:13px">T1·T2 예상 여객 비교</small></div>
     <div class="bs-bar"><button class="bs-bt bs-theme-btn" onclick="bsThemeToggle()">☾ 다크</button><button class="bs-bt bs-fs-btn" onclick="bsFsToggle('sPax')">⛶ 전체화면</button><button class="bs-bt" onclick="go('main')">← 메뉴</button></div>
   </div>
   <div style="padding:13px">
@@ -5303,7 +5303,7 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
 <!-- ══ 주차현황 ══ -->
 <div id="sPark" class="scr">
   <div class="pg-hd">
-    <div><h1>주차현황</h1><small style="font-size:13px">인천공항 제1·제2여객터미널 주차장 실시간 현황</small></div>
+    <div><h1>주차현황</h1><small style="font-size:13px">인천공항 T1·T2 주차장 실시간 현황</small></div>
     <div class="bs-bar"><button class="bs-bt bs-theme-btn" onclick="bsThemeToggle()">☾ 다크</button><button class="bs-bt bs-fs-btn" onclick="bsFsToggle('sPark')">⛶ 전체화면</button><button class="bs-bt" onclick="go('main')">← 메뉴</button></div>
   </div>
   <div id="parkBody" style="padding:13px;max-width:720px;margin:0 auto"></div>
@@ -5312,7 +5312,7 @@ body.wl-printing #sWorkLog #wlBody{padding:0 !important}body.wl-printing #sWorkL
 <!-- ══ 출국장 혼잡도 ══ -->
 <div id="sCong" class="scr">
   <div class="pg-hd">
-    <div><h1>터미널 실시간 현황</h1><small style="font-size:13px">인천공항 제1·제2여객터미널 출국장·입국장·공기질 현황</small></div>
+    <div><h1>터미널 실시간 현황</h1><small style="font-size:13px">인천공항 T1·T2 출국장·입국장·공기질 현황</small></div>
     <div class="bs-bar"><button class="bs-bt bs-theme-btn" onclick="bsThemeToggle()">☾ 다크</button><button class="bs-bt bs-fs-btn" onclick="bsFsToggle('sCong')">⛶ 전체화면</button><button class="bs-bt" onclick="go('main')">← 메뉴</button></div>
   </div>
   <div id="congBody" style="padding:13px;max-width:720px;margin:0 auto"></div>
@@ -38803,7 +38803,7 @@ function fcFloorList(rows){
    fc_pax(terminal,pax_date,hour,dep,arr): 인천공항 '공항 예상 혼잡도' 엑셀을 터미널별로 저장. 그룹앱에서만 올리고 모든 앱이 읽음. */
 var PX_BLOCKS=[{a:6,b:10,shift:'오전'},{a:10,b:14,shift:'오전'},{a:14,b:18,shift:'오후'},{a:18,b:22,shift:'오후'}];
 var PX_WD=['일','월','화','수','목','금','토'];
-var PX_NAME={T1:'제1여객터미널',T2:'제2여객터미널',SUM:'제1+제2 합산'};
+var PX_NAME={T1:'T1',T2:'T2',SUM:'T1+T2 합산'};
 var PX_COL={T1:'#12A594',T2:'#2F7DE1'};
 var PX={data:{T1:{},T2:{}},loaded:false};
 PX.kst=function(iso){ var d=new Date(new Date(iso).getTime()+9*3600000); return {h:d.getUTCHours(),ds:d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0')}; };
@@ -38881,7 +38881,7 @@ PX.cardHtml=function(fx){
   return '<div style="background:#fff;border-radius:14px;box-shadow:0 1px 6px rgba(15,40,60,.08);padding:11px 12px;margin-bottom:14px"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px"><span style="font-size:13px;font-weight:800;color:#333">✈️ '+PX.md(fx.date)+' '+PX_NAME[fx.term]+' 여객 반영</span><span style="font-size:10.5px;color:#999">출국+입국 · '+(fx.label||'평균')+' 대비</span></div><div style="display:flex;gap:6px">'+cells+'</div></div>';
 };
 PX.pills=function(view,own){
-  var items=[['cmp','T1·T2 비교'],['T1','제1여객터미널'],['T2','제2여객터미널']];
+  var items=[['cmp','T1·T2 비교'],['T1','T1'],['T2','T2']];
   return '<div style="display:flex;gap:6px;margin-bottom:12px">'+items.map(function(x){ var on=(view===x[0]), c=x[0]==='T1'?PX_COL.T1:(x[0]==='T2'?PX_COL.T2:'#4B5563');
     return '<button data-pxv="'+x[0]+'" style="flex:1;padding:11px 2px;border-radius:14px;border:2px solid '+(on?c:'transparent')+';background:'+(on?'#fff':'#E8ECF0')+';color:'+(on?c:'#667')+';font-size:13px;font-weight:900;cursor:pointer;box-shadow:'+(on?'0 2px 8px rgba(0,0,0,.1)':'none')+'">'+x[1]+(own===x[0]?'<div style="font-size:9.5px;font-weight:700;opacity:.8">내 터미널</div>':'')+'</button>'; }).join('')+'</div>';
 };
@@ -38890,9 +38890,9 @@ PX.compare=function(el,sub){
   var S1=PX.series('T1'),S2=PX.series('T2'),d1=Object.keys(S1).sort(),d2=Object.keys(S2).sort();
   var card='background:#fff;border-radius:22px;box-shadow:0 2px 12px rgba(15,40,60,.09);padding:18px 14px 16px;margin-bottom:16px';
   var ttl='font-size:19px;font-weight:900;color:#1B2A38;padding:0 4px',cap='font-size:14px;color:#4A5F72;line-height:1.55;margin:3px 4px 8px';
-  if(sub) sub.textContent='제1 '+d1.length+'일 · 제2 '+d2.length+'일 등록';
+  if(sub) sub.textContent='T1 '+d1.length+'일 · T2 '+d2.length+'일 등록';
   if(!d1.length||!d2.length){
-    el.innerHTML='<div style="'+card+';text-align:center;padding:34px 18px"><div style="font-size:46px">✈️</div><div style="font-size:19px;font-weight:800;color:#1B2A38;margin-top:8px">비교할 자료가 부족합니다</div><div style="font-size:14px;color:#4A5F72;margin-top:6px;line-height:1.6">제1·제2여객터미널 자료가 모두 있어야 비교할 수 있어요.<br>(제1 '+d1.length+'일 · 제2 '+d2.length+'일 등록) 그룹앱에서 엑셀을 올려 주세요.</div></div>';
+    el.innerHTML='<div style="'+card+';text-align:center;padding:34px 18px"><div style="font-size:46px">✈️</div><div style="font-size:19px;font-weight:800;color:#1B2A38;margin-top:8px">비교할 자료가 부족합니다</div><div style="font-size:14px;color:#4A5F72;margin-top:6px;line-height:1.6">T1·T2 자료가 모두 있어야 비교할 수 있어요.<br>(T1 '+d1.length+'일 · T2 '+d2.length+'일 등록) 그룹앱에서 엑셀을 올려 주세요.</div></div>';
     return;
   }
   var today=PX.kst(new Date().toISOString()).ds, h='';
@@ -38904,47 +38904,48 @@ PX.compare=function(el,sub){
     var hr=[];for(var q=0;q<24;q++){var s=0;ds.forEach(function(x){s+=S[x][q][0]+S[x][q][1];});hr[q]=s/ds.length;} var pk=0;hr.forEach(function(v,i){if(v>hr[pk])pk=i;});
     return {k:k,d:d,t:t,dep:dep,arr:arr,lv:lv,hr:hr,pk:pk,avg:a,n:ds.length}; };
   var i1=info(S1,d1,a1,'T1'),i2=info(S2,d2,a2,'T2');
-  // ① 예상 여객 비교 카드
-  var big=function(i){ var c=PX_COL[i.k]; return '<div style="flex:1;min-width:0;border-radius:18px;padding:12px 10px;background:'+c+'14;border:2px solid '+c+'55;text-align:center"><div style="font-size:13px;font-weight:900;color:'+c+'">'+PX_NAME[i.k]+'</div><div style="font-size:24px;font-weight:900;color:#1B2A38;margin:4px 0 0">'+paxKor(i.t).replace(' 명','')+'</div><div style="font-size:12px;color:#4A5F72">명 · '+PX.md(i.d)+'</div><div style="margin:8px 0 6px"><span style="display:inline-block;padding:5px 10px;border-radius:12px;background:'+i.lv[1]+';color:'+i.lv[2]+';font-size:12.5px;font-weight:900">'+i.lv[0]+'</span></div><div style="font-size:12px;color:#33475A;line-height:1.6">출국 <b>'+paxKor(i.dep)+'</b><br>입국 <b>'+paxKor(i.arr)+'</b></div></div>'; };
-  var ratio=i1.t?(i2.t/i1.t):0;
-  h+='<div style="'+card+'"><div style="'+ttl+'">✈️ 예상 여객 비교</div><div style="'+cap+'">출국+입국 · 날짜는 오늘 또는 가장 가까운 등록일</div><div style="display:flex;gap:10px">'+big(i1)+big(i2)+'</div>'
-    +'<div style="margin-top:12px;padding:10px 12px;background:#F3F7FA;border-radius:14px;font-size:13.5px;color:#33475A;line-height:1.6">제2터미널은 제1터미널의 약 <b style="font-size:16px;color:#1B2A38">'+Math.round(ratio*100)+'%</b> 수준 · 일평균 제1 '+paxKor(a1)+' / 제2 '+paxKor(a2)+'</div></div>';
-  // ② 시간대별 한눈 요약 + 한 줄 흐름 (제1·제2 나란히)
-  var C1=PX_COL.T1,C2=PX_COL.T2,mx2=Math.max.apply(null,i1.hr.slice(6,22).concat(i2.hr.slice(6,22)))||1,f1=function(v){ return (Math.round(v/100)/10).toFixed(1); };
-   var sv='';
-   [6,14].forEach(function(s0,bi){
-     sv+='<div style="font-size:14.5px;font-weight:900;color:#33475A;margin:'+(bi?'16px':'0')+' 0 6px">'+(bi?'오후·저녁 (14~22시)':'오전·낮 (6~14시)')+'</div><div style="display:grid;grid-template-columns:40px repeat(8,1fr);gap:4px;align-items:center"><div></div>';
-     for(var hh=s0;hh<s0+8;hh++) sv+='<div style="text-align:center;font-size:13px;font-weight:900;color:#33475A">'+hh+'시</div>';
-     [['제1',i1,C1,[226,245,242],[18,165,148]],['제2',i2,C2,[232,240,252],[47,125,225]]].forEach(function(r){
-       sv+='<div style="font-size:14px;font-weight:900;color:'+r[2]+'">'+r[0]+'</div>';
-       for(var hh=s0;hh<s0+8;hh++){ var v=r[1].hr[hh], q=v/mx2, k=[0,1,2].map(function(z){ return Math.round(r[3][z]+(r[4][z]-r[3][z])*q); });
-         sv+='<div style="text-align:center;padding:10px 0;border-radius:10px;background:rgb('+k.join(',')+');color:'+(q>0.55?'#fff':'#1B2A38')+';font-size:15px;font-weight:900">'+f1(v)+'</div>'; }
-     });
-     sv+='<div style="font-size:13px;font-weight:900;color:#33475A">차이</div>';
-     for(var hh=s0;hh<s0+8;hh++){ var d=i1.hr[hh]-i2.hr[hh]; sv+='<div style="text-align:center;font-size:12.5px;font-weight:900;line-height:1.3;color:'+(d>=0?C1:C2)+'">'+(d>=0?'제1':'제2')+'<br>+'+f1(Math.abs(d))+'</div>'; }
-     sv+='</div>';
-   });
-   var pk1=0,pk2=0; for(var hh=6;hh<22;hh++){ if(i1.hr[hh]>i1.hr[pk1||6]) pk1=hh; if(i2.hr[hh]>i2.hr[pk2||6]) pk2=hh; } pk1=pk1||6; pk2=pk2||6;
-   var lg='<div style="display:flex;gap:14px;flex-wrap:wrap;margin:12px 2px 0;font-size:14px;font-weight:800;color:#33475A"><span style="color:'+C1+'">제1 가장 붐비는 시간 '+pk1+'~'+(pk1+1)+'시 ('+f1(i1.hr[pk1])+')</span><span style="color:'+C2+'">제2 가장 붐비는 시간 '+pk2+'~'+(pk2+1)+'시 ('+f1(i2.hr[pk2])+')</span></div>';
-   h+='<div style="'+card+'"><div style="'+ttl+'">시간대별 여객 비교</div><div style="'+cap+'">근무 시간(6~22시) 1시간 단위 일평균 (단위: 천 명) · 색이 진할수록 많음 · 아래 줄은 어느 터미널이 얼마나 더 많은지</div>'+sv+lg+'</div>';
+  // ① 예상 여객 비교 (T1 | T2 대결)
+  var C1=PX_COL.T1,C2=PX_COL.T2,f1=function(v){ return (Math.round(v/100)/10).toFixed(1); }, man=function(v){ return (v/10000).toFixed(1); };
+  var side=function(i,win){ var c=PX_COL[i.k]; return '<div style="flex:1;min-width:0;border-radius:20px;padding:16px 8px 14px;text-align:center;background:'+(win?c:c+'18')+';color:'+(win?'#fff':'#1B2A38')+';'+(win?'box-shadow:0 6px 16px '+c+'55':'border:2px solid '+c+'44')+'"><div style="font-size:20px;font-weight:900;'+(win?'':'color:'+c)+'">'+i.k+'</div><div style="font-size:38px;font-weight:900;line-height:1.1;margin:6px 0 0">'+man(i.t)+'<span style="font-size:17px;margin-left:2px">만</span></div><div style="font-size:13px;font-weight:700;opacity:.85;margin-top:4px">출국 '+man(i.dep)+' · 입국 '+man(i.arr)+'</div><div style="display:inline-block;margin-top:8px;padding:3px 10px;border-radius:12px;font-size:12.5px;font-weight:900;background:'+(win?'rgba(255,255,255,.25)':i.lv[1])+';color:'+(win?'#fff':i.lv[2])+'">'+i.lv[0]+'</div></div>'; };
+  var w1=i1.t>=i2.t, share=(i1.t+i2.t)?Math.round(i1.t/(i1.t+i2.t)*100):50;
+  h+='<div style="'+card+'"><div style="'+ttl+'">✈️ 예상 여객 비교</div><div style="'+cap+'">출국+입국 · 날짜는 오늘 또는 가장 가까운 등록일</div><div style="display:flex;align-items:center;gap:8px">'+side(i1,w1)+'<div style="font-size:15px;font-weight:900;color:#8896A4">VS</div>'+side(i2,!w1)+'</div>'
+    +'<div style="display:flex;height:16px;border-radius:9px;overflow:hidden;margin-top:14px"><i style="width:'+share+'%;background:'+C1+'"></i><i style="flex:1;background:'+C2+'"></i></div><div style="display:flex;justify-content:space-between;font-size:14px;font-weight:900;margin-top:5px"><span style="color:'+C1+'">T1 '+share+'%</span><span style="color:'+C2+'">T2 '+(100-share)+'%</span></div>'
+    +'<div style="margin-top:12px;padding:11px 12px;background:#F3F7FA;border-radius:14px;font-size:14.5px;color:#33475A;line-height:1.6"><b style="color:'+(w1?C1:C2)+';font-size:17px">'+(w1?'T1':'T2')+'</b>가 <b style="font-size:17px">'+man(Math.abs(i1.t-i2.t))+'만 명</b> 더 많음 · 일평균 T1 '+paxKor(a1)+' / T2 '+paxKor(a2)+'</div></div>';
+  // 줄다리기 막대: 한 줄 안에서 T1:T2 비율을 색으로 나눠 보여줌 — 어느 쪽이 얼마나 많은지 한눈에
+  var tug=function(rows,fmt,rh){ rh=rh||40;
+    var o='<div style="display:flex;justify-content:space-between;margin:0 0 8px;padding-left:74px"><span style="font-size:15px;font-weight:900;color:#fff;background:'+C1+';border-radius:10px;padding:3px 16px">T1</span><span style="font-size:15px;font-weight:900;color:#fff;background:'+C2+';border-radius:10px;padding:3px 16px">T2</span></div>';
+    rows.forEach(function(r){ var A=r.a||0,B=r.b||0,tot=A+B||1,pa=Math.round(A/tot*100),win=A>=B?'T1':'T2',wc=A>=B?C1:C2;
+      o+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:9px"><div style="width:66px;white-space:nowrap;text-align:center;font-size:'+(r.big?'15':'14')+'px;font-weight:900;color:#1B2A38;line-height:1.15">'+r.l+(r.sub?'<div style="font-size:11px;font-weight:700;color:#7A8B9A">'+r.sub+'</div>':'')+'</div>'
+       +'<div style="flex:1;position:relative;display:flex;height:'+rh+'px;border-radius:'+(rh/2)+'px;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.04)"><div style="width:'+pa+'%;background:linear-gradient(90deg,'+C1+','+C1+'dd);display:flex;align-items:center;padding-left:12px;color:#fff;font-weight:900;font-size:'+(A>=B?'17':'14')+'px">'+fmt(A)+'</div><div style="flex:1;background:linear-gradient(90deg,'+C2+'dd,'+C2+');display:flex;align-items:center;justify-content:flex-end;padding-right:12px;color:#fff;font-weight:900;font-size:'+(B>A?'17':'14')+'px">'+fmt(B)+'</div></div>'
+       +'<div style="width:62px;text-align:center;font-size:12.5px;font-weight:900;color:'+wc+';line-height:1.2"><span style="display:block;font-size:14px">'+win+'</span>+'+fmt(Math.abs(A-B))+'</div></div>'; });
+    return o; };
+  var legend='<div style="font-size:13px;color:#4A5F72;font-weight:700;margin:4px 2px 0">막대 길이 = 두 터미널 중 차지하는 비율 · 오른쪽 숫자 = 더 많은 쪽과 차이</div>';
+  // ② 시간대별 — 하루 흐름 곡선 (T1·T2 겹쳐서)
+  var W=360,H=220,pl=30,pr=12,pt=30,pb=28, mxh=0; for(var hh=6;hh<22;hh++) mxh=Math.max(mxh,i1.hr[hh],i2.hr[hh]); mxh=Math.ceil(mxh/1000)*1000||1000;
+  var X=function(h){ return pl+(h-6)/15*(W-pl-pr); }, Y=function(v){ return H-pb-(H-pb-pt)*v/mxh; };
+  var pts=function(i){ var a=[]; for(var k=6;k<22;k++) a.push([X(k),Y(i.hr[k])]); return a; };
+  var P1=pts(i1),P2=pts(i2), d1s=paxSmooth(P1), d2s=paxSmooth(P2);
+  var ar=function(P,d,c,id){ return '<defs><linearGradient id="'+id+'" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="'+c+'" stop-opacity=".35"/><stop offset="1" stop-color="'+c+'" stop-opacity="0"/></linearGradient></defs><path d="'+d+' L'+P[P.length-1][0].toFixed(1)+','+(H-pb)+' L'+P[0][0].toFixed(1)+','+(H-pb)+' Z" fill="url(#'+id+')"/><path d="'+d+'" fill="none" stroke="'+c+'" stroke-width="3.2" stroke-linecap="round"/>'; };
+  var sg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block" role="img" aria-label="시간대별 여객 흐름 T1 T2 비교">';
+  for(var gi=0;gi<=4;gi++){ var gv=mxh*gi/4, gy=Y(gv); sg+='<line x1="'+pl+'" x2="'+(W-pr)+'" y1="'+gy.toFixed(1)+'" y2="'+gy.toFixed(1)+'" stroke="#E4EAF0" stroke-width="1"/><text x="'+(pl-5)+'" y="'+(gy+4).toFixed(1)+'" text-anchor="end" font-size="10.5" font-weight="700" fill="#7A8B9A">'+Math.round(gv/1000)+'</text>'; }
+  [6,8,10,12,14,16,18].forEach(function(h){ sg+='<text x="'+X(h).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11.5" font-weight="800" fill="#4A5F72">'+h+'시</text>'; });
+  sg+='<text x="'+X(21).toFixed(1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11.5" font-weight="800" fill="#4A5F72">22시</text>';sg+=ar(P2,d2s,C2,'gA2')+ar(P1,d1s,C1,'gA1');
+  var pkm=function(i,pk,c,below){ var x=X(pk),y=Y(i.hr[pk]),ty=below?y+22:y-12; return '<circle cx="'+x.toFixed(1)+'" cy="'+y.toFixed(1)+'" r="5.5" fill="#fff" stroke="'+c+'" stroke-width="3"/><text x="'+Math.min(W-30,Math.max(34,x)).toFixed(1)+'" y="'+ty.toFixed(1)+'" text-anchor="middle" font-size="13" font-weight="900" fill="'+c+'" stroke="#fff" stroke-width="4" paint-order="stroke">'+i.k+' '+f1(i.hr[pk])+'</text>'; };
+  var pk1=6,pk2=6; for(hh=6;hh<22;hh++){ if(i1.hr[hh]>i1.hr[pk1]) pk1=hh; if(i2.hr[hh]>i2.hr[pk2]) pk2=hh; }
+  sg+=pkm(i1,pk1,C1,false)+pkm(i2,pk2,C2,true)+'</svg>';
+  var dmax=6,dv=0; for(hh=6;hh<22;hh++){ var dd=Math.abs(i1.hr[hh]-i2.hr[hh]); if(dd>dv){ dv=dd; dmax=hh; } }
+  h+='<div style="'+card+'"><div style="'+ttl+'">시간대별 여객 흐름</div><div style="'+cap+'">근무 시간(6~22시) 일평균 · 세로축 단위: 천 명</div>'+sg
+    +'<div style="display:flex;gap:14px;margin:4px 2px 10px;font-size:14px;font-weight:900"><span style="color:'+C1+'">● T1</span><span style="color:'+C2+'">● T2</span></div>'
+    +'<div style="display:flex;gap:8px"><div style="flex:1;padding:10px 6px;border-radius:14px;background:'+C1+'18;text-align:center"><div style="font-size:12.5px;font-weight:800;color:'+C1+'">T1 가장 붐빔</div><div style="font-size:19px;font-weight:900;color:#1B2A38">'+pk1+'~'+(pk1+1)+'시</div></div><div style="flex:1;padding:10px 6px;border-radius:14px;background:'+C2+'18;text-align:center"><div style="font-size:12.5px;font-weight:800;color:'+C2+'">T2 가장 붐빔</div><div style="font-size:19px;font-weight:900;color:#1B2A38">'+pk2+'~'+(pk2+1)+'시</div></div><div style="flex:1;padding:10px 6px;border-radius:14px;background:#F3F7FA;text-align:center"><div style="font-size:12.5px;font-weight:800;color:#4A5F72">격차 최대</div><div style="font-size:19px;font-weight:900;color:#1B2A38">'+dmax+'~'+(dmax+1)+'시</div></div></div></div>';
   // ③ 시간대 4구간 비교
   var bl=function(S,ds){ return PX_BLOCKS.map(function(b){ var t=0; ds.forEach(function(d){ for(var k=b.a;k<b.b;k++) t+=S[d][k][0]+S[d][k][1]; }); return t/ds.length; }); };
-  var b1=bl(S1,d1),b2=bl(S2,d2),bm=Math.max.apply(null,b1.concat(b2))||1;
-  h+='<div style="'+card+'"><div style="'+ttl+'">시간대별 구간 비교</div><div style="'+cap+'">청결예보 시간대 기준 일평균 (단위: 만 명)</div>';
-  PX_BLOCKS.forEach(function(b,i){ var row=function(v,c,nm){ return '<div style="display:flex;align-items:center;gap:8px;margin-top:5px"><span style="width:20px;font-size:12px;font-weight:800;color:'+c+'">'+nm+'</span><div style="flex:1;height:16px;background:#EEF2F6;border-radius:8px;overflow:hidden"><div style="width:'+(v/bm*100).toFixed(1)+'%;height:100%;background:'+c+';border-radius:8px"></div></div><b style="width:42px;text-align:right;font-size:13px;color:#1B2A38">'+(v/10000).toFixed(1)+'</b></div>'; };
-    h+='<div style="margin-top:'+(i?12:4)+'px"><div style="font-size:14px;font-weight:900;color:#1B2A38">'+b.a+'~'+b.b+'시</div>'+row(b1[i],PX_COL.T1,'제1')+row(b2[i],PX_COL.T2,'제2')+'</div>'; });
-  h+='</div>';
+  var b1=bl(S1,d1),b2=bl(S2,d2);
+  h+='<div style="'+card+'"><div style="'+ttl+'">시간대별 구간 비교</div><div style="'+cap+'">청결예보 시간대 기준 일평균 (단위: 만 명)</div>'+tug(PX_BLOCKS.map(function(b,i){ return {l:b.a+'~'+b.b+'시',sub:b.shift,a:b1[i],b:b2[i],big:1}; }),man,44)+legend+'</div>';
   // ④ 요일별 비교
   var wk=function(S,ds){ return [1,2,3,4,5,6,0].map(function(w){ var a=ds.filter(function(d){return PX.wd(d)===w;}); return a.length?a.reduce(function(s,d){return s+PX.dayTotal(S,d);},0)/a.length:null; }); };
-  var w1=wk(S1,d1),w2=wk(S2,d2),wm=Math.max.apply(null,w1.concat(w2).map(function(x){return x||0;}))||1;
-  var W2=340,H2=210,B2=34,T2=26,gw=(W2-16)/7,bw=(gw-8)/2,Yb=function(v){return H2-B2-(H2-B2-T2)*v/(wm*1.04);},s3='<svg viewBox="0 0 '+W2+' '+H2+'" style="width:100%;display:block" role="img" aria-label="요일별 여객 비교">';
-  [1,2,3,4,5,6,0].forEach(function(w,k){ var x0=8+k*gw;
-    if(w1[k]===null&&w2[k]===null) s3+='<text x="'+(x0+gw/2).toFixed(1)+'" y="'+(H2-B2-10)+'" text-anchor="middle" font-size="9.5" font-weight="700" fill="#A4B3C0">자료 없음</text>';
-    [[w1[k],PX_COL.T1,0],[w2[k],PX_COL.T2,1]].forEach(function(p){ if(p[0]===null) return; var yy=Yb(p[0]), bx=x0+4+p[2]*bw; s3+='<rect x="'+bx.toFixed(1)+'" y="'+yy.toFixed(1)+'" width="'+bw.toFixed(1)+'" height="'+(H2-B2-yy).toFixed(1)+'" rx="5" fill="'+p[1]+'"/><text x="'+(bx+bw/2).toFixed(1)+'" y="'+(yy-5).toFixed(1)+'" text-anchor="middle" font-size="9.5" font-weight="800" fill="#1B2A38">'+(p[0]/10000).toFixed(1)+'</text>'; });
-    s3+='<text x="'+(x0+gw/2).toFixed(1)+'" y="'+(H2-10)+'" text-anchor="middle" font-size="16" font-weight="900" fill="'+(w===0?'#C0504D':(w===6?'#2F7FB8':'#1B2A38'))+'">'+PX_WD[w]+'</text>'; });
-  s3+='</svg>';
-  h+='<div style="'+card+'"><div style="'+ttl+'">요일별 평균 비교</div><div style="'+cap+'">요일별 일평균 (단위: 만 명)</div>'+s3+'<div style="display:flex;gap:16px;font-size:13.5px;color:#33475A;font-weight:700;margin:6px 4px 0"><span><i style="display:inline-block;width:13px;height:13px;border-radius:4px;background:'+PX_COL.T1+';margin-right:5px;vertical-align:-2px"></i>제1</span><span><i style="display:inline-block;width:13px;height:13px;border-radius:4px;background:'+PX_COL.T2+';margin-right:5px;vertical-align:-2px"></i>제2</span></div></div>';
-  h+='<div class="pax-wide" style="padding:13px 14px;background:#EEF3F7;border-radius:14px;font-size:14px;line-height:1.7;color:#33475A;margin-bottom:6px">※ 인천공항 <b>공항 예상 혼잡도</b> 예상 인원 기준이며 실제와 다를 수 있음. 각 사업부 청결예보는 자기 터미널 여객으로 보정됩니다(부대건물은 제1+제2 합산).</div>';
+  var wa1=wk(S1,d1),wa2=wk(S2,d2);
+  h+='<div style="'+card+'"><div style="'+ttl+'">요일별 평균 비교</div><div style="'+cap+'">요일별 일평균 (단위: 만 명)</div>'+tug([1,2,3,4,5,6,0].map(function(w,k){ return {l:PX_WD[w],a:wa1[k],b:wa2[k],big:1}; }),man,38)+legend+'</div>';
+  h+='<div class="pax-wide" style="padding:13px 14px;background:#EEF3F7;border-radius:14px;font-size:14px;line-height:1.7;color:#33475A;margin-bottom:6px">※ 인천공항 <b>공항 예상 혼잡도</b> 예상 인원 기준이며 실제와 다를 수 있음. 각 사업부 청결예보는 자기 터미널 여객으로 보정됩니다(부대건물은 T1+T2 합산).</div>';
   el.innerHTML=h;
 };
 /* ── 보기 전환: 비교 / 제1 / 제2 ── */
@@ -49998,7 +49999,7 @@ function pkTermHtml(tab,pcv){
 }
 function pkRender(){
   var el=document.getElementById('congBody'); if(!el) return;
-  var _sm=document.querySelector('#sCong .pg-hd small'); if(_sm) _sm.textContent='인천공항 제1·제2여객터미널 주차장 실시간 현황';
+  var _sm=document.querySelector('#sCong .pg-hd small'); if(_sm) _sm.textContent='인천공항 T1·T2 주차장 실시간 현황';
   if(!PK.rows.length){ el.innerHTML=cgModeTabs()+'<div style="text-align:center;padding:30px;color:var(--g4);font-size:16px">주차 데이터가 없습니다</div>'; return; }
   var tab=PK.tab, pc=window.innerWidth>=1100, h='';
   var tabsH='<div style="display:flex;gap:8px;margin-bottom:12px">'+['T1','T2'].map(function(t){ var on=t===tab; return '<button onclick="pkTab(\''+t+'\')" style="flex:1;padding:15px 6px;border:none;border-radius:14px;font-size:18px;font-weight:900;cursor:pointer;border:1.5px solid '+(on?'var(--teal)':'var(--g2)')+';background:'+(on?'var(--teal-bg)':'var(--g0)')+';color:'+(on?'var(--teal2)':'var(--g4)')+'">제'+(t==='T1'?'1':'2')+'여객터미널</button>'; }).join('')+'</div>';
@@ -50307,7 +50308,7 @@ var CG_STD={pm10:100,pm25:50,co2:1000,co:10,no2:0.1};
 function cgAirLv(p){ return p<80?['양호','#3F8F67','#EAF6EF','#6CC59B']:(p<100?['주의','#C98036','#FFF4E2','#F2C14E']:['초과','#C95F58','#FDEDEB','#E36C6C']); }
 function cgAirHtml(){
   if(!CG.air.length) return '<div style="text-align:center;padding:30px;color:var(--g4);font-size:16px">공기질 데이터가 없습니다</div>';
-  var order={'T1':0,'T2':1}, NM={'T1':'제1여객터미널','T2':'제2여객터미널'}, rows=CG.air.slice().sort(function(a,b){ return (order[a.terminal]!=null?order[a.terminal]:9)-(order[b.terminal]!=null?order[b.terminal]:9); });
+  var order={'T1':0,'T2':1}, NM={'T1':'T1','T2':'T2'}, rows=CG.air.slice().sort(function(a,b){ return (order[a.terminal]!=null?order[a.terminal]:9)-(order[b.terminal]!=null?order[b.terminal]:9); });
   var SC=120;
   var h='<div style="font-size:13.5px;color:var(--g5);font-weight:700;margin:0 2px 10px">'+cgHM(rows[0].rtime)+' 측정 · 시간당 1회 갱신</div><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px">';
   rows.forEach(function(a){
@@ -50333,7 +50334,7 @@ function cgRender(){
   if(CG.mode==='park'){ pkRender(); return; }
   var h1=document.querySelector('#sCong .pg-hd h1'), sm=document.querySelector('#sCong .pg-hd small');
   if(h1) h1.textContent='터미널 실시간 현황';
-  if(sm) sm.textContent=CG.mode==='arr'?'인천공항 제1·제2여객터미널 입국심사 대기 현황':(CG.mode==='air'?'인천공항 여객터미널·탑승동 실내 공기질':'인천공항 제1·제2여객터미널 출국장 대기 현황');
+  if(sm) sm.textContent=CG.mode==='arr'?'인천공항 T1·T2 입국심사 대기 현황':(CG.mode==='air'?'인천공항 여객터미널·탑승동 실내 공기질':'인천공항 제1·제2여객터미널 출국장 대기 현황');
   if(CG.mode==='dep'){ cgRenderDep(); el.insertAdjacentHTML('afterbegin',cgModeTabs()); return; }
   var h=cgModeTabs();
   if(CG.mode==='arr'){ h+=cgTermTabs()+cgArrHtml(); }
@@ -50861,7 +50862,7 @@ function txShTermOf(r,ix){
 function txShTerm(t){ TX_TM=(t==='T2'?'T2':'T1'); try{ localStorage.setItem('tx_shterm',TX_TM); }catch(e){} TX.shRoute=TX_ORD[TX_TM][0]; TX.shopen=null; txRender(); }
 function txShTermBar(){
   var b=function(t,sub){ var on=TX_TM===t; return '<div onclick="txShTerm(\''+t+'\')" style="flex:1;cursor:pointer;text-align:center;padding:10px 6px;border-radius:14px;border:2px solid '+(on?'var(--teal2)':'var(--g2)')+';background:'+(on?'var(--teal2)':'#fff')+';color:'+(on?'#fff':'var(--g5)')+'"><div style="font-size:19px;font-weight:900;line-height:1.1">'+t+'</div><div style="font-size:12px;font-weight:700;opacity:.9;margin-top:2px">'+sub+'</div></div>'; };
-  return '<div style="display:flex;gap:8px;margin:0 0 10px">'+b('T1','제1여객터미널')+b('T2','제2여객터미널')+'</div>';
+  return '<div style="display:flex;gap:8px;margin:0 0 10px">'+b('T1','T1')+b('T2','T2')+'</div>';
 }
 var TX_SH={
 '01':{n:TX_RN['01'],r:'제1여객터미널 ↔ 1터미널 장기주차장',t:'04:30~24:00',g:'8~16분',w:'왕복 약 16분',s:['제1여객터미널 1층 3C (3번 출입구 길 건너)','제1여객터미널 1층 13C (13번 출입구 길 건너)','장기탑승장 1','장기탑승장 2','장기탑승장 3','장기탑승장 4','장기탑승장 5','장기탑승장 6','장기탑승장 7']},

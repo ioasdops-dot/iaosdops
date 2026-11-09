@@ -3254,6 +3254,22 @@ function pkGroup(pr){
 function lastRows(rows){ var l=rows.length?rows[0].fetched_at:null; return rows.filter(function(r){return r.fetched_at===l;}); }
 function fetchPk(){ return sb.from('fc_parking_log').select('floor,parking,area,fetched_at').order('fetched_at',{ascending:false}).limit(19).then(function(r){return lastRows((r&&r.data)||[]);}); }
 function fetchDc(){ var cut=new Date(Date.now()-30*60000).toISOString(); return sb.from('fc_depcong_log').select('terminal,gate,wait_min,wait_len,is_open,fetched_at').gte('fetched_at',cut).order('fetched_at',{ascending:false}).limit(60).then(function(r){return lastRows((r&&r.data)||[]);}); }
+function fetchArr(){ return sb.from('fc_arrcong_log').select('terminal,gate,ko,fo,flights,fetched_at').order('fetched_at',{ascending:false}).limit(24).then(function(r){return lastRows((r&&r.data)||[]);},function(){return [];}); }
+function fetchAirq(){ return sb.from('fc_airq_log').select('terminal,rtime,co2,pm10,pm25,co,no2').order('rtime',{ascending:false}).limit(12).then(function(r){var seen={};return ((r&&r.data)||[]).filter(function(x){if(seen[x.terminal])return false;seen[x.terminal]=1;return true;});},function(){return [];}); }
+function arrGroup(rows){
+  var t={T1:{ko:0,fo:0,mx:0,mg:'',at:null,n:0},T2:{ko:0,fo:0,mx:0,mg:'',at:null,n:0}};
+  (rows||[]).forEach(function(r){var o=t[r.terminal==='T2'?'T2':'T1'];o.n++;o.at=r.fetched_at;o.ko+=r.ko||0;o.fo+=r.fo||0;var v=(r.ko||0)+(r.fo||0);if(v>o.mx){o.mx=v;o.mg=r.gate;}});
+  return t;
+}
+var AQ_STD={pm10:100,pm25:50,co2:1000,co:10,no2:0.1};
+function aqLv(p){return p<80?['양호','#3F8F67']:(p<100?['주의','#C98036']:['초과','#C95F58']);}
+function aqWorst(a){var it=[['PM10',a.pm10,AQ_STD.pm10],['PM2.5',a.pm25,AQ_STD.pm25],['CO₂',a.co2,AQ_STD.co2],['CO',a.co,AQ_STD.co],['NO₂',a.no2,AQ_STD.no2]],w=0,n='';it.forEach(function(x){if(x[1]!=null){var p=x[1]/x[2]*100;if(p>w){w=p;n=x[0];}}});return {p:w,n:n};}
+function hmK(iso){var k=new Date(new Date(iso).getTime()+9*3600*1000);return String(k.getUTCHours()).padStart(2,'0')+':'+String(k.getUTCMinutes()).padStart(2,'0');}
+function arrMini(ar,aq){
+  var arrM=['T1','T2'].map(function(t){var o=ar[t];if(!o.n)return '<div class="nw-ap"><b>'+t+' 입국장</b><span class="nw-gr">자료 없음</span></div>';var tot=o.ko+o.fo;return '<div class="nw-ap"><b>'+t+' 입국심사 대기</b><div class="nw-dcb"><em style="color:#4B83B5">'+n0(tot)+'<small>명</small></em><span>내 '+n0(o.ko)+' · 외 '+n0(o.fo)+(o.mg?' · 최다 '+esc(o.mg)+'구역':'')+'</span></div></div>';}).join('');
+  var aqM=['T1','T2'].map(function(t){var a=(aq||[]).filter(function(x){return x.terminal===t;})[0];if(!a)return '<div class="nw-ap"><b>'+t+' 공기질</b><span class="nw-gr">자료 없음</span></div>';var w=aqWorst(a),L=aqLv(w.p);return '<div class="nw-ap"><b>'+t+' 공기질</b><div class="nw-dcb"><em style="color:'+L[1]+'">'+L[0]+'</em><span>최고 '+w.n+' · 기준의 '+Math.round(w.p)+'%</span></div><div class="nw-pb"><i style="width:'+Math.min(w.p,100)+'%;background:'+L[1]+'"></i></div></div>';}).join('');
+  return '<div class="nw-aps">'+arrM+'</div><div class="nw-aps">'+aqM+'</div>';
+}
 function dcGroup(dc){
   var t={T1:{gates:[],n:0,s:0,mx:0,len:0},T2:{gates:[],n:0,s:0,mx:0,len:0}};
   dc.forEach(function(r){var o=t[r.terminal==='T2'?'T2':'T1'];o.gates.push(r);if(!r.is_open)return;o.n++;o.s+=r.wait_min;o.mx=Math.max(o.mx,r.wait_min);o.len+=r.wait_len;});
@@ -3276,11 +3292,12 @@ function loadNow(){
 function loadNowLive(){
   var w=wday(),y=nwYest(),t=ymd(w.y,w.m,w.d),yy=ymd(y.y,y.m,y.d);
   var edu=function(a){return rpc('group_edu_staff',{p_from:a,p_to:a}).then(function(ex){return (ex||[]).map(function(r){return {division_id:r.division_id,metric:'edu',k:'',v:r.v};});},function(){return [];});};
-  return Promise.all([rpc('group_dashboard',{p_from:t,p_to:t}),rpc('group_dashboard',{p_from:yy,p_to:yy}),edu(t),edu(yy),fetchPk().catch(function(){return [];}),fetchDc().catch(function(){return [];})]).then(function(a){
-    renderNowLive((a[0]||[]).concat(a[2]),(a[1]||[]).concat(a[3]),pkGroup(a[4]),dcGroup(a[5]),a[4].length?a[4][0].fetched_at:null);
+  return Promise.all([rpc('group_dashboard',{p_from:t,p_to:t}),rpc('group_dashboard',{p_from:yy,p_to:yy}),edu(t),edu(yy),fetchPk().catch(function(){return [];}),fetchDc().catch(function(){return [];}),fetchArr(),fetchAirq()]).then(function(a){
+    renderNowLive((a[0]||[]).concat(a[2]),(a[1]||[]).concat(a[3]),pkGroup(a[4]),dcGroup(a[5]),a[4].length?a[4][0].fetched_at:null,arrGroup(a[6]),a[7]);
   });
 }
-function renderNowLive(rt,ry,pk,dc,pkAt){
+function renderNowLive(rt,ry,pk,dc,pkAt,ar,aq){
+  ar=ar||arrGroup([]); aq=aq||[];
   var el=$('nowBody'); if(!el) return;
   if(!divs.length){el.innerHTML='<div class="card empty">등록된 사업부가 없어요.</div>';return;}
   var rg={avg:false}, T=dashCalc(rt,rg), Y=dashCalc(ry,rg);
@@ -3322,7 +3339,7 @@ function renderNowLive(rt,ry,pk,dc,pkAt){
   var pc=function(t,k){var o=(pk.g[t]||{})[k];return o&&o.a?Math.round(o.p/o.a*100):null;};
   var parkMini=['T1','T2'].map(function(t){return '<div class="nw-ap"><b>'+t+' 주차 점유</b><div class="nw-mr">'+['단기','장기','예약'].map(function(k){var v=pc(t,k);if(v==null)return '';return (window.innerWidth<600)?'<div class="nw-pr2"><span>'+k+'</span><div class="nw-pb"><i style="width:'+Math.min(v,100)+'%;background:'+pkCol(v)+'"></i></div><b style="color:'+pkCol(v)+'">'+v+'%</b></div>':'<div>'+nwRing(v,pkCol(v),74,9,v+'%','')+'<small>'+k+'</small></div>';}).join('')+'</div></div>';}).join('');
   var dcMini=['T1','T2'].map(function(t){var o=dc[t];if(!o.n)return '<div class="nw-ap"><b>'+t+' 출국장</b><span class="nw-gr">운영 중인 출국장 없음</span></div>';var a=o.s/o.n,lv=cgLv(a);return '<div class="nw-ap"><b>'+t+' 출국장</b><div class="nw-dcb"><em style="color:'+lv[0]+'">'+a.toFixed(1)+'<small>분</small></em><span>평균 대기 · 최대 '+Math.round(o.mx)+'분</span></div><div class="nw-pb"><i style="width:'+Math.min(a/30*100,100)+'%;background:'+lv[0]+'"></i></div><strong style="color:'+lv[0]+'">'+lv[1]+'</strong></div>';}).join('');
-  var air='<div class="nw-c nw-air"><h3>공항 현황 <small>T1 · T2 비교'+(pkAt?' · '+fmtT(pkAt):'')+'</small></h3><div class="nw-aps">'+dcMini+'</div><div class="nw-aps">'+parkMini+'</div><div class="nw-lk"><button type="button" data-go="pk">🅿️ 주차 현황 ›</button><button type="button" data-go="dc">🛃 출국장 혼잡도 ›</button><button type="button" data-go="tr">🚆 교통정보 ›</button><button type="button" data-go="px">🛫 여객 ›</button></div></div>';
+  var air='<div class="nw-c nw-air"><h3>공항 현황 <small>T1 · T2 비교'+(pkAt?' · '+fmtT(pkAt):'')+'</small></h3><div class="nw-aps">'+dcMini+'</div><div class="nw-aps">'+parkMini+'</div>'+arrMini(ar,aq)+'<div class="nw-lk"><button type="button" data-go="pk">🅿️ 주차 현황 ›</button><button type="button" data-go="dc">🛃 출국장 혼잡도 ›</button><button type="button" data-go="tr">🚆 교통정보 ›</button><button type="button" data-go="px">🛫 여객 ›</button></div></div>';
   el.innerHTML=sel+hero+'<div class="nw-g2">'+staffC+procC+'</div>'+cards+tbl+air+'<div class="note">▼ 전일보다 감소 · ▲ 증가 · – 동일 · 근무율 = 근무인원 ÷ 정원 · 기간별 비교는 「기간 분석」 탭</div>';
   el.querySelectorAll('[data-nsel]').forEach(function(b){b.onclick=function(){NOW.sel=b.dataset.nsel;loadNowLive().catch(function(){});};});
   el.querySelectorAll('[data-go]').forEach(function(b){b.onclick=function(){showTab(b.dataset.go);};});
@@ -3491,11 +3508,36 @@ function cgBoard(term){
   h+='<div style="display:flex;flex-wrap:wrap;gap:2px 10px;justify-content:center;font-size:12.5px;font-weight:800;margin-top:9px"><span style="color:#3F8F67">● 원활 ~10분</span><span style="color:#4B83B5">● 보통 ~20분</span><span style="color:#C98036">● 혼잡 ~30분</span><span style="color:#C95F58">● 매우 혼잡 31분~</span><span style="color:#51708C">· 사람 1명 ≈ '+unit+'명</span></div></div>';
   return h;
 }
+
+function dcArrAirHtml(ar,aq,fl,sg){
+  var surge='';
+  if(sg&&sg.cur!=null&&sg.base!=null&&sg.days>=7){var ratio=sg.cur/Math.max(1,sg.base);if(ratio>=1.5&&sg.cur-sg.base>=300)surge='<div class="note" style="background:#FFF4E2;color:#C98036;font-weight:800">🛬 T1 입국장 대기 '+n0(sg.cur)+'명 — 같은 시간대 평균('+n0(sg.base)+'명)보다 '+Math.round((ratio-1)*100)+'% 많음</div>';}
+  var col=function(t){
+    var o=ar[t];if(!o.n)return '<div class="card"><h3>🛬 '+t+' 입국장</h3><div class="empty">자료 없음</div></div>';
+    var tot=o.ko+o.fo,kp=tot?Math.round(o.ko/tot*100):0;
+    var f=fl.filter(function(x){return x.terminal===t&&(x.ko+x.fo)>0;}).sort(function(a,b){return (b.ko+b.fo)-(a.ko+a.fo);}).slice(0,5);
+    return '<div class="card"><h3>🛬 '+t+' 입국장 <small>'+hmK(o.at)+'</small></h3><div style="font-size:34px;font-weight:900;color:#1B3A6B">'+n0(tot)+'<small style="font-size:15px">명</small></div>'
+     +'<div style="display:flex;height:12px;border-radius:7px;overflow:hidden;margin:8px 0;background:#E7ECF0"><i style="width:'+kp+'%;background:#3CC3B0"></i><i style="flex:1;background:#6B8FD6"></i></div>'
+     +'<div style="font-size:13px;font-weight:700;color:var(--mut)">내국인 '+n0(o.ko)+' · 외국인 '+n0(o.fo)+(o.mg?' · 최다 '+esc(o.mg)+'구역 '+n0(o.mx)+'명':'')+'</div>'
+     +(f.length?'<div style="margin-top:8px">'+f.map(function(x,i){return '<div style="display:flex;justify-content:space-between;padding:6px 0;'+(i?'border-top:1px solid var(--line);':'')+'font-size:13.5px"><span><b>'+esc(x.flight_id)+'</b> <small style="color:var(--mut)">'+esc(x.airport||'')+'발 '+hmK(x.est_time)+'</small></span><b>'+(x.ko+x.fo)+'명</b></div>';}).join('')+'</div>':'')+'</div>';
+  };
+  var aqc=function(t){
+    var a=aq.filter(function(x){return x.terminal===t;})[0];if(!a)return '<div class="card"><h3>🌬 '+t+' 공기질</h3><div class="empty">자료 없음</div></div>';
+    var w=aqWorst(a),L=aqLv(w.p);
+    var it=[['미세먼지 PM10',a.pm10,'㎍/㎥',AQ_STD.pm10],['초미세먼지 PM2.5',a.pm25,'㎍/㎥',AQ_STD.pm25],['이산화탄소 CO₂',a.co2,'ppm',AQ_STD.co2],['일산화탄소 CO',a.co,'ppm',AQ_STD.co],['이산화질소 NO₂',a.no2,'ppm',AQ_STD.no2]];
+    return '<div class="card"><h3>🌬 '+t+' 공기질 <small>'+hmK(a.rtime)+' 측정</small></h3><div style="font-size:26px;font-weight:900;color:'+L[1]+'">'+L[0]+' <small style="font-size:13px">최고 '+w.n+' · 기준의 '+Math.round(w.p)+'%</small></div>'
+     +it.map(function(x){var p=x[1]!=null?x[1]/x[3]*100:0,l=aqLv(p);return '<div style="margin-top:8px"><div style="display:flex;justify-content:space-between;font-size:13px;font-weight:700"><span>'+x[0]+'</span><span style="color:'+l[1]+'">'+(x[1]!=null?x[1]:'-')+' '+x[2]+' · '+l[0]+'</span></div><div class="nw-pb"><i style="width:'+Math.min(p,100)+'%;background:'+l[1]+'"></i></div></div>';}).join('')+'</div>';
+  };
+  return surge+'<div class="dc-2">'+col('T1')+col('T2')+'</div><div class="dc-2">'+aqc('T1')+aqc('T2')+'</div><div class="note">공기질 기준: PM10 100 · PM2.5 50 · CO₂ 1000 · CO 10 · NO₂ 0.1(권고) — 80% 미만 양호 · 100% 미만 주의 · 이상 초과</div>';
+}
 function loadDc(){
   var kst=new Date(Date.now()+9*3600*1000), d0=new Date(Date.UTC(kst.getUTCFullYear(),kst.getUTCMonth(),kst.getUTCDate())-9*3600*1000);
   return Promise.all([
     sb.from('fc_depcong_log').select('terminal,gate,wait_min,wait_len,op_time,is_open,fetched_at').order('fetched_at',{ascending:false}).limit(40),
-    sb.rpc('fc_depcong_trend',{p_from:d0.toISOString()})
+    sb.rpc('fc_depcong_trend',{p_from:d0.toISOString()}),
+    fetchArr(), fetchAirq(),
+    sb.from('fc_arr_flights').select('terminal,flight_id,est_time,airport,ko,fo').limit(300).then(function(r){return (r&&r.data)||[];},function(){return [];}),
+    sb.rpc('fc_arr_surge').then(function(r){return r&&r.data;},function(){return null;})
   ]).then(function(rs){
     var el=$('p-dc'), all=(rs[0]&&rs[0].data)||[];
     if(!all.length){el.innerHTML='<div class="card empty">출국장 혼잡도 자료가 아직 없어요.<br><small>SQL 63번을 실행했는지 확인해 주세요.</small></div>';return;}
@@ -3505,6 +3547,7 @@ function loadDc(){
       return '<div class="dcs"><b>'+t+'</b><div class="dcs-n" style="color:'+lv[0]+'">'+(o.n?a:'–')+'<small>분</small></div><span class="dcs-l" style="background:'+lv[0]+'">'+(o.n?lv[2]:'미운영')+'</span><div class="dcs-r"><span>전체 대기 <em>'+n0(o.len)+'명</em></span><span>가장 긴 대기 <em>'+Math.round(o.mx)+'분</em></span><span>운영 중 <em>'+o.n+'/'+o.gates.length+'곳</em></span></div></div>';}).join('');
     var col=function(t){return '<div class="dc-col"><div class="dc-ttl">'+(t==='T1'?'제1여객터미널':'제2여객터미널')+' <small>'+fmtT(at)+'</small></div>'+cgBoard(t)+'<div class="dc-sub">오늘 시간대별 <small>3시간 단위</small></div><div class="dc-trend">'+cgTrendTable(t)+'</div></div>';};
     el.innerHTML='<div class="card"><h3>🛃 출국장 혼잡도 비교 <small>'+fmtT(at)+'</small></h3><div class="dcs-2">'+sumc+'</div></div><div class="dc-2">'+col('T1')+col('T2')+'</div><div class="note">원활 ~10분 · 보통 ~20분 · 혼잡 ~30분 · 매우 혼잡 31분~ · 출처: 공공데이터포털 · 인천국제공항공사 출국장 혼잡도 (10분마다 자동 수집)</div>';
+    el.insertAdjacentHTML('beforeend',dcArrAirHtml(arrGroup(rs[2]),rs[3]||[],rs[4]||[],rs[5]));
   });
 }
 

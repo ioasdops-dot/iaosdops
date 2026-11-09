@@ -410,7 +410,7 @@ function topsZoneKey(team,key){
 }
 function topsApplyAssign(rows,D){
   S.topsN=0;
-  (rows||[]).forEach(function(r){ var a=r.assign; if(!a||typeof a!=='object') return;
+  (rows||[]).forEach(function(r){ var a=r.assign; if(!a||typeof a!=='object') return; if(!shInBase(r.shift||'')) return;
     Object.keys(a).forEach(function(k){ var zk=topsZoneKey(r.team_code,k); if(!zk) return;
       (a[k]||[]).forEach(function(id){ if(!S.byNo[id]||S.checkin[id]) return;
         S.checkin[id]={work_date:D,emp_no:id,status:'출근',zone_key:zk,zone_team:r.team_code,support_from:null,checked_by:'DopS 배치',checked_at:null,tops:true}; S.topsN++; }); }); });

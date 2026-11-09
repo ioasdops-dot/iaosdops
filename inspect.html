@@ -239,6 +239,94 @@ textarea:focus{border-color:var(--sky)}
   .wrap{max-width:1100px}
 }
 </style>
+<style id="ui2">
+/* ═══ UI2 (2026-11-06): 큰 글자·큰 버튼·한 화면에 핵심만 — 기능은 그대로 ═══ */
+/* 홈 */
+.hm-hero{background:linear-gradient(135deg,#2E4A6B,#4A6B94);color:#fff;border-radius:20px;padding:16px 16px 15px;box-shadow:0 6px 16px rgba(46,74,107,.25)}
+.hm-h1{font-size:13.5px;font-weight:700;color:#D6E2F7}
+.hm-h2{font-size:21px;font-weight:900;margin:3px 0 10px;letter-spacing:-.3px}
+.hm-bar{height:10px;border-radius:99px;background:rgba(255,255,255,.22);overflow:hidden}.hm-bar i{display:block;height:100%;background:#5EEAD4;border-radius:99px;transition:width .4s}
+.hm-h3{font-size:13px;color:#D6E2F7;margin-top:6px;font-weight:700}
+.hm-hbtn{display:block;width:100%;margin-top:12px;background:#fff;color:#2E4A6B;border:0;border-radius:14px;padding:14px;font-size:16.5px;font-weight:900;cursor:pointer}
+.hm-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+.hm-c{background:#fff;border:1.5px solid var(--g2);border-radius:18px;padding:14px 4px 11px;text-align:center;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:6px}
+.hm-c:active{transform:scale(.97)}
+.hm-ic{width:46px;height:46px;border-radius:14px;background:#E6F3F0;color:#0F766E;display:flex;align-items:center;justify-content:center}
+.hm-ic svg,.hm-ric svg{width:27px;height:27px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.hm-c b{font-size:15px;font-weight:800;color:#2E4A6B;line-height:1.2}
+.hm-c small .mod-cnt{margin:0;font-size:11.5px;padding:2px 9px;display:inline-block}
+.hm-list{background:#fff;border:1.5px solid var(--g2);border-radius:18px;overflow:hidden}
+.hm-r{display:flex;align-items:center;gap:12px;width:100%;padding:13px 14px;background:none;border:0;border-top:1px solid #F0F2F4;text-align:left;cursor:pointer}
+.hm-r:first-child{border-top:0}
+.hm-ric{width:42px;height:42px;border-radius:13px;background:#EAF0F7;color:#2E4A6B;display:flex;align-items:center;justify-content:center;flex:none}
+.hm-rt{flex:1;min-width:0}.hm-rt b{display:block;font-size:16.5px;font-weight:800;color:var(--g5)}.hm-rt small{display:block;font-size:12.5px;color:var(--g4);margin-top:2px}
+.hm-go{color:#94a3b8;font-size:24px;line-height:1;flex:none}
+/* 입력 화면 공통 */
+.sec-title{font-size:14px}
+.card{border-radius:18px;padding:14px;margin-bottom:12px}
+.f-label{font-size:13px;font-weight:800;color:#475569;margin:0 0 6px 2px}
+select,input[type=text],input[type=date]{padding:13px 14px;border-radius:14px;font-size:16px!important}
+.shift-seg{gap:8px}
+.seg-btn{padding:14px 0;border-radius:14px;font-size:16px;font-weight:800}
+.sub-back{font-size:14.5px;font-weight:800;padding:10px 15px;border-radius:12px;color:#2E4A6B}
+.tm-fold{background:#F1F5F9;border-radius:14px;padding:0 13px;margin-top:2px}
+.tm-fold summary{list-style:none;display:flex;justify-content:space-between;align-items:center;padding:13px 0;font-size:15px;font-weight:800;color:#475569;cursor:pointer}
+.tm-fold summary::-webkit-details-marker{display:none}
+.tm-fold summary em{font-style:normal;font-weight:600;color:#94a3b8}
+.tm-fold summary .tm-sum{font-size:14px;color:#2E4A6B}
+.tm-fold summary:after{content:'⌄';margin-left:8px;color:#94a3b8}
+.tm-fold[open] summary:after{content:'⌃'}
+.tm-fold .f-row{margin-bottom:12px}
+/* 점검항목: 항목 한 줄 + 큰 버튼 */
+#chkList .chk-row,#skChkList .chk-row{display:block;padding:14px 0}
+#chkList .chk-name,#skChkList .chk-name{font-size:16.5px;font-weight:800;margin-bottom:10px;line-height:1.35}
+#chkList .chk-btns,#skChkList .chk-btns{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:7px}
+#chkList .st-btn,#skChkList .st-btn{width:auto;height:58px;border-radius:14px;flex-direction:column;gap:1px;font-size:21px;line-height:1.1;border:1.5px solid #cbd5e1}
+#chkList .st-btn small,#skChkList .st-btn small{font-size:12.5px;font-weight:800}
+/* 화장실·게이트 선택 */
+#tRoomGrid{flex-direction:row!important;flex-wrap:wrap;gap:8px!important}
+#tRoomGrid .gate-chip{flex:1 1 29%;display:flex!important;flex-direction:column;align-items:center;justify-content:center!important;text-align:center!important;padding:12px 4px;border-radius:14px;font-size:16px;font-weight:800;color:#334155;min-width:96px}
+#tRoomGrid .gate-chip.on{background:#0F766E!important;border-color:#0F766E!important;color:#fff!important}
+#tRoomGrid .gate-chip span:last-child{font-size:12px!important;font-weight:700!important;margin-top:2px;color:#64748b}
+#tRoomGrid .gate-chip.on span:last-child{color:#E6F3F0}
+.gate-chip{padding:13px 4px;font-size:15px;font-weight:800;border-radius:14px}
+#pGateGrid{grid-template-columns:repeat(4,1fr)!important;gap:8px!important}
+.gate-chip.on{background:#0F766E;border-color:#0F766E}
+.sel-all{flex:none;border:1.5px solid #2E4A6B;background:#fff;color:#2E4A6B;font-size:13.5px;font-weight:800;border-radius:11px;padding:7px 12px;cursor:pointer}
+/* 저장 버튼 하단 고정 */
+.screen.on .save-btn{position:sticky;bottom:12px;z-index:20;padding:17px;font-size:18px;border-radius:16px;box-shadow:0 8px 20px rgba(46,74,107,.3)}
+#skDelBtn,#resetMenuBtn{position:static!important;box-shadow:none!important;font-size:15px!important;padding:13px!important}
+/* 흡연실 */
+#skAmRows input,#skPmRows input{padding:13px!important;font-size:16px!important;border-radius:13px!important}
+/* 장비 월 입력 */
+.em-sum{font-size:15px;font-weight:800;padding:13px 14px;border-radius:14px}
+.em-big{padding:17px;font-size:17px;border-radius:15px}
+.em-bar select{font-size:15px;padding:12px}
+.em-card{border-radius:18px;padding:14px}
+.em-name{font-size:17.5px}.em-sub{font-size:12.5px}.em-badge{font-size:13px}.em-progt{font-size:12.5px}
+.em-btn{padding:14px 4px;font-size:15px;border-radius:13px}
+/* 실시간 현황·출력 */
+.dash-btn{font-size:16px;padding:16px;border-radius:16px}
+
+@media (min-width:1100px){
+html body{background:#F4F6F9}
+body .wrap{max-width:1120px!important;padding:18px 24px 60px!important}
+#scrMain .hm-hero{display:grid;grid-template-columns:minmax(0,1fr) 300px;column-gap:28px;align-items:center;padding:18px 24px;border-radius:16px}
+#scrMain .hm-h1,#scrMain .hm-h2,#scrMain .hm-bar,#scrMain .hm-h3{grid-column:1}
+#scrMain .hm-h2{font-size:22px;margin:2px 0 10px}
+#scrMain .hm-hbtn{grid-column:2;grid-row:1/span 4;margin:0;align-self:center;font-size:16px;padding:16px}
+#scrMain .sec-title{font-size:14px;color:#64748B;margin:22px 0 8px!important}
+#scrMain .hm-grid{grid-template-columns:repeat(6,1fr)!important;gap:12px}
+#scrMain .hm-c{padding:16px 6px 13px;border-radius:14px;border:1px solid #E2E8F0}
+#scrMain .hm-c:hover,#scrMain .hm-r:hover{background:#F3F8FF}
+#scrMain .hm-c b{font-size:15px}
+#scrMain .hm-list{display:grid;grid-template-columns:repeat(3,1fr);border-radius:14px;border:1px solid #E2E8F0}
+#scrMain .hm-r{border-top:0;border-left:1px solid #EEF1F4;padding:14px 16px}
+#scrMain .hm-r:first-child{border-left:0}
+#scrMain .hm-rt b{font-size:15.5px}
+#scrMain #resetMenuBtn{margin-top:16px}
+}
+</style>
 <style id="noZoomFix">html,body,button,.st-btn,.chk-row,.chk-btns,.chip,.gate-chip,select,label{touch-action:manipulation;-webkit-tap-highlight-color:transparent}button,.st-btn{-webkit-user-select:none;user-select:none}input,select,textarea{font-size:16px!important}</style>
 </head>
 <body>
@@ -263,65 +351,29 @@ textarea:focus{border-color:var(--sky)}
 
   <!-- 메인 -->
   <div class="screen on" id="scrMain">
-    <div class="sec-title">점검 모듈</div>
-    <div class="mod-grid">
-      <button class="mod-card" onclick="openMod('toilet')">
-        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="7" cy="4.5" r="1.8"/><path d="M4.6 21v-6.5H3.4l1.3-5.1a1.6 1.6 0 0 1 1.5-1.2h1.6a1.6 1.6 0 0 1 1.5 1.2l1.3 5.1H9.4V21"/><circle cx="17" cy="4.5" r="1.8"/><path d="M17 8.2c.9 0 1.7.6 1.9 1.4L20.5 15h-2.2v6h-2.6v-6H13.5l1.6-5.4c.2-.8 1-1.4 1.9-1.4z"/></svg></span>
-        <div class="mod-name">화장실 점검</div>
-        <div class="mod-desc">교대별 7항목 ○△X</div>
-        <span class="mod-cnt" id="cntToilet">-</span>
-      </button>
-      <button class="mod-card" onclick="openMod('rest')">
-        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/><path d="M3 13a2 2 0 0 1 4 0v2h10v-2a2 2 0 0 1 4 0v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M6 18v2M18 18v2"/></svg></span>
-        <div class="mod-name">휴게시설 점검</div>
-        <div class="mod-desc">관리상태 6항목 ○△×－</div>
-        <span class="mod-cnt" id="cntRest">-</span>
-      </button>
-      <button class="mod-card" onclick="openMod('equip')">
-        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z"/></svg></span>
-        <div class="mod-name">장비점검</div>
-        <div class="mod-desc">사용·점검 일지 누적</div>
-        <span class="mod-cnt" id="cntEquip">-</span>
-      </button>
-      <button class="mod-card" onclick="emOpen()">
-        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h2M12 14h2M16 14h.01M8 18h2M12 18h2"/></svg></span>
-        <div class="mod-name">장비 월 입력</div>
-        <div class="mod-desc">달력·패턴으로 한 달 한번에</div>
-        <span class="mod-cnt">조장 간편 입력</span>
-      </button>
-      <button class="mod-card" onclick="openMod('pbb')">
-        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></span>
-        <div class="mod-name">게이트 관리 일지</div>
-        <div class="mod-desc">브릿지·E/L·방화문 등 10항목</div>
-        <span class="mod-cnt">GATE 1~50</span>
-      </button>
-      <button class="mod-card" onclick="openMod('common')">
-        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M19 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg></span>
-        <div class="mod-name">공용구역 점검</div>
-        <div class="mod-desc">층별 · L/S · A/S 6항목</div>
-        <span class="mod-cnt">전 구역</span>
-      </button>
-      <button class="mod-card" onclick="openMod('baby')">
-        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 10.5h.01M15 10.5h.01M9.6 14.6a3.3 3.3 0 0 0 4.8 0M12 3c-.9 1.6.1 2.9 1.6 2.6"/></svg></span>
-        <div class="mod-name">유아휴게실 점검</div>
-        <div class="mod-desc">바닥·선반·정수기 등 6항목</div>
-        <span class="mod-cnt" id="cntBaby">-</span>
-      </button>
-      <button class="mod-card" onclick="openSmoking()">
-        <span class="mod-icon"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16h13v3H3z"/><path d="M19 16v3M22 16v3"/><path d="M18 12c0-1.6 1.6-1.9 1.6-3.5S18 6.9 18 5.3"/></svg></span>
-        <div class="mod-name">흡연실 점검</div>
-        <div class="mod-desc">월간 점검표 (재떨이·바닥 등)</div>
-        <span class="mod-cnt" id="cntSmoking">-</span>
-      </button>
+    <div class="hm-hero" id="hmHero">
+      <div class="hm-h1">오늘 점검 현황</div>
+      <div class="hm-h2" id="hmHeroTxt">화장실 점검 · 오늘 기록 확인 중…</div>
+      <div class="hm-bar"><i id="hmHeroBar" style="width:0%"></i></div>
+      <div class="hm-h3" id="hmHeroSub">&nbsp;</div>
+      <button class="hm-hbtn" onclick="openMod('toilet')">화장실 점검 이어서 하기 ›</button>
+      <span class="mod-cnt" id="cntToilet" style="display:none">-</span>
     </div>
-    <button class="dash-btn" onclick="openDash()">
-      <svg viewBox="0 0 24 24" style="width:22px;height:22px;vertical-align:-5px;fill:none;stroke:#0F766E;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg> 실시간 현황
-      <span class="arrow">오늘 완료율·불량 보기 →</span>
-    </button>
-    <button class="dash-btn" onclick="openPrint()">
-      <svg viewBox="0 0 24 24" style="width:22px;height:22px;vertical-align:-5px;fill:none;stroke:#0F766E;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg> 출력 / 다운로드
-      <span class="arrow">월간 양식 엑셀·A4 인쇄 →</span>
-    </button>
+    <div class="sec-title" style="margin-top:14px">점검 모듈</div>
+    <div class="hm-grid">
+      <button class="hm-c" onclick="openMod('rest')"><span class="hm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11V8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3"/><path d="M3 13a2 2 0 0 1 4 0v2h10v-2a2 2 0 0 1 4 0v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M6 18v2M18 18v2"/></svg></span><b>휴게시설</b><small><span class="mod-cnt" id="cntRest">-</span></small></button>
+      <button class="hm-c" onclick="openMod('baby')"><span class="hm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9 10.5h.01M15 10.5h.01M9.6 14.6a3.3 3.3 0 0 0 4.8 0M12 3c-.9 1.6.1 2.9 1.6 2.6"/></svg></span><b>유아휴게실</b><small><span class="mod-cnt" id="cntBaby">-</span></small></button>
+      <button class="hm-c" onclick="openSmoking()"><span class="hm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16h13v3H3z"/><path d="M19 16v3M22 16v3"/><path d="M18 12c0-1.6 1.6-1.9 1.6-3.5S18 6.9 18 5.3"/></svg></span><b>흡연실</b><small><span class="mod-cnt" id="cntSmoking">-</span></small></button>
+      <button class="hm-c" onclick="openMod('common')"><span class="hm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M11 3l1.9 5.1L18 10l-5.1 1.9L11 17l-1.9-5.1L4 10l5.1-1.9z"/><path d="M19 14l.8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8z"/></svg></span><b>공용구역</b><small><span class="mod-cnt">전 구역</span></small></button>
+      <button class="hm-c" onclick="openMod('pbb')"><span class="hm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17.8 19.2 16 11l3.5-3.5C21 6 21.5 4 21 3c-1-.5-3 0-4.5 1.5L13 8 4.8 6.2c-.5-.1-.9.1-1.1.5l-.3.5c-.2.5-.1 1 .3 1.3L9 12l-2 3H4l-1 1 3 2 2 3 1-1v-3l3-2 3.5 5.3c.3.4.8.5 1.3.3l.5-.2c.4-.3.6-.7.5-1.2z"/></svg></span><b>게이트</b><small><span class="mod-cnt">GATE 1~50</span></small></button>
+      <button class="hm-c" onclick="openMod('equip')"><span class="hm-ic"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.8-3.8a6 6 0 0 1-7.9 7.9l-6.9 6.9a2.1 2.1 0 0 1-3-3l6.9-6.9a6 6 0 0 1 7.9-7.9l-3.8 3.8z"/></svg></span><b>장비점검</b><small><span class="mod-cnt" id="cntEquip">-</span></small></button>
+    </div>
+    <div class="sec-title" style="margin-top:14px">바로가기</div>
+    <div class="hm-list">
+      <button class="hm-r" onclick="emOpen()"><span class="hm-ric"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M8 14h2M12 14h2M16 14h.01M8 18h2M12 18h2"/></svg></span><span class="hm-rt"><b>장비 월 입력</b><small>달력·패턴으로 한 달 한번에 (조장 간편 입력)</small></span><span class="hm-go">›</span></button>
+      <button class="hm-r" onclick="openDash()"><span class="hm-ric"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/></svg></span><span class="hm-rt"><b>실시간 현황</b><small>오늘 완료율·불량 보기</small></span><span class="hm-go">›</span></button>
+      <button class="hm-r" onclick="openPrint()"><span class="hm-ric"><svg viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a1 1 0 0 1-1-1v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6a1 1 0 0 1-1 1h-2"/><rect x="6" y="14" width="12" height="7" rx="1"/></svg></span><span class="hm-rt"><b>출력 / 다운로드</b><small>월간 양식 엑셀·A4 인쇄</small></span><span class="hm-go">›</span></button>
+    </div>
     <button class="dash-btn" id="resetMenuBtn" style="display:none;border-color:var(--danger);color:var(--danger)" onclick="openReset()">
       <svg viewBox="0 0 24 24" style="width:22px;height:22px;vertical-align:-5px;fill:none;stroke:#DC2626;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round"><path d="M3 6h18M8 6V4h8v2M6 6l1 14h10l1-14M10 10v6M14 10v6"/></svg> 데이터 초기화 <span style="font-weight:400;color:var(--g3);font-size:11px">(테스트 기간 전용)</span>
       <span class="arrow" style="color:var(--danger)">관리 →</span>
@@ -385,7 +437,8 @@ textarea:focus{border-color:var(--sky)}
         </div>
       </div>
       <div id="joChips" class="info-chips" style="display:none;margin:-4px 0 8px"></div>
-      <div class="f-row" id="timeRow">
+      <details class="tm-fold" id="timeFold"><summary><span>점검 시간 <em>(선택)</em></span><span class="tm-sum" id="timeSum">입력 안 함</span></summary>
+      <div class="f-row" id="timeRow" style="margin-top:8px">
         <div>
           <div class="f-label">점검 시작 <span style="font-weight:400;color:var(--g3)">(선택)</span></div>
           <select id="iT1"></select>
@@ -394,12 +447,12 @@ textarea:focus{border-color:var(--sky)}
           <div class="f-label">점검 종료</div>
           <select id="iT2"></select>
         </div>
-      </div>
+      </div></details>
     </div>
 
     <!-- 대상 선택: 화장실 -->
     <div class="card" id="tgtToilet" style="display:none">
-      <div class="f-label">화장실 선택 <span style="font-weight:400;color:var(--g3)">(여러 개 선택 가능 — 층 전체 순회 점검 시)</span></div>
+      <div class="f-label" style="display:flex;align-items:center;justify-content:space-between;gap:8px"><span>화장실 선택 <span style="font-weight:400;color:var(--g3)">(여러 개 선택 가능 — 층 전체 순회 점검 시)</span></span><button type="button" class="sel-all" onclick="selAllRooms()">전체 선택</button></div>
       <div class="f-row">
         <select id="tFloor" onchange="fillToiletList()"></select>
         <select id="tZone" onchange="fillToiletList()">
@@ -918,6 +971,7 @@ function navBack(){
   else showScr('scrMain');
 }
 function showScr(id, _fromPop){
+  try{ if(id==='scrMain'&&TOILETS&&TOILETS.length) heroUpdate(); }catch(e){}
   var s=document.querySelectorAll('.screen');
   for(var i=0;i<s.length;i++)s[i].classList.remove('on');
   document.getElementById(id).classList.add('on');
@@ -938,6 +992,20 @@ if(!history.state || !history.state.inspScreen){
   history.replaceState({inspScreen:'scrMain'}, '', '#scrMain');
 }
 
+document.addEventListener('change',function(e){ if(e.target&&(e.target.id==='iT1'||e.target.id==='iT2')) try{ updTimeSum(); }catch(_){} });
+// ─ 홈 상단: 오늘 화장실 점검 현황 (실시간 현황 화면과 같은 계산: 기록건수 / 화장실 수) ─
+function heroUpdate(){
+  var t=document.getElementById('hmHeroTxt'); if(!t) return;
+  var d=todayStr();
+  sbFetch('/inspection_data?insp_date=eq.'+d+'&insp_type=eq.toilet&select=id').then(function(r){return r.json();}).then(function(rows){
+    if(!Array.isArray(rows)) return;
+    var n=rows.length, tot=(typeof TOILETS!=='undefined'&&TOILETS.length)?TOILETS.length:0;
+    var pct=tot?Math.min(100,Math.round(n/tot*100)):0;
+    t.textContent='화장실 점검 '+n+(tot?' / '+tot+'개소':'건');
+    document.getElementById('hmHeroBar').style.width=pct+'%';
+    document.getElementById('hmHeroSub').textContent=tot?('완료율 '+pct+'%'):'오늘 기록 '+n+'건';
+  }).catch(function(){ t.textContent='화장실 점검'; });
+}
 // ─ 마스터 로드 ─
 function loadMasters(){
   var dot=document.getElementById('dbDot'), msg=document.getElementById('dbMsg');
@@ -967,6 +1035,7 @@ function loadMasters(){
     dot.className='dot ok'; msg.textContent='데이터 연결 정상 · 화장실 '+TOILETS.length+' · 장비 '+EQUIPS.length+' · 휴게시설 '+RESTS.length;
     handleEquipDeepLink();
     handleLocDeepLink();
+    try{ heroUpdate(); }catch(e){}
   }).catch(function(e){
     dot.className='dot err'; msg.textContent='데이터 로드 실패 — 네트워크 확인';
   });
@@ -1044,6 +1113,11 @@ function setShift(s){
   for(var i=0;i<btns.length;i++)btns[i].classList.toggle('on',btns[i].getAttribute('data-s')===s);
   if(curMod==='toilet')fillToiletList();
 }
+function updTimeSum(){
+  var a=(document.getElementById('iT1')||{}).value||'', b=(document.getElementById('iT2')||{}).value||'';
+  var el=document.getElementById('timeSum'); if(!el) return;
+  el.textContent=(a||b)?((a||'--:--')+' ~ '+(b||'--:--')):'입력 안 함';
+}
 function onTeamChange(){
   if(curMod==='equip')fillEquipTypes();
   if(curMod==='rest')fillRestList();
@@ -1063,7 +1137,7 @@ function openMod(mod){
   document.getElementById('inpDate').textContent='· '+todayStr();
   fillTimeSels();
   document.getElementById('iT1').value=''; document.getElementById('iT2').value='';
-  document.getElementById('timeRow').style.display = mod==='equip' ? 'none' : 'grid';
+  document.getElementById('timeRow').style.display = mod==='equip' ? 'none' : 'grid'; try{ document.getElementById('timeFold').style.display = mod==='equip' ? 'none' : 'block'; updTimeSum(); }catch(e){}
   document.getElementById('tgtToilet').style.display = mod==='toilet'?'block':'none';
   document.getElementById('tgtRest').style.display = mod==='rest'?'block':'none';
   document.getElementById('tgtEquip').style.display = mod==='equip'?'block':'none';
@@ -1099,6 +1173,11 @@ function toiletTeamOk(t){
   if(team==='10팀')return t.zone==='Airside';
   if(!t.team)return true;
   return String(t.team).split(/\s+/).indexOf(team)>=0;
+}
+function selAllRooms(){
+  var cs=document.querySelectorAll('#tRoomGrid .gate-chip'); var all=true;
+  cs.forEach(function(c){ if(!c.classList.contains('on')) all=false; });
+  cs.forEach(function(c){ if(all===c.classList.contains('on')) c.click(); });
 }
 function fillToiletList(){
   var fl=document.getElementById('tFloor').value;
@@ -1393,7 +1472,7 @@ function renderChecklist(){
     for(var j=0;j<defs.length;j++){
       (function(item,code,cls,label){
         var b=document.createElement('button'); b.className='st-btn'; b.textContent=label;
-        if(label==='N/A')b.style.fontSize='10px';
+        b.innerHTML=(label==='N/A'?'－':label)+'<small>'+({O:'양호',T:'보통',X:'불량',D:'해당없음'}[code]||'')+'</small>';
         if(cs[item]===code)b.classList.add(cls);
         b.onclick=function(){ activeChkStates()[item]=code; renderChecklist(); updateNoteReq(); renderTargetTabs(); };
         bt.appendChild(b);
@@ -1804,7 +1883,7 @@ function openModForEdit(d){
   document.getElementById('tgtBaby').style.display = mod==='baby'?'block':'none';
   document.getElementById('inpDate').textContent='· '+(r.insp_date||todayStr());
   fillTimeSels();
-  document.getElementById('timeRow').style.display = mod==='equip' ? 'none' : 'grid';
+  document.getElementById('timeRow').style.display = mod==='equip' ? 'none' : 'grid'; try{ document.getElementById('timeFold').style.display = mod==='equip' ? 'none' : 'block'; updTimeSum(); }catch(e){}
   if(mod!=='equip'){
     var wt=String(r.work_time||'').split('~');
     document.getElementById('iT1').value=wt[0]||'';
@@ -1934,6 +2013,7 @@ function renderSmokingChk(){
     var bt=document.createElement('div'); bt.className='chk-btns';
     [['O','○','sO'],['X','X','sX']].forEach(function(def){
       var b=document.createElement('button'); b.className='st-btn'; b.textContent=def[1];
+      b.innerHTML=def[1]+'<small>'+({O:'양호',X:'불량'}[def[0]]||'')+'</small>';
       if(skChkStates[it]===def[0])b.classList.add(def[2]);
       b.onclick=function(){ skChkStates[it]=def[0]; renderSmokingChk(); };
       bt.appendChild(b);

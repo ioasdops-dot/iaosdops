@@ -845,7 +845,7 @@ var MOD_META = {
 function toast(m){var t=document.getElementById('toast');t.textContent=m;t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';clearTimeout(t._t);t._t=setTimeout(function(){t.style.opacity='0';t.style.transform='translateX(-50%) translateY(8px)';},2600);}
 function todayStr(){var n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
 
-var S7_SHORT={T1:'T1',T2:'T2',BD:'부대건물'};
+var S7_SHORT={T1:'T1',T2:'T2',BD:'부대'};
 function s7Short(){ var d=s7Div(); return S7_SHORT[d]||d; }
 function s7Div(){
   try{

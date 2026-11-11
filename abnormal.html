@@ -329,7 +329,7 @@ var SUPABASE_KEY='sb_publishable_Gen29p8bEbT5FwoQzgJnxg_tduW0wMZ';
 var DIV_NAMES={T1:'T1환경미화사업부',T2:'T2환경미화사업부',BD:'부대건물환경미화사업부'};
 function curDiv(){try{var u=JSON.parse(localStorage.getItem('t1_me')||'null');if(!u)return null;if(u.role==='master'||u.role==='group_viewer')return localStorage.getItem('iaos_div')||u.division_id||null;return u.division_id||null;}catch(e){return null;}}
 function isMultiUser(){try{var u=JSON.parse(localStorage.getItem('t1_me')||'null');return !!(u&&(u.role==='master'||u.role==='group_viewer'));}catch(e){return false;}}
-function divShort(){return {T1:'T1',T2:'T2',BD:'부대건물'}[curDiv()]||'T1';}
+function divShort(){return {T1:'T1',T2:'T2',BD:'부대'}[curDiv()]||'T1';}
 function divName(){return DIV_NAMES[curDiv()]||'환경미화사업부';}
 function sbFetch(path,opt){opt=opt||{};
   if(path.indexOf('/rpc/')!==0&&(opt.method||'GET')==='GET'&&isMultiUser()&&curDiv()&&path.indexOf('division_id=')<0){path+=(path.indexOf('?')>=0?'&':'?')+'division_id=eq.'+encodeURIComponent(curDiv());}var tok=SUPABASE_KEY;try{var a=JSON.parse(localStorage.getItem('t1_auth')||'null');if(a&&a.access_token)tok=a.access_token;}catch(e){}
@@ -2100,7 +2100,7 @@ async function setGender(id,g){try{var r=await sbFetch('/worklog_emp_ext?on_conf
 
 // ── 그룹 보기 (?group=1): 각 사업부 화면이 저장한 스냅샷을 합산해 같은 화면(현황·상황판)으로 보여 줍니다 ──
 var GR={on:false,view:'all',by:{},m:null,loading:false,err:''};
-var GDIV=[['T1','T1'],['T2','T2'],['BD','부대건물']];
+var GDIV=[['T1','T1'],['T2','T2'],['BD','부대']];
 function grpMode(){return /[?&]group=1/.test(location.search);}
 function grpAgo(t){if(!t)return '';var m=Math.max(0,Math.round((Date.now()-new Date(t).getTime())/60000));return m<1?'방금 전':(m<60?m+'분 전':Math.floor(m/60)+'시간 '+(m%60)+'분 전');}
 function grpPick(only){var o=[];GDIV.forEach(function(d){if(only?only!==d[0]:(GR.view!=='all'&&GR.view!==d[0]))return;var r=GR.by[d[0]];if(r&&!r.dormant&&r.data&&r.data.v===2)o.push({id:d[0],short:d[1],x:r.data,at:r.updated_at});});return o;}
@@ -2172,7 +2172,7 @@ function gSup(inCol){
   return h+'</table></div>';}
 function gBMgr(){
   var by=GR.m.mg,ts=Object.keys(by).filter(function(t){return by[t].length;}),inn=0;ts.forEach(function(t){inn+=by[t].length;});
-  var mk=function(t){var m=t.match(/^(?:(T1|T2|부대건물) )?(.*)$/);return m;};
+  var mk=function(t){var m=t.match(/^(?:(T1|T2|부대건물|부대) )?(.*)$/);return m;};
   ts.sort(function(a,b){var x=mk(a),y=mk(b);var dx=GDIV.map(function(d){return d[1];}).indexOf(x[1]||''),dy=GDIV.map(function(d){return d[1];}).indexOf(y[1]||'');if(dx!==dy)return dx-dy;var p=parseInt(x[2]),q=parseInt(y[2]);if(isNaN(p)&&isNaN(q))return x[2]<y[2]?-1:1;if(isNaN(p))return 1;if(isNaN(q))return -1;return p-q;});
   var h='<div class="pn mgx"><div class="pt">관리자 출근<i>|</i><small>총괄·팀장·조장·사업부장</small><b>'+inn+'<small>명</small></b></div>';
   if(isPC())h+='<div class="mgl">'+ts.map(function(t){return '<div class="mgt"><h4>'+esc(t)+'</h4>'+by[t].slice().sort(function(a,b){return String(a).localeCompare(String(b),'ko');}).map(function(n){return '<span class="on">'+esc(n)+'</span>';}).join('')+'</div>';}).join('')+'</div>';

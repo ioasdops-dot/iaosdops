@@ -456,6 +456,7 @@ body{padding-bottom:calc(150px + env(safe-area-inset-bottom))!important}
 .rc-hb span{padding:10px 15px;border-radius:12px;font-weight:900;font-size:14px;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.45);cursor:pointer}.rc-hb span.w{background:#fff;color:#27476B;border-color:#fff}
 .rc-chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:11px;align-items:center}.rc-chips i{font-style:normal;padding:8px 14px;border-radius:20px;background:#fff;border:1px solid var(--line);font-weight:800;font-size:14px;cursor:pointer}.rc-chips i.on{background:#27303d;color:#fff;border-color:#27303d}.rc-sp{flex:1}
 .rc-dt{margin:-2px 0 11px}.rc-dt input{padding:8px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+.rc-dl{margin-bottom:12px}.rc-g2tm{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;align-items:start;margin-bottom:12px}@media(max-width:1099px){.rc-g2tm{grid-template-columns:1fr 1fr}}@media(max-width:760px){.rc-g2tm{grid-template-columns:1fr}}.rc-tx .rc-t th,.rc-tx .rc-t td{padding:7px 6px;min-width:42px}.rc-tx .rc-t th:first-child,.rc-tx .rc-t td:first-child{position:sticky;left:0;background:#fff;z-index:1;text-align:left;font-weight:800;min-width:58px}.rc-tx .rc-t th:first-child{background:#EEF2F7}.rc-tx .rc-t tr.rc-sum td:first-child{background:#F1F4F8}.rc-z{color:#C3CAD3}.rc-tx .rc-t td:nth-child(2),.rc-tx .rc-t th:nth-child(2){background:#F7F9FC;font-weight:900;min-width:52px}.rc-dl .rc-t th,.rc-dl .rc-t td{padding:6px 5px}.rc-trend{display:flex;align-items:flex-end;gap:3px;height:112px;margin:2px 0 4px}.rc-trend>div{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;min-width:0}.rc-tb{width:100%;max-width:18px;flex:1;display:flex;flex-direction:column-reverse;justify-content:flex-start;border-radius:4px 4px 0 0;overflow:hidden}.rc-tb i{display:block;width:100%}.rc-trend small{font-size:9.5px;color:var(--mut);margin-top:3px}.rc-lg{display:flex;gap:12px;align-items:center;font-size:12px;font-weight:700;margin:0 0 10px}.rc-lg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:4px}.rc-lg em{margin-left:auto;font-style:normal;color:var(--mut);font-weight:600}.rc-sum td{background:#F1F4F8;font-weight:900}
 .rc-g2{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:stretch;margin-bottom:12px}.rc-col{display:flex;flex-direction:column;gap:12px}
 .rc-card{background:#fff;border-radius:20px;padding:16px;box-shadow:0 1px 8px rgba(0,0,0,.06);display:flex;flex-direction:column}.rc-card.rc-f{flex:1}
 .rc-card h4{margin:0 0 10px;font-size:16px;border-left:4px solid #5DC29C;padding-left:9px}.rc-card h4 small{font-weight:600;color:var(--mut);font-size:12px}
@@ -844,7 +845,7 @@ function atFind(div,team,key){var g=(MGR.view||{})[div]||[];for(var i=0;i<g.leng
 function atBoard(){
   var h='<div class="dp"><div class="nv"><button type="button" data-atmove="-1">◀</button><b>'+esc(AT.date)+(AT.date===atToday()?' · 오늘':'')+'</b><button type="button" data-atmove="1">▶</button>'
     +(AT.date===atToday()?'':'<button type="button" data-atmove="0">오늘</button>')+'</div>'
-    +'<div class="md">'+(atCanEdit()?'<button type="button" data-atleave="1">📅 일정</button>':'')+'<button type="button" data-atplan="1">🏠 휴무계획</button></div></div>';
+    +'<div class="md">'+(atCanEdit()?'<button type="button" data-atleave="1">📅 일정</button>':'')+'<button type="button" data-attm="1">👥 팀·조별</button><button type="button" data-atplan="1">🏠 휴무계획</button></div></div>';
   if(!MGR.board) return h+'<div class="card empty">불러오는 중…</div>';
   var me1=atMine();
   if(me1) h+=atMineCard(me1);
@@ -997,9 +998,75 @@ var PLH=window.IAOSPlan?IAOSPlan.init({rpc:rpc,canEdit:atCanEdit,today:today,div
 var PL=PLH?PLH.state:{tab:'list',sheet:null};
 function plView(){return PLH?PLH.view():'<div class="card empty">휴무계획 모듈(plan.js)을 불러오지 못했어요.<br>앱을 완전히 종료한 뒤 다시 열어주세요.</div>';}
 function plLoad(){return PLH?PLH.load():Promise.resolve();}
+
+/* ---------- 근태 · 팀·조별 출근 상세 (사업부별 일평균, 엑셀·A4) ---------- */
+var TM={per:'month',from:'',to:'',div:'ALL',data:{},busy:false,err:''};
+function tmParse(tc){var s=String(tc||''),m=s.match(/(\d+)/),l=s.match(/([A-Za-z])\s*조?\s*$/);return {t:m?+m[1]:0,j:l?l[1].toUpperCase():''};}
+function tmDiv(d){
+  var tl=(TM.data[d.id]&&TM.data[d.id].teams)||[], rows={}, js={}, tot=0;
+  tl.forEach(function(x){var p=tmParse(x.team_code),k=p.t?('t'+p.t):('c'+x.team_code),j=p.j||'-',v=Number(x.avg)||0;
+    var r=rows[k]||(rows[k]={name:p.t?p.t+'팀':String(x.team_code),t:p.t,by:{},sum:0}); r.by[j]=(r.by[j]||0)+v; r.sum+=v; js[j]=1; tot+=v;});
+  var jl=Object.keys(js).sort(), rl=Object.keys(rows).map(function(k){return rows[k];}).sort(function(a,b){return (a.t||999)-(b.t||999)||a.name.localeCompare(b.name);});
+  var cs={}; jl.forEach(function(j){cs[j]=0;}); rl.forEach(function(r){jl.forEach(function(j){cs[j]+=r.by[j]||0;});});
+  return {rows:rl,js:jl,cs:cs,tot:tot};
+}
+function tmRange(){var rg=perRange(TM.per,TM.from,TM.to);TM.from=rg.from;TM.to=rg.to;return rg;}
+function tmLoad(){
+  var rg=tmRange(); TM.busy=true; TM.err='';
+  if(!$('p-at').innerHTML||AT.view!=='team'){AT.view='team';} renderAt();
+  return Promise.all(divs.map(function(d){return rpc('group_division_status',{p_division:d.id,p_from:rg.from,p_to:rg.to}).then(function(r){TM.data[d.id]=(Array.isArray(r)?r[0]:r)||{};}).catch(function(e){TM.data[d.id]={};TM.err=(e&&e.message)||'오류';});}))
+    .then(function(){TM.busy=false;renderAt();});
+}
+function tmN(v){return v?(Math.round(v*10)/10):'<span class="rc-z">·</span>';}
+function tmView(){
+  var rg=tmRange(), ds=TM.div==='ALL'?divs:[divById(TM.div)];
+  var h='<div style="margin-bottom:8px"><button type="button" class="sp-btn g" data-atback="1">← 근태 현황</button></div>'
+   +'<div class="rc-hero"><div><h2>👥 팀·조별 출근 상세</h2><small>'+esc(rg.from)+' ~ '+esc(rg.to)+' · '+(TM.div==='ALL'?'통합':esc(divById(TM.div).short))+' · 일평균 출근 인원</small></div><div class="rc-hb"><span class="w" id="tmRep">보고서 (A4·PDF)</span><span id="tmXl">엑셀 다운로드</span><span id="tmPr">인쇄</span></div></div>'
+   +'<div class="rc-chips"><i data-tmd="ALL" class="'+(TM.div==='ALL'?'on':'')+'">통합</i>'+divs.map(function(d){return '<i data-tmd="'+esc(d.id)+'" class="'+(TM.div===d.id?'on':'')+'" style="'+(TM.div===d.id?'background:'+d.color+';border-color:'+d.color+';color:#fff':'')+'">'+esc(d.short)+'</i>';}).join('')+'<b class="rc-sp"></b>'+perChips(TM.per,'tmp')+'</div>'+perCustom(TM,'tm');
+  if(TM.busy) return h+'<div class="card empty">불러오는 중…</div>';
+  if(TM.err&&!Object.keys(TM.data).some(function(k){return (TM.data[k].teams||[]).length;})) return h+'<div class="card empty">불러오지 못했어요.<br>'+esc(TM.err)+'<br><small>SQL 20번을 실행했는지 확인해 주세요.</small></div>';
+  var all=0; ds.forEach(function(d){all+=tmDiv(d).tot;});
+  h+='<div class="rc-card" style="margin-bottom:12px"><h4>사업부 요약 <small>일평균 출근 합계</small></h4><div class="rc-kp"><div><b>'+n0(Math.round(all*10)/10)+'</b><small>통합 (명)</small></div>'+ds.map(function(d){var x=tmDiv(d);return '<div style="background:'+d.soft+'"><b style="color:'+d.color+'">'+n0(Math.round(x.tot*10)/10)+'</b><small>'+esc(d.short)+'</small></div>';}).join('')+'</div></div>';
+  h+='<div class="rc-g2tm">'+ds.map(function(d){
+    var x=tmDiv(d);
+    var t='<div class="rc-card"><h4 style="border-left-color:'+d.color+'">'+esc(d.name)+' <small>합계 '+n0(Math.round(x.tot*10)/10)+'명</small></h4>';
+    if(!x.rows.length) return t+'<div class="empty">해당 기간 입력된 인력현황이 없어요.</div></div>';
+    t+='<div class="rc-tw"><table class="rc-t"><tr><th>팀'+x.js.map(function(j){return '<th>'+(j==='-'?'기타':esc(j)+'조');}).join('')+'<th>합계</tr>'
+      +x.rows.map(function(r){return '<tr><td style="text-align:left;font-weight:800">'+esc(r.name)+x.js.map(function(j){return '<td>'+tmN(r.by[j]);}).join('')+'<td><b>'+tmN(r.sum)+'</b>';}).join('')
+      +'<tr class="rc-sum"><td style="text-align:left">합계'+x.js.map(function(j){return '<td>'+tmN(x.cs[j]);}).join('')+'<td>'+tmN(x.tot)+'</table></div></div>';
+    return t;}).join('')+'</div>';
+  return h;
+}
+function tmBind(){
+  var el=$('p-at'); if(AT.view!=='team') return;
+  el.querySelectorAll('[data-tmd]').forEach(function(b){b.onclick=function(){TM.div=b.dataset.tmd;renderAt();};});
+  el.querySelectorAll('[data-tmp]').forEach(function(b){b.onclick=function(){TM.per=b.dataset.tmp;if(TM.per==='custom'){var r=perRange('month');TM.from=r.from;TM.to=r.to;renderAt();}else tmLoad();};});
+  var f=$('tmF'),t=$('tmT'); if(f)f.onchange=function(){TM.from=f.value;tmLoad();}; if(t)t.onchange=function(){TM.to=t.value;tmLoad();};
+  var x=$('tmXl'); if(x)x.onclick=tmExcel; var r=$('tmRep'); if(r)r.onclick=tmReport; var p=$('tmPr'); if(p)p.onclick=tmReport;
+}
+function tmExcel(){
+  if(!window.XLSX) return; var ds=TM.div==='ALL'?divs:[divById(TM.div)], wb=XLSX.utils.book_new(), a=[['환경미화운영그룹 팀·조별 출근 상세 (일평균 출근 인원)',TM.from+' ~ '+TM.to],[],['사업부','팀','A조','B조','C조','기타','합계']], a2=[['사업부','조 코드','일평균 출근']];
+  ds.forEach(function(d){var x=tmDiv(d); x.rows.forEach(function(r){var g=function(j){return r.by[j]?Math.round(r.by[j]*10)/10:'';};a.push([d.short,r.name,g('A'),g('B'),g('C'),g('-'),Math.round(r.sum*10)/10]);});
+    if(x.rows.length) a.push([d.short,'합계',Math.round((x.cs.A||0)*10)/10,Math.round((x.cs.B||0)*10)/10,Math.round((x.cs.C||0)*10)/10,Math.round((x.cs['-']||0)*10)/10,Math.round(x.tot*10)/10]);
+    ((TM.data[d.id]&&TM.data[d.id].teams)||[]).forEach(function(t){a2.push([d.short,t.team_code,Math.round((Number(t.avg)||0)*10)/10]);});});
+  var ws=XLSX.utils.aoa_to_sheet(a); ws['!cols']=[{wch:10},{wch:10},{wch:9},{wch:9},{wch:9},{wch:9},{wch:10}]; XLSX.utils.book_append_sheet(wb,ws,'팀·조별 출근');
+  var ws2=XLSX.utils.aoa_to_sheet(a2); ws2['!cols']=[{wch:10},{wch:14},{wch:12}]; XLSX.utils.book_append_sheet(wb,ws2,'조 코드별 원자료');
+  try{XLSX.writeFile(wb,'그룹_팀조별출근_'+TM.from+'~'+TM.to+'.xlsx');}catch(e){}
+}
+function tmReport(){
+  var ds=TM.div==='ALL'?divs:[divById(TM.div)], b='';
+  ds.forEach(function(d,i){var x=tmDiv(d);
+    b+='<h3 style="border-left:5px solid '+d.color+';padding-left:6px">'+(i+1)+'. '+esc(d.name)+' (합계 '+n0(Math.round(x.tot*10)/10)+'명)</h3>';
+    if(!x.rows.length){b+='<table><tr><td>입력된 인력현황이 없습니다</tr></table>';return;}
+    b+='<table><tr><th>팀'+x.js.map(function(j){return '<th>'+(j==='-'?'기타':esc(j)+'조');}).join('')+'<th>합계</tr>'
+      +x.rows.map(function(r){return '<tr><td class="t">'+esc(r.name)+x.js.map(function(j){return '<td>'+(r.by[j]?Math.round(r.by[j]*10)/10:'');}).join('')+'<td>'+(Math.round(r.sum*10)/10)+'</tr>';}).join('')
+      +'<tr style="font-weight:800;background:#F1F4F8"><td class="t">합계'+x.js.map(function(j){return '<td>'+(Math.round((x.cs[j]||0)*10)/10);}).join('')+'<td>'+(Math.round(x.tot*10)/10)+'</tr></table>';});
+  repWin('환경미화운영그룹 팀·조별 출근 상세 보고서','기간 '+TM.from+' ~ '+TM.to+' · '+(TM.div==='ALL'?'통합':divById(TM.div).short)+' · 일평균 출근 인원',b);
+}
 function renderAt(){
   var el=$('p-at'); if(!el) return;
-  el.innerHTML=(AT.view==='hist'?atHist():AT.view==='leave'?atLeaveView():AT.view==='plan'?plView():atBoard())+(AT.view==='board'?atPicker():'');
+  el.innerHTML=(AT.view==='hist'?atHist():AT.view==='leave'?atLeaveView():AT.view==='plan'?plView():AT.view==='team'?tmView():atBoard())+(AT.view==='board'?atPicker():'');
+  if(AT.view==='team') tmBind();
 }
 function atApply(B){MGR.board=B;MGR.view=atBuild(B,AT.date);}
 function atLoad(){
@@ -1036,6 +1103,7 @@ function atAct(q){
   if(q.athmode){AT.hm.mode=q.athmode;return atHistLoad();}
   if(q.athmove){var H=AT.hm,n=+q.athmove; if(H.mode==='year')H.y+=n; else{H.m+=n;if(H.m<1){H.m=12;H.y--;}if(H.m>12){H.m=1;H.y++;}} return atHistLoad();}
     if(q.atplan){AT.view='plan';AT.pick=null;PL.tab='list';PL.sheet=null;renderAt();return plLoad();}
+  if(q.attm){AT.pick=null;AT.view='team';return tmLoad();}
   if(q.atleave){AT.view='leave';AT.lt='in';AT.ledit=null;return atLeaveLoad();}
   if(q.atlt!==undefined){AT.lt=q.atlt;AT.ledit=null;return atLeaveLoad();}
   if(q.atling!==undefined){AT.lf.ing=q.atling;renderAt();return;}
@@ -2276,8 +2344,8 @@ function loadNowPeriod(){var rg=dashRange();
   }).then(renderNow);}
 
 /* ---------- 내역 · 종합 (사업부 입력 건별 취합 + 엑셀·보고서) ---------- */
-var RK=[['accident','🦺','안전사고'],['voc','📞','민원'],['lost','🎒','습득물'],['joint','🤝','공동작업'],['handover','📋','인수인계'],['waste','♻️','폐기물']];
-var RKC={accident:['일시','사업부','팀','유형','장소','상태','내용'],voc:['일자','사업부','구역','유형','내용','상태','비고'],lost:['일시','사업부','작성자','품목','장소','상태','비고'],joint:['일자','사업부','근무조','분류','작업명','인원','장소·비고'],handover:['일시','사업부','팀','근무조','내용','확인','작성자'],waste:['일자','사업부','팀','근무조','배출(소각/재활용)','비고','합계']};
+var RK=[['accident','🦺','안전사고'],['voc','📞','민원'],['lost','🎒','습득물'],['joint','🤝','공동작업'],['handover','📋','인수인계'],['waste','♻️','폐기물'],['facility','🔧','고장신고']];
+var RKC={accident:['일시','사업부','팀','유형','장소','상태','내용'],voc:['일자','사업부','구역','유형','내용','상태','비고'],lost:['일시','사업부','작성자','품목','장소','상태','비고'],joint:['일자','사업부','근무조','분류','작업명','인원','장소·비고'],handover:['일시','사업부','팀','근무조','내용','확인','작성자'],waste:['일자','사업부','팀','근무조','배출(소각/재활용)','비고','합계'],facility:['일시','사업부','팀','유형','장소','접수자','신고자·내용']};
 var RX={kind:'accident',div:'ALL',per:'month',from:'',to:'',rows:[],busy:false,err:''};
 var SM={per:'month',from:'',to:'',rows:null,rec:null};
 function perRange(per,f,t){
@@ -2305,17 +2373,56 @@ function recSummary(rows){
 function loadRec(){
   var el=$('p-rec'); var rg=perRange(RX.per,RX.from,RX.to); RX.from=rg.from; RX.to=rg.to; RX.busy=true; RX.err='';
   if(!el.innerHTML) el.innerHTML='<div class="card empty">불러오는 중…</div>';
-  return rpc('group_records',{p_kind:RX.kind,p_from:rg.from,p_to:rg.to}).then(function(r){RX.rows=r||[];RX.busy=false;renderRec();},function(e){RX.rows=[];RX.busy=false;RX.err=(e&&e.message)||'오류';renderRec();});
+  return (RX.kind==='facility'?rpc('group_facility_records',{p_from:rg.from,p_to:rg.to}):rpc('group_records',{p_kind:RX.kind,p_from:rg.from,p_to:rg.to})).then(function(r){RX.rows=r||[];RX.busy=false;renderRec();},function(e){RX.rows=[];RX.busy=false;RX.err=(e&&e.message)||'오류';renderRec();});
+}
+
+/* 일자별 집계 (인수인계 확인 현황 · 폐기물 일별 배출량) — 건별 내역에서 계산, 새 SQL 없음 */
+function recDailyAgg(rows,kind,dv){
+  var m={}; rows.forEach(function(r){
+    var d=String(r.dt||'').slice(0,10); if(!d) return;
+    var o=m[d]||(m[d]={d:d,n:0,ok:0,no:0,kg:0,by:{}}); var v=o.by[r.division_id]||(o.by[r.division_id]={n:0,kg:0});
+    o.n++; v.n++;
+    if(kind==='handover'){var k=stCls(r.status); if(k==='ok')o.ok++; else o.no++;}
+    else {var q=Number(r.num)||0; o.kg+=q; v.kg+=q;}
+  });
+  return Object.keys(m).sort().map(function(k){return m[k];});
+}
+function recDailyDivs(){return RX.div==='ALL'?divs:[divById(RX.div)];}
+function recDailyHtml(rows){
+  if(RX.kind!=='handover'&&RX.kind!=='waste') return '';
+  var A=recDailyAgg(rows,RX.kind), ds=recDailyDivs(), isH=RX.kind==='handover';
+  if(!A.length) return '';
+  var h='<div class="rc-card"><h4>'+(isH?'일자별 인수인계 현황':'일별 폐기물 배출량')+' <small>'+(isH?'건수 · 확인 현황':'단위 kg · 사업부별')+'</small></h4>';
+  if(!isH){
+    var T=A.slice(-31), mx=1; T.forEach(function(a){if(a.kg>mx)mx=a.kg;});
+    h+='<div class="rc-trend">'+T.map(function(a){
+      var col=ds.map(function(d){var q=(a.by[d.id]||{}).kg||0;return q?'<i style="height:'+(q/mx*100)+'%;background:'+d.color+'"></i>':'';}).join('');
+      return '<div title="'+esc(a.d)+' '+n0(a.kg)+'kg"><div class="rc-tb">'+col+'</div><small>'+esc(a.d.slice(8))+'</small></div>';}).join('')+'</div>'
+      +'<div class="rc-lg">'+ds.map(function(d){return '<span><i style="background:'+d.color+'"></i>'+esc(d.short)+'</span>';}).join('')+'<em>최대 '+n0(mx)+'kg · 최근 '+T.length+'일</em></div>';
+  }
+  var T2=A.slice(-31), cut=A.length>31;
+  function z(x){return x?n0(Math.round(x)):'<span class="rc-z">·</span>';}
+  var dh='<th>구분<th>합계'+T2.map(function(a){return '<th>'+esc(a.d.slice(5).replace('-','/'));}).join('');
+  var tot=function(d){var x=0;A.forEach(function(a){var v=a.by[d.id]||{n:0,kg:0};x+=isH?v.n:v.kg;});return x;};
+  var rowsH=ds.map(function(d){return '<tr><td><span class="rc-bg" style="background:'+d.color+'">'+esc(d.short)+'</span><td><b>'+z(tot(d))+'</b>'+T2.map(function(a){var v=a.by[d.id]||{n:0,kg:0};return '<td>'+z(isH?v.n:v.kg);}).join('')+'</tr>';}).join('');
+  var sum=0,ok=0; A.forEach(function(a){sum+=isH?a.n:a.kg;ok+=a.ok;});
+  rowsH+='<tr class="rc-sum"><td>합계<td>'+z(sum)+T2.map(function(a){return '<td>'+z(isH?a.n:a.kg);}).join('')+'</tr>';
+  if(isH){
+    rowsH+='<tr><td class="rc-st ok">확인<td class="rc-st ok">'+z(ok)+T2.map(function(a){return '<td class="rc-st ok">'+z(a.ok);}).join('')+'</tr>'
+      +'<tr><td class="rc-st no">미확인<td class="rc-st no">'+z(sum-ok)+T2.map(function(a){return '<td class="rc-st no">'+z(a.no);}).join('')+'</tr>'
+      +'<tr><td>확인률<td><b>'+(sum?Math.round(ok/sum*100):0)+'%</b>'+T2.map(function(a){return '<td>'+(a.n?Math.round(a.ok/a.n*100)+'%':'<span class="rc-z">·</span>');}).join('')+'</tr>';
+  }
+  return h+'<div class="rc-tw rc-tx"><table class="rc-t"><tr>'+dh+'</tr>'+rowsH+'</table></div>'+(cut?'<div style="font-size:11.5px;color:var(--mut);margin-top:6px">화면은 최근 31일까지 표시, 합계는 선택 기간 전체 · 전체 일자는 엑셀·보고서에서 확인</div>':'')+'</div>';
 }
 function renderRec(){
   var el=$('p-rec'), rg=perRange(RX.per,RX.from,RX.to), kd=RK.filter(function(k){return k[0]===RX.kind;})[0], rows=recRows(), S=recSummary(rows);
   var h='<div class="rc-hero"><div><h2>'+kd[1]+' '+kd[2]+'</h2><small>'+esc(rg.from)+' ~ '+esc(rg.to)+' · '+(RX.div==='ALL'?'통합':esc(divById(RX.div).short))+' · '+rows.length+'건</small></div><div class="rc-hb"><span class="w" id="rcRep">보고서 (A4·PDF)</span><span id="rcXl">엑셀 다운로드</span><span id="rcPr">인쇄</span></div></div>';
   h+='<div class="rc-chips">'+RK.map(function(k){return '<i data-rk="'+k[0]+'" class="'+(RX.kind===k[0]?'on':'')+'">'+k[1]+' '+k[2]+'</i>';}).join('')+'</div>';
   h+='<div class="rc-chips"><i data-rd="ALL" class="'+(RX.div==='ALL'?'on':'')+'">통합</i>'+divs.map(function(d){return '<i data-rd="'+esc(d.id)+'" class="'+(RX.div===d.id?'on':'')+'" style="'+(RX.div===d.id?'background:'+d.color+';border-color:'+d.color+';color:#fff':'')+'">'+esc(d.short)+'</i>';}).join('')+'<b class="rc-sp"></b>'+perChips(RX.per,'rp')+'</div>'+perCustom(RX,'rc');
-  if(RX.err){h+='<div class="card empty">내역을 불러오지 못했어요.<br>'+esc(RX.err)+'<br><small>SQL 65번을 실행했는지 확인해 주세요.</small></div>';el.innerHTML=h;rcBind();return;}
+  if(RX.err){h+='<div class="card empty">내역을 불러오지 못했어요.<br>'+esc(RX.err)+'<br><small>'+(RX.kind==='facility'?'SQL 69번':'SQL 65번')+'을 실행했는지 확인해 주세요.</small></div>';el.innerHTML=h;rcBind();return;}
   var cols=RKC[RX.kind], lim=rows.slice(0,300);
   var list='<div class="rc-card rc-l"><h4>건별 목록 <small>'+rows.length+'건'+(rows.length>300?' (화면은 300건까지, 엑셀·보고서는 전체)':'')+'</small></h4>'+(rows.length?'<div class="rc-tw"><table class="rc-t"><tr><th>'+cols.slice(0,6).filter(function(c,i){return i<5;}).concat([cols[5]]).join('<th>')+'</tr>'
-    +lim.map(function(r){return '<tr><td>'+esc(dateFmt(r.dt))+'<td>'+dBadge(r.division_id)+'<td>'+esc(r.team)+'<td>'+esc(r.cat)+'<td class="rc-ttl">'+esc(r.title)+'<td class="rc-st '+stCls(r.status)+'">'+esc(r.status||'-');}).join('')+'</table></div>':'<div class="empty">해당 기간 입력된 내역이 없어요.</div>')+'</div>';
+    +lim.map(function(r){return '<tr><td>'+esc(dateFmt(r.dt))+'<td>'+dBadge(r.division_id)+'<td>'+esc(r.team)+'<td>'+esc(r.cat)+'<td class="rc-ttl">'+esc(r.title)+(RX.kind==='facility'&&r.detail?'<br><small style="color:var(--mut);font-weight:600">'+esc(r.detail)+'</small>':'')+'<td class="rc-st '+(RX.kind==='facility'?'':stCls(r.status))+'">'+esc(r.status||'-');}).join('')+'</table></div>':'<div class="empty">해당 기간 입력된 내역이 없어요.</div>')+'</div>';
   var tot=rows.length||1;
   var cmp='<div class="rc-card"><h4>사업부 비교</h4><div class="rc-kp"><div><b>'+rows.length+'</b><small>통합</small></div>'+divs.map(function(d){return '<div style="background:'+d.soft+'"><b style="color:'+d.color+'">'+(S.by[d.id]||0)+'</b><small>'+esc(d.short)+'</small></div>';}).join('')+'</div>'
     +'<div class="rc-tug">'+divs.map(function(d){var n=S.by[d.id]||0;return n?'<span style="width:'+(n/tot*100)+'%;background:'+d.color+'">'+esc(d.short)+' '+n+'</span>':'';}).join('')+'</div></div>';
@@ -2323,7 +2430,11 @@ function renderRec(){
   var cat='<div class="rc-card rc-f"><h4>유형별 건수</h4>'+(ck.length?ck.map(function(k){return '<div class="rc-r3"><span>'+esc(k)+'</span><div class="rc-bar"><i style="width:'+(S.cat[k]/cmx*100)+'%"></i></div><em>'+S.cat[k]+'</em></div>';}).join(''):'<div class="empty">내역 없음</div>')+'</div>';
   var stt=S.st.ok+S.st.no, pc=stt?Math.round(S.st.ok/stt*100):0;
   var ring='<div class="rc-card rc-f"><h4>처리 현황</h4><div class="rc-rg"><div><div class="rc-ring" style="background:conic-gradient(#1D8A5B 0 '+pc+'%,#E9ECEF 0)"><span>'+(stt?pc+'%':'-')+'</span></div><p>완료 '+S.st.ok+'/'+stt+'</p></div><div><div class="rc-ring" style="background:conic-gradient(#c0392b 0 '+(stt?100-pc:0)+'%,#E9ECEF 0)"><span>'+S.st.no+'건</span></div><p>미처리</p></div></div></div>';
+  var dly=recDailyHtml(rows);
+  if(RX.kind==='facility'){var pl={};rows.forEach(function(r){var k=r.title||'(장소 미기재)';pl[k]=(pl[k]||0)+1;});var pk=Object.keys(pl).sort(function(a,b){return pl[b]-pl[a];}).slice(0,6),pmx=pk.length?pl[pk[0]]:1;
+    ring='<div class="rc-card rc-f"><h4>장소별 신고 TOP <small>반복 고장 확인</small></h4>'+(pk.length?pk.map(function(k){return '<div class="rc-r3" style="grid-template-columns:120px 1fr 36px"><span style="font-size:13px">'+esc(k)+'</span><div class="rc-bar"><i style="width:'+(pl[k]/pmx*100)+'%;background:#E3A04C"></i></div><em>'+pl[k]+'</em></div>';}).join(''):'<div class="empty">내역 없음</div>')+'</div>';}
   h+='<div class="rc-g2">'+list+'<div class="rc-col">'+cmp+cat+ring+'</div></div>';
+  if(dly) h+='<div class="rc-dl">'+dly+'</div>';
   el.innerHTML=h; rcBind();
 }
 function rcBind(){
@@ -2341,6 +2452,7 @@ function recExcel(){
   var S=recSummary(rows), a2=[['사업부','건수']].concat(divs.map(function(d){return [d.short,S.by[d.id]||0];})).concat([['합계',rows.length]]);
   var ws=XLSX.utils.aoa_to_sheet(aoa); ws['!cols']=[{wch:17},{wch:8},{wch:12},{wch:14},{wch:30},{wch:10},{wch:44}];
   var ws2=XLSX.utils.aoa_to_sheet(a2), wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,kd[2]+' 내역'); XLSX.utils.book_append_sheet(wb,ws2,'사업부별 건수');
+  if(RX.kind==='handover'||RX.kind==='waste'){var A=recDailyAgg(rows,RX.kind),ds=recDailyDivs(),isH=RX.kind==='handover';var a3=[['일자'].concat(ds.map(function(d){return d.short;})).concat(['합계']).concat(isH?['확인','미확인','확인률(%)']:[]).concat(isH?[]:['(단위 kg)'])];A.forEach(function(a){a3.push([a.d].concat(ds.map(function(d){var v=a.by[d.id]||{n:0,kg:0};return isH?v.n:Math.round(v.kg);})).concat([isH?a.n:Math.round(a.kg)]).concat(isH?[a.ok,a.no,a.n?Math.round(a.ok/a.n*100):0]:[]));});var ws3=XLSX.utils.aoa_to_sheet(a3);ws3['!cols']=[{wch:12}].concat(new Array(ds.length+4).fill({wch:10}));XLSX.utils.book_append_sheet(wb,ws3,isH?'일자별 인수인계':'일별 폐기물');}
   try{XLSX.writeFile(wb,'그룹_'+kd[2]+'_'+RX.from+'~'+RX.to+'.xlsx');}catch(e){}
 }
 function repWin(title,sub,body){
@@ -2353,7 +2465,8 @@ function recReport(){
   var b='<h3>1. 사업부별 건수</h3><table><tr><th>구분'+divs.map(function(d){return '<th>'+esc(d.short);}).join('')+'<th>합계</tr><tr><td class="t">건수'+divs.map(function(d){return '<td>'+(S.by[d.id]||0);}).join('')+'<td class="t">'+rows.length+'</tr><tr><td class="t">처리 완료 / 미처리<td colspan="'+(divs.length+1)+'">'+S.st.ok+' / '+S.st.no+'</tr></table>';
   var ck=Object.keys(S.cat).sort(function(a,c){return S.cat[c]-S.cat[a];});
   b+='<h3>2. 유형별 건수</h3><table><tr><th>유형<th>건수</tr>'+ck.map(function(k){return '<tr><td class="l">'+esc(k)+'<td>'+S.cat[k]+'</tr>';}).join('')+(ck.length?'':'<tr><td colspan="2">내역 없음</tr>')+'</table>';
-  b+='<h3>3. 건별 내역 ('+rows.length+'건)</h3><table><tr><th>'+cols.slice(0,6).join('<th>')+'</tr>'+rows.map(function(r){return '<tr><td>'+esc(r.dt)+'<td>'+esc(divById(r.division_id).short)+'<td>'+esc(r.team)+'<td>'+esc(r.cat)+'<td class="l">'+esc(r.title)+'<td>'+esc(r.status);}).join('')+'</table>';
+  if(RX.kind==='handover'||RX.kind==='waste'){var A=recDailyAgg(rows,RX.kind),ds=recDailyDivs(),isH=RX.kind==='handover';b+='<h3>3. '+(isH?'일자별 인수인계 현황':'일별 폐기물 배출량(kg)')+'</h3><table><tr><th>일자'+ds.map(function(d){return '<th>'+esc(d.short);}).join('')+'<th>합계'+(isH?'<th>확인<th>미확인<th>확인률':'')+'</tr>'+A.slice().reverse().map(function(a){return '<tr><td>'+esc(a.d)+ds.map(function(d){var v=a.by[d.id]||{n:0,kg:0};return '<td>'+(isH?v.n:n0(Math.round(v.kg)));}).join('')+'<td>'+(isH?a.n:n0(Math.round(a.kg)))+(isH?'<td>'+a.ok+'<td>'+a.no+'<td>'+(a.n?Math.round(a.ok/a.n*100):0)+'%':'')+'</tr>';}).join('')+'</table>';}
+  b+='<h3>'+((RX.kind==='handover'||RX.kind==='waste')?'4':'3')+'. 건별 내역 ('+rows.length+'건)</h3><table><tr><th>'+cols.slice(0,6).join('<th>')+'</tr>'+rows.map(function(r){return '<tr><td>'+esc(r.dt)+'<td>'+esc(divById(r.division_id).short)+'<td>'+esc(r.team)+'<td>'+esc(r.cat)+'<td class="l">'+esc(r.title)+'<td>'+esc(r.status);}).join('')+'</table>';
   repWin('환경미화운영그룹 '+kd[2]+' 보고서',RX.from+' ~ '+RX.to+' · '+(RX.div==='ALL'?'통합':divById(RX.div).short),b);
 }
 
@@ -3743,7 +3856,7 @@ function init(){
     var rp=e.target.closest('[data-rpage],[data-rback],[data-rrf],[data-rmore]');
     if(rp){ if(rp.dataset.rpage){repOpen(rp.dataset.rpage);} else if(rp.dataset.rback){repBack();} else if(rp.dataset.rrf){REP.rf=rp.dataset.rrf;REP.rn=30;renderRep(REP.data);} else if(rp.dataset.rmore){REP.rn+=50;renderRep(REP.data);} return; }
     var dvb=e.target.closest('[data-dvidx]'); if(dvb){dvGo(+dvb.dataset.dvidx);return;}
-    var at=e.target.closest('[data-atmove],[data-atpick],[data-atclose],[data-athist],[data-atset],[data-atme],[data-atback],[data-athmode],[data-athmove],[data-atleave],[data-atplan],[data-atlt],[data-atling],[data-atledit],[data-atlrm],[data-atlsave],[data-atldel],[data-atosave],[data-goat]');
+    var at=e.target.closest('[data-atmove],[data-atpick],[data-atclose],[data-athist],[data-atset],[data-atme],[data-atback],[data-athmode],[data-athmove],[data-atleave],[data-atplan],[data-attm],[data-atlt],[data-atling],[data-atledit],[data-atlrm],[data-atlsave],[data-atldel],[data-atosave],[data-goat]');
     if(at){ if(at.classList.contains('at-sheet')&&e.target!==at) return; atAct(at.dataset); return; }
     var t=e.target.closest('[data-month],[data-kpi],[data-rep],[data-dmove],[data-dmode],[data-dlive],[data-smove],[data-smode],[data-sopen],[data-rmove],[data-rmode],[data-rsub],[data-ritem]'); if(!t) return;
     if(t.dataset.rmove){repMove(+t.dataset.rmove);return;}

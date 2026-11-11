@@ -2655,6 +2655,7 @@ function hrDel(id){
   if(!confirm(e.name+'님 파견 기록을 삭제할까요?\n삭제하면 시작일부터 원래 소속으로 집계됩니다.'))return;
   rpc('group_asg_del',{p_id:id}).then(function(r){if(r&&r.ok===false){alert(r.error||'삭제 실패');return;}loadHr();}).catch(function(er){alert('삭제 실패: '+((er&&er.message)||''));});
 }
+window.hrDiv=hrDiv;window.hrSet=hrSet;window.hrIn=hrIn;window.hrPick=hrPick;window.hrSave=hrSave;window.hrEnd=hrEnd;window.hrDel=hrDel;
 /* ---------- 비정상상황 (3개 사업장 합산 · 사업장 화면이 저장한 스냅샷) ---------- */
 var AB={date:'',rows:[]};
 function loadAb(){return rpc('group_abnormal',{p_date:AB.date||null}).then(function(r){AB.rows=r||[];renderAb(r);});}
@@ -3743,6 +3744,7 @@ function rcSave(){
     MN_DIFF=false; rcRender(); toast('✓ '+divs.length+'개 사업부에 저장했습니다 — 앱을 다시 열면 적용됩니다');
   }).catch(function(e){ toast('저장 실패: '+((e&&e.message)||e)); });
 }
+window.rcmOpen=rcmOpen;window.rcmPreset=rcmPreset;window.rcMenuRole=rcMenuRole;window.rcReset=rcReset;window.rcSave=rcSave;
 window.__mn={rcmCell:rcmCell,rcmGroup:rcmGroup,rcmOpen:rcmOpen,rcmPreset:rcmPreset,rcMenuOn:rcMenuOn,rcMenuRole:rcMenuRole,rcFrSlot:rcFrSlot,rcReset:rcReset,rcSave:rcSave};
 
 /* ===== 하단 메뉴 + 더보기 ===== */

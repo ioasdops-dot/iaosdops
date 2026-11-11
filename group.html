@@ -1884,7 +1884,7 @@ function scForm(){
    +'<div style="display:flex;gap:6px"><button type="button" class="sp-btn" data-scsave="1" style="flex:1">저장</button>'+(E.id?'<button type="button" class="sp-btn r" data-scdel="'+esc(E.id)+'">삭제</button>':'')+'</div></div>';
 }
 function scMeet(){
-  var M=SC.mt||{weekly:[],monthly:[]};
+  var M=SC.mt||{}; M.weekly=M.weekly||[]; M.monthly=M.monthly||[];
   if(!SC.mtDiv&&divs.length) SC.mtDiv=divs[0].id;
   var h='<div class="cl-chips">'+divs.map(function(d){var on=SC.mtDiv===d.id;return '<button type="button" data-scmt="'+esc(d.id)+'" class="'+(on?'on':'')+'" style="'+(on?'background:'+d.color:'')+'">'+esc(d.short)+'</button>';}).join('')+'</div>';
   var wk=M.weekly.filter(function(w){return w.division_id===SC.mtDiv;}), mo=M.monthly.filter(function(x){return x.division_id===SC.mtDiv;});

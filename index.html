@@ -12,7 +12,7 @@
 <link rel="icon" type="image/png" href="favicon.png">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="apple-touch-icon" sizes="180x180" href="apple-touch-icon.png">
-<script>try{var _q=new URLSearchParams(location.search);if(_q.get("app")==="1")sessionStorage.setItem("iaos_app","1");if(_q.get("div"))localStorage.setItem("iaos_div",_q.get("div"));}catch(e){}try{var _m=JSON.parse(localStorage.getItem("t1_me")||"null");var _d=_m?((_m.role==="master"||_m.role==="group_viewer")?localStorage.getItem("iaos_div"):_m.division_id):null;document.documentElement.setAttribute("data-div",_d||"ALL");}catch(e){document.documentElement.setAttribute("data-div","ALL");}</script>
+<script>try{var _q=new URLSearchParams(location.search);if(_q.get("app")==="1")sessionStorage.setItem("iaos_app","1");if(_q.get("div"))localStorage.setItem("iaos_div",_q.get("div"));}catch(e){}try{var _m=JSON.parse(localStorage.getItem("t1_me")||"null");var _g=_m&&(_m.role==="master"||_m.role==="group_viewer");var _d=_m?(_g?(sessionStorage.getItem("iaos_app")==="1"?localStorage.getItem("iaos_div"):"ALL"):_m.division_id):null;document.documentElement.setAttribute("data-div",_d||"ALL");}catch(e){document.documentElement.setAttribute("data-div","ALL");}</script>
 <title>환경미화운영그룹</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>

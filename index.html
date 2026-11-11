@@ -1816,7 +1816,6 @@ function t1CClear(name){ try{ for(var i=localStorage.length-1;i>=0;i--){ var key
   <div style="height:20px"></div>
     </div>
     <div class="mh-panel" id="mhPanelDash">
-  <div id="groupLinkCard" onclick="iaosBackToGroup()" style="display:none;cursor:pointer;margin:12px 13px 0;padding:12px 14px;border-radius:14px;background:linear-gradient(135deg,#6FA0EC,#5DC29C);color:#fff;font-weight:800;font-size:14px;align-items:center;justify-content:space-between"><span>📊 환경미화운영그룹 전체 통합 현황</span><span style="font-size:18px">›</span></div>
   <div style="padding:14px 13px 6px;display:flex;align-items:center;justify-content:space-between">
     <div>
       <h1 style="font-size:21px;font-weight:800;color:var(--g7)">운영현황</h1>
@@ -13434,7 +13433,7 @@ function openDivPicker(){
    +'<div style="background:#fff;width:100%;max-width:480px;border-radius:18px 18px 0 0;padding:18px 16px 26px">'
    +'<div style="font-size:16px;font-weight:800;margin-bottom:4px;color:var(--g7)">사업부 전환</div>'
    +'<div style="font-size:12px;color:var(--g4);margin-bottom:12px">선택한 사업부의 데이터가 화면에 표시됩니다</div>'
-   +'<div onclick="iaosBackToGroup()" style="padding:13px 14px;border-radius:12px;margin-bottom:10px;background:linear-gradient(135deg,#6FA0EC,#5DC29C);color:#fff;font-size:15px;font-weight:800">📊 환경미화운영그룹 전체 통합 현황 ›</div>';
+   +'';
   IAOS_DIVS.forEach(function(d){
     var on=d.id===window.curDivision;
     h+='<div onclick="iaosSwitchDiv(\''+d.id+'\')" style="padding:13px 14px;border:1.5px solid '+(on?'var(--teal)':'var(--g2)')+';background:'+(on?'var(--teal-bg)':'#fff')+';border-radius:12px;margin-bottom:8px;font-size:15px;font-weight:'+(on?'800':'600')+';color:'+(on?'var(--teal2)':'var(--g6)')+'">'+d.name+(on?' ✓':'')+'</div>';
@@ -13445,7 +13444,7 @@ function openDivPicker(){
 function iaosSwitchDiv(id){
   try{localStorage.setItem('iaos_div',id);}catch(e){}
   window.curDivision=id;
-  location.reload();
+  try{ var u=new URL(location.href); u.searchParams.delete('div'); location.replace(u.toString()); }catch(e){ location.reload(); }
 }
 
 // ══════════ 사업부 관리 (master 전용) — 사업부·팀·조·구역/건물 편집 ══════════

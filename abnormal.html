@@ -1227,13 +1227,15 @@ function boardTheme(){BDARK=!BDARK;try{localStorage.setItem('abBoardDark',BDARK?
 function bNow(){return new Date(Date.now()+9*3600000).toISOString().slice(11,19);}
 function bTone(p){return p>=90?'var(--grn)':p>=70?'var(--amb)':'var(--red)';}
 function evCnt(kind){var r={new:0,doing:0,done:0};(S.events||[]).forEach(function(x){if(x.kind===kind&&r[x.status]!=null)r[x.status]++;});return r;}
+function unpLbl(n){return n>0?'구역 미배치 · DopS 입력은 있으나 층 배치 전, 또는 지원':'구역 배치가 TOPS 입력보다 많음'}
+function spSum(z){var n=0,d=[];SPECIALS.forEach(function(s){var c=z[s[0]]||0;n+=c;d.push(s[1]+' '+c);});var ns=0;NSITEMS.forEach(function(x){ns+=z[nsKey(x[0])]||0;});if(ns){n+=ns;d.push('야간작업 '+ns);}return {n:n,d:d.join(' · ')};}
 function bFloors(z){
   var fl=FLOORS.filter(function(f){return AREAS.some(function(a){return KINDS.some(function(k){var key=a[0]+'_'+k[0]+'_'+f[0];return (z[key]||0)>0||(S.avg[key]||0)>=.5;});});});
   if(!fl.length)fl=FLOORS.slice(0,4);
   var v=function(f,k){var n=0,av=0;AREAS.forEach(function(a){var key=a[0]+'_'+k+'_'+f;n+=z[key]||0;av+=S.avg[key]||0;});return {n:n,a:Math.round(av)};};
   var allT=0,rows=KINDS.map(function(k){return {k:k,c:fl.map(function(f){return v(f[0],k[0]);})};});
   var colT=fl.map(function(f,i){return rows.reduce(function(t,r){return t+r.c[i].n;},0);});
-  allT=colT.reduce(function(a,b){return a+b;},0);var MF=mgrField();allT+=MF.n;
+  allT=colT.reduce(function(a,b){return a+b;},0);var MF=mgrField();var SPT=spSum(z);var UNP=totals().in-(allT+MF.n+SPT.n);allT+=MF.n+SPT.n+UNP;
   var cell=function(c){return '<div class="'+(!c.n&&!c.a?'z':(c.a&&c.n<c.a*0.8?'lo':''))+'">'+(!c.n&&!c.a?'-':c.n)+'</div>';};
   var h='<div class="pn"><div class="pt">층별 투입<i>|</i><small>L/S · A/S 구분</small>'+mgrFieldInline()+'<b>'+allT+'<small>명</small></b></div><div class="fl" style="grid-template-rows:auto repeat(5,minmax(0,1fr));grid-template-columns:auto repeat('+fl.length+',1fr)"><span></span>'+fl.map(function(f){return '<span class="fh">'+f[1]+'</span>';}).join('');
   rows.forEach(function(r){h+='<em>'+r.k[1]+'</em>'+r.c.map(cell).join('');});
@@ -1242,7 +1244,7 @@ function bFloors(z){
     var tot=0,cards=fl.map(function(f){var t=0,d=KINDS.map(function(k){var c=vv(f[0],k[0]);t+=c.n;return '<span>'+k[1]+'<b class="'+(!c.n&&!c.a?'z':(c.a&&c.n<c.a*0.8?'lo':''))+'">'+(!c.n&&!c.a?'-':c.n)+'</b></span>';}).join('');tot+=t;return '<div><div class="fh2"><h4>'+f[1]+'</h4><div class="t">'+t+'</div></div><div class="s">'+d+'</div></div>';}).join('');
     return '<div class="fcs '+pref+'"><div class="fcl"><b>'+nm+'</b>'+(sub?'<small>'+sub+'</small>':'')+'<em>'+tot+'<u>명</u></em></div><div class="fcc" style="grid-template-columns:repeat('+fl.length+',1fr)">'+cards+'</div></div>';};
   h+='<div class="fcg">'+grp('ls','L/S','')+grp('as','A/S','')+'</div><div class="fcn">빨강 = 월평균 대비 20% 이상 부족</div>';
-  h+='<table class="flm"><tr><th>층<th>화장실<th>겸용<th>공용구역<th>수거<th>합계</tr>'+fl.map(function(f,i){return '<tr><td>'+f[1]+rows.map(function(r){return '<td>'+(r.c[i].n||'-');}).join('')+'<td class="tt3">'+colT[i];}).join('')+'<tr class="sm"><td>계'+rows.map(function(r){return '<td>'+r.c.reduce(function(t,c){return t+c.n;},0);}).join('')+'<td class="tt3">'+(allT-MF.n)+'</table></div>';
+  h+='<table class="flm"><tr><th>층<th>화장실<th>겸용<th>공용구역<th>수거<th>합계</tr>'+fl.map(function(f,i){return '<tr><td>'+f[1]+rows.map(function(r){return '<td>'+(r.c[i].n||'-');}).join('')+'<td class="tt3">'+colT[i];}).join('')+'<tr class="sm"><td>계'+rows.map(function(r){return '<td>'+r.c.reduce(function(t,c){return t+c.n;},0);}).join('')+'<td class="tt3">'+(allT-MF.n-SPT.n-UNP)+'</table></div>';
   return h;
 }
 function bMgr(){
@@ -1306,14 +1308,14 @@ function reportModel(){
     un=[['민노',U['민노']],['한마음',U['한마음']],['비노조',U['비노조']],['총원',tot]].map(function(r){return {name:r[0],n:r[1].n,o:r[1].o,c:r[1].c,p:r[1].p,rate:pct(r[1].p,r[1].w)};});}
   var d=S.date.split('-');
   return {title:'비정상상황 현황 보고',stamp:(+d[1])+'월 '+(+d[2])+'일 ('+dowOf(S.date)+') '+rpNowTxt()+' 기준',basis:baseLabel(),
-    inv:{q:T.q,in:T.in,mc:T.mc,c:T.c,sup:T.sup,xie:T.xie,ent:T.ent||0,rate:T.q?Math.round(T.in/T.q*100):0,dw:dowAvg()},frows:frows,ftot:ftot,fall:frows.reduce(function(t,r){return t+r.t;},0),mf:mgrField(),cu:T.cu,un:un,ev:ec,
+    inv:{q:T.q,in:T.in,mc:T.mc,c:T.c,sup:T.sup,xie:T.xie,ent:T.ent||0,rate:T.q?Math.round(T.in/T.q*100):0,dw:dowAvg()},frows:frows,ftot:ftot,fall:frows.reduce(function(t,r){return t+r.t;},0),sp:spSum(z).n,spd:spSum(z).d,unp:T.in-(frows.reduce(function(t,r){return t+r.t;},0)+spSum(z).n+mgrField().n),mf:mgrField(),cu:T.cu,un:un,ev:ec,
     who:(S.me&&(S.me.name||S.me.emp_name))||'',a3:(function(){try{return a3Model();}catch(e){return null;}})(),ex:(function(){try{return exModel();}catch(e){return null;}})(),exf:(function(){try{return exModelFc();}catch(e){return null;}})()};
 }
 function rpHTML(m,sel){
   var h='<div class="rpa"><div class="rph"><h1>'+m.title+'</h1><p>'+m.stamp+'</p><small>정원 기준 '+m.basis+' · '+divName()+'</small></div>';
   var n=0;
   if(sel.inv){n++;h+='<section><h3>'+n+'. 투입 현황</h3><table class="rt big"><tr><th>정원<th>총 투입<th>근무<th>관리<th>지원<th>협정<th>조장입력<th>투입률<th>요일 평균<th>평균 대비</tr><tr><td>'+m.inv.q+'<td class="b">'+m.inv.in+'<td>'+m.inv.c+'<td>'+m.inv.mc+'<td>'+m.inv.sup+'<td>'+m.inv.xie+'<td>'+m.inv.ent+'<td class="b">'+m.inv.rate+'%<td>'+(m.inv.dw?m.inv.dw.avg:'-')+'<td>'+(m.inv.dw?((m.inv.in-m.inv.dw.avg>0?'+':m.inv.in-m.inv.dw.avg<0?'−':'±')+Math.abs(m.inv.in-m.inv.dw.avg)):'-')+'</tr></table><p class="rn">총 투입 = 근무 + 관리(출근한 총괄·팀장·조장·사업부장) + 지원 + 협정 + 조장입력(출근체크 전 조의 DopS 입력 인원) · 정원 = 조원 정원 + 관리자 정원 · 투입률 = 총 투입 ÷ 정원</p></section>';}
-  if(sel.floor){n++;h+='<section class="gr"><h3>'+n+'. 층별 투입 <small>랜드·에어 합산</small></h3><table class="rt"><tr><th>층'+KINDS.map(function(k){return '<th>'+k[1];}).join('')+'<th>합계</tr>'+m.frows.map(function(r){return '<tr><th>'+r.f+r.v.map(function(v){return '<td>'+v;}).join('')+'<td class="b">'+r.t;}).join('')+'<tr class="sm"><th>계'+m.ftot.map(function(v){return '<td>'+v;}).join('')+'<td class="b">'+m.fall+'</tr><tr><th>현장관리<td colspan="'+KINDS.length+'">전체 '+m.mf.all.length+' · L/S '+m.mf.ls.length+' · A/S '+m.mf.as.length+'<td class="b">'+m.mf.n+'</tr>'+(m.cu?'<tr><th>층 미배정<td colspan="'+KINDS.length+'">출근 확정(ERP), 구역 배치 전<td class="b">'+m.cu+'</tr>':'')+'<tr class="sm"><th>총 합계<td colspan="'+KINDS.length+'">층 배치 + 현장관리<td class="b">'+(m.fall+m.mf.n)+'</tr></table></section>';}
+  if(sel.floor){n++;h+='<section class="gr"><h3>'+n+'. 층별 투입 <small>랜드·에어 합산</small></h3><table class="rt"><tr><th>층'+KINDS.map(function(k){return '<th>'+k[1];}).join('')+'<th>합계</tr>'+m.frows.map(function(r){return '<tr><th>'+r.f+r.v.map(function(v){return '<td>'+v;}).join('')+'<td class="b">'+r.t;}).join('')+'<tr class="sm"><th>계'+m.ftot.map(function(v){return '<td>'+v;}).join('')+'<td class="b">'+m.fall+'</tr>'+(m.unp?'<tr><th>'+(m.unp>0?'구역 미배치':'배치 초과')+'<td colspan="'+KINDS.length+'">'+unpLbl(m.unp)+'<td class="b">'+m.unp+'</tr>':'')+(m.sp?'<tr><th>집하·특수<td colspan="'+KINDS.length+'">'+m.spd+'<td class="b">'+m.sp+'</tr>':'')+'<tr><th>현장관리<td colspan="'+KINDS.length+'">전체 '+m.mf.all.length+' · L/S '+m.mf.ls.length+' · A/S '+m.mf.as.length+'<td class="b">'+m.mf.n+'</tr>'+(m.cu?'<tr><th>층 미배정<td colspan="'+KINDS.length+'">출근 확정(ERP), 구역 배치 전<td class="b">'+m.cu+'</tr>':'')+'<tr class="sm"><th>총 합계<td colspan="'+KINDS.length+'">층 배치'+(m.sp?' + 집하·특수':'')+(m.unp?' + 미배치':'')+' + 현장관리<td class="b">'+(m.fall+m.sp+m.unp+m.mf.n)+'</tr></table></section>';}
   if(sel.union){n++;h+='<section><h3>'+n+'. 노조 현황 <small>결근 = 근무 예정인데 출근하지 않은 파업 참여 인원</small></h3>'+(m.un?'<table class="rt"><tr><th>구분<th>조합원<th>휴무외<th>투입(출근)<th>결근<th>결근율</tr>'+m.un.map(function(r,i){return '<tr'+(i===2?' class="sm"':'')+'><th>'+r.name+'<td>'+r.n+'<td>'+r.o+'<td>'+r.c+'<td class="r">'+r.p+'<td class="r">'+r.rate;}).join('')+'</table>':'<p class="rn">노조 자료 없음</p>')+'</section>';}
   if(sel.event){n++;h+='<section><h3>'+n+'. 이벤트 발생 <small>총 '+(m.ev.illegal+m.ev.obstruct)+'건</small></h3><table class="rt big"><tr><th>불법행위<th>업무방해</tr><tr><td class="b">'+m.ev.illegal+'건<td class="b">'+m.ev.obstruct+'건</tr></table></section>';}
   if(!n)h+='<p class="rn" style="margin:40px 0;text-align:center">출력할 항목을 선택하세요</p>';
@@ -1355,7 +1357,7 @@ function reportXlsx(){
   var m=RP.saved?RP.saved.snapshot:reportModel(),wb=XLSX.utils.book_new(),sel=RP.sel;
   function add(n,rows){var ws=XLSX.utils.aoa_to_sheet(rows);ws['!cols']=rows[0].map(function(){return {wch:14};});XLSX.utils.book_append_sheet(wb,ws,n);}
   if(sel.inv)add('투입현황',[['기준',m.stamp],['정원 기준',m.basis],[],['정원','총 투입','근무','관리','지원','협정','조장입력','투입률','요일 평균','평균 대비'],[m.inv.q,m.inv.in,m.inv.c,m.inv.mc,m.inv.sup,m.inv.xie,m.inv.ent,m.inv.rate+'%',m.inv.dw?m.inv.dw.avg:'',m.inv.dw?m.inv.in-m.inv.dw.avg:'']]);
-  if(sel.floor)add('층별투입',[['층'].concat(KINDS.map(function(k){return k[1];}),['합계'])].concat(m.frows.map(function(r){return [r.f].concat(r.v,[r.t]);}),[['계'].concat(m.ftot,[m.fall])],[['현장관리','전체 '+m.mf.all.length,'L/S '+m.mf.ls.length,'A/S '+m.mf.as.length,m.mf.n],['층 미배정','','','',m.cu||0],['총 합계','','','',m.fall+m.mf.n]]));
+  if(sel.floor)add('층별투입',[['층'].concat(KINDS.map(function(k){return k[1];}),['합계'])].concat(m.frows.map(function(r){return [r.f].concat(r.v,[r.t]);}),[['계'].concat(m.ftot,[m.fall])],[['집하·특수',m.spd,'','',m.sp||0],['구역 미배치/초과',unpLbl(m.unp||0),'','',m.unp||0],['현장관리','전체 '+m.mf.all.length,'L/S '+m.mf.ls.length,'A/S '+m.mf.as.length,m.mf.n],['층 미배정','','','',m.cu||0],['총 합계','','','',m.fall+m.sp+m.unp+m.mf.n]]));
   if(sel.union&&m.un)add('노조현황',[['구분','조합원','휴무외','투입(출근)','결근','결근율']].concat(m.un.map(function(r){return [r.name,r.n,r.o,r.c,r.p,r.rate];})));
   if(sel.event)add('이벤트',[['불법행위','업무방해'],[m.ev.illegal,m.ev.obstruct]]);
   if(!wb.SheetNames.length){toast('출력할 항목을 선택하세요');return;}
@@ -1502,9 +1504,11 @@ async function a3Xlsx(){var m=a3Get();if(!m)return;
   ['층'].concat(KINDS.map(function(k){return k[1];}),['합계']).forEach(function(t,i){p2(q,1+i,q,1+i,t,{sz:12,b:1,fg:'FFFFFF',bg:A3C.navy});});w2.getRow(q).height=28;q++;
   rm.frows.forEach(function(x){p2(q,1,q,1,x.f,{sz:14,b:1,bg:A3C.lb});x.v.forEach(function(v,i){p2(q,2+i,q,2+i,v,{sz:14});});p2(q,2+nK,q,2+nK,x.t,{sz:15,b:1,fg:A3C.blue});w2.getRow(q).height=28;q++;});
   p2(q,1,q,1,'계',{sz:14,b:1,bg:A3C.gr});rm.ftot.forEach(function(v,i){p2(q,2+i,q,2+i,v,{sz:14,b:1,bg:A3C.gr});});p2(q,2+nK,q,2+nK,rm.fall,{sz:15,b:1,fg:A3C.blue,bg:A3C.gr});w2.getRow(q).height=28;q++;
+  if(rm.unp){p2(q,1,q,1,rm.unp>0?'구역 미배치':'배치 초과',{sz:13,b:1,bg:A3C.gr});p2(q,2,q,1+nK,unpLbl(rm.unp),{sz:12});p2(q,2+nK,q,2+nK,rm.unp,{sz:14,b:1});q++;}
+  if(rm.sp){p2(q,1,q,1,'집하·특수',{sz:13,b:1,bg:A3C.gr});p2(q,2,q,1+nK,rm.spd,{sz:12});p2(q,2+nK,q,2+nK,rm.sp,{sz:14,b:1});q++;}
   p2(q,1,q,1,'현장관리',{sz:13,b:1,bg:A3C.gr});p2(q,2,q,1+nK,'전체 '+rm.mf.all.length+' · L/S '+rm.mf.ls.length+' · A/S '+rm.mf.as.length,{sz:12});p2(q,2+nK,q,2+nK,rm.mf.n,{sz:14,b:1});q++;
   if(rm.cu){p2(q,1,q,1,'층 미배정',{sz:13,b:1,bg:A3C.gr});p2(q,2,q,1+nK,'출근 확정(ERP), 구역 배치 전',{sz:12});p2(q,2+nK,q,2+nK,rm.cu,{sz:14,b:1});q++;}
-  p2(q,1,q,1,'총 합계',{sz:14,b:1,bg:A3C.lb});p2(q,2,q,1+nK,'층 배치 + 현장관리',{sz:12,bg:A3C.lb});p2(q,2+nK,q,2+nK,rm.fall+rm.mf.n,{sz:16,b:1,fg:A3C.navy,bg:A3C.lb});q+=2;
+  p2(q,1,q,1,'총 합계',{sz:14,b:1,bg:A3C.lb});p2(q,2,q,1+nK,'층 배치'+(rm.sp?' + 집하·특수':'')+(rm.unp?' + 미배치':'')+' + 현장관리',{sz:12,bg:A3C.lb});p2(q,2+nK,q,2+nK,rm.fall+rm.sp+rm.unp+rm.mf.n,{sz:16,b:1,fg:A3C.navy,bg:A3C.lb});q+=2;
   p2(q,1,q,last,'② 노조 현황 (쟁의 참여) — 결근 = 근무 예정이었는데 출근하지 않은 파업 참여 인원',{sz:15,b:1,fg:'FFFFFF',bg:A3C.blue,h:'left'});q++;
   if(rm.un){['구분','조합원','휴무외','투입(출근)','결근','결근율'].forEach(function(t,i){p2(q,1+i,q,1+i,t,{sz:12,b:1,fg:'FFFFFF',bg:A3C.navy});});w2.getRow(q).height=28;q++;
     rm.un.forEach(function(x){var tot=x.name==='총원';p2(q,1,q,1,x.name,{sz:14,b:1,bg:tot?A3C.lb:A3C.gr});p2(q,2,q,2,x.n,{sz:14});p2(q,3,q,3,x.o,{sz:14});p2(q,4,q,4,x.c,{sz:14,fg:A3C.grn,b:1});p2(q,5,q,5,x.p,{sz:15,b:1,fg:A3C.red});p2(q,6,q,6,x.rate,{sz:14,b:1,fg:x.p?A3C.red:'44546A'});w2.getRow(q).height=28;q++;});}
@@ -1832,9 +1836,9 @@ setInterval(function(){try{if(document.hidden||S.loading||S.board||S.sheet||RP.o
   if(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName))return;
   loadAll(true);}catch(e){}},60000);
 
-// 현장관리: 출근한 총괄(사업부장·총괄팀장)=전체, 1·2·6·7팀 팀장·조장=L/S, 3·4·8·9팀 팀장·조장=A/S (행정·5/10팀 제외)
+// 현장관리: 출근한 총괄(사업부장·총괄팀장)=전체, 1·2·5·6·7팀 팀장·조장=L/S(랜드), 3·4·8·9·10팀 팀장·조장=A/S(에어) (행정 제외)
 function mgrField(){var r={all:[],ls:[],as:[]};S.emps.forEach(function(e){if(!isMgrEmp(e)||!mgrCount(e))return;if(!(S.mgrIn[e.emp_no]||S.checkin[e.emp_no]))return;
-  if(!/^\d+팀$/.test(e.team||'')){r.all.push(e.name);return;}var n=parseInt(e.team);if([1,2,6,7].indexOf(n)>=0)r.ls.push(e.name);else if([3,4,8,9].indexOf(n)>=0)r.as.push(e.name);});
+  if(!/^\d+팀$/.test(e.team||'')){r.all.push(e.name);return;}var n=parseInt(e.team);if([1,2,5,6,7].indexOf(n)>=0)r.ls.push(e.name);else if([3,4,8,9,10].indexOf(n)>=0)r.as.push(e.name);});
   r.n=r.all.length+r.ls.length+r.as.length;return r;}
 function mgrFieldHTML(){var f=mgrField(),cu=totals().cu;return '<div class="fmg"><b>현장관리</b><span>전체 <i>'+f.all.length+'</i></span><span>L/S <i>'+f.ls.length+'</i></span><span>A/S <i>'+f.as.length+'</i></span>'+(cu?'<span class="un"><b>층 미배정</b> <i>'+cu+'</i></span>':'')+'</div>';}
 

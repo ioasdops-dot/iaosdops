@@ -855,10 +855,12 @@ body #scrStats .seg-btn{flex:0 0 auto!important;min-width:110px;height:44px;padd
     </div>
     <details class="info-fold" id="infoFold"><summary><span>팀·작성자</span><span id="infoSum" class="info-sum"></span></summary>
     <div class="info-grid">
+      <div style="grid-column:1/-1"><div class="f-label">오전 조장·팀장 선택</div><select id="selAm" onchange="hdrPick('Am')" style="width:100%;height:44px;border:1.5px solid #D5DEE8;border-radius:10px;font-size:15px;font-weight:700;padding:0 8px;background:#fff"><option value="">선택…</option></select></div>
       <div><div class="f-label">오전 팀</div><input type="text" id="teamAm" placeholder="없으면 공란"></div>
-      <div><div class="f-label">오전 작성자</div><input type="text" id="leaderAm" placeholder="없으면 공란" list="leaderList"></div>
+      <div><div class="f-label">오전 조장</div><input type="text" id="leaderAm" placeholder="없으면 공란" list="leaderList"></div>
+      <div style="grid-column:1/-1"><div class="f-label">오후 조장·팀장 선택</div><select id="selPm" onchange="hdrPick('Pm')" style="width:100%;height:44px;border:1.5px solid #D5DEE8;border-radius:10px;font-size:15px;font-weight:700;padding:0 8px;background:#fff"><option value="">선택…</option></select></div>
       <div><div class="f-label">오후 팀</div><input type="text" id="teamPm" placeholder="없으면 공란"></div>
-      <div><div class="f-label">오후 작성자</div><input type="text" id="leaderPm" placeholder="없으면 공란" list="leaderList"></div>
+      <div><div class="f-label">오후 조장</div><input type="text" id="leaderPm" placeholder="없으면 공란" list="leaderList"></div>
       <div><div class="f-label">야간 팀</div><input type="text" id="teamNight" placeholder="없으면 공란"></div>
       <div><div class="f-label">야간 작성자</div><input type="text" id="leaderNight" placeholder="없으면 공란" list="leaderList"></div>
     </div>
@@ -1367,7 +1369,7 @@ function loadMasters(){
     var dl=document.getElementById('leaderList'); dl.innerHTML='';
     var seen={};
     LEADERS.forEach(function(l){ if(l.name&&!seen[l.name]){ seen[l.name]=1; var o=document.createElement('option'); o.value=l.name; dl.appendChild(o); } });
-    renderWarehouses(); loadWhStock();
+    wkLoadUsers(); renderWarehouses(); loadWhStock();
     dot.classList.add('ok'); msg.textContent='DB 연결됨 · 창고 '+WAREHOUSES.length+'개 · 품목 '+ITEMS.length+'개';
     loadHomeSummary();
   }).catch(function(){ dot.classList.remove('ok'); msg.textContent='DB 연결 실패 — 네트워크를 확인하세요'; });
@@ -1735,6 +1737,48 @@ function onDateChange(){
   loadWarehouseItemsAndLedger();
 }
 
+// ── 대장 머리글: 조장·팀장 선택 / 하단 도장 ──
+var WK_USERS=[], HDR_PAIR={1:6,2:7,3:8,4:9,6:1,7:2,8:3,9:4};
+function wkLoadUsers(){ return sbFetch('/users?select=name,team,role&role=in.(leader,manager)').then(function(r){return r.json();}).then(function(u){ WK_USERS=Array.isArray(u)?u:[]; hdrFill(); }).catch(function(){}); }
+function hdrTeams(){ var all=[1,2,3,4,5,6,7,8,9,10]; if(!me) return []; if(me.role==='master'||me.role==='admin') return all;
+  var m=/(\d+)\s*팀/.exec(me.team||''); if(!m) return all; var n=parseInt(m[1],10); return HDR_PAIR[n]?[n,HDR_PAIR[n]].sort(function(a,b){return a-b;}):[n]; }
+function hdrOptions(){ var out=[]; hdrTeams().forEach(function(n){
+  WK_USERS.filter(function(u){return u.role==='manager'&&u.team===n+'팀';}).forEach(function(u){ out.push({t:n+'팀',n:u.name,k:'팀장'}); });
+  ['A','B','C'].forEach(function(L){ WK_USERS.filter(function(u){return u.role==='leader'&&u.team===n+'팀 '+L+'조';}).forEach(function(u){ out.push({t:n+'팀 '+L+'조',n:u.name,k:'조장'}); }); }); }); return out; }
+function hdrFill(){ ['Am','Pm'].forEach(function(s){ var el=document.getElementById('sel'+s); if(!el) return; var cur=document.getElementById('team'+s).value+'|'+document.getElementById('leader'+s).value;
+  var h='<option value="">선택…</option>'; hdrOptions().forEach(function(o){ var v=o.t+'|'+o.n; h+='<option value="'+esc(v)+'"'+(v===cur?' selected':'')+'>'+esc(o.t+' · '+o.k+' '+o.n)+'</option>'; }); el.innerHTML=h; }); }
+function hdrPick(s){ var v=document.getElementById('sel'+s).value; if(!v) return; var p=v.split('|'); var t=document.getElementById('team'+s), l=document.getElementById('leader'+s);
+  t.value=p[0]; l.value=p[1]; [t,l].forEach(function(e){ try{ e.dispatchEvent(new Event('input',{bubbles:true})); }catch(x){} }); try{ ledInfoSum(); }catch(e){} }
+function wkStampOn(){ try{ return localStorage.getItem('wk_stamp')!=='0'; }catch(e){ return true; } }
+function wkStampSet(el){ try{ localStorage.setItem('wk_stamp',el.checked?'1':'0'); }catch(e){} }
+function wkSplitNames(s){ return String(s||'').split(/\s*[·,]\s*/).map(function(x){return x.trim();}).filter(Boolean); }
+function wkTeamLeads(ts){ var out=[]; wkSplitNames(ts).forEach(function(t){ var m=/(\d+)\s*팀/.exec(t); if(!m) return; var u=WK_USERS.filter(function(x){return x.role==='manager'&&x.team===m[1]+'팀';})[0]; if(u&&out.indexOf(u.name)<0) out.push(u.name); }); return out; }
+function wkRectStamp(name){ var d=new Date(Date.now()+9*3600000).toISOString(), t=d.slice(5,10).replace('-','.')+' '+d.slice(11,16);
+  return '<span style="display:inline-flex;align-items:center;white-space:nowrap;border:1.6px solid #c0392b;border-radius:3px;color:#c0392b;background:#fff;padding:1px 5px;line-height:1;transform:rotate(-1.5deg);margin-left:2px"><span style="font-family:Nanum Pen Script,Noto Sans KR,cursive;font-size:14px;letter-spacing:-.5px;font-weight:400">'+esc(name)+'</span><span style="border-left:1px solid #c0392b;margin-left:4px;padding-left:4px;font-size:8px;font-weight:700">'+t+'</span></span>'; }
+
+// 창고 담당팀 기준 기본 머리말: 오전=1~4팀(+6~9팀의 연계팀), 오후=6~9팀(+1~4팀의 연계팀), 야간=5·10팀. 담당자=해당 팀 팀장
+function whDefHdr(w){
+  var PAIRX={1:6,2:7,3:8,4:9,6:1,7:2,8:3,9:4}, am=[],pm=[],nt=[];
+  var add=function(a,n){ if(a.indexOf(n)<0) a.push(n); };
+  extractTeamNums((w&&w.teams)||'').forEach(function(n){
+    if(n===5||n===10){ add(nt,n); return; }
+    var o=PAIRX[n]; if(!o) return; var lo=Math.min(n,o), hi=Math.max(n,o); add(am,lo); add(pm,hi);
+  });
+  var srt=function(a){ return a.sort(function(x,y){return x-y;}); };
+  // 조장 계정: 내 팀·연계팀은 '팀장'이 아니라 같은 조(A/B/C)의 조장으로 채움
+  var grp=(typeof me!=='undefined'&&me&&me.role==='leader')?/(\d+)\s*팀\s*([A-C])\s*조/.exec(me.team||''):null, gn=grp?parseInt(grp[1],10):0;
+  var ent=function(n){
+    var lds=WK_USERS.filter(function(x){return x.role==='leader'&&new RegExp('^'+n+'팀\\s*[A-C]\\s*조').test(x.team||'');}).sort(function(a,b){return (a.team||'').localeCompare(b.team||'');});
+    // 동편 창고 = A조, 서편 창고 = B조 (현장 배치 기준). 동·서 표시가 없으면 해당 팀 조장 전체
+    var side=/서\s*편|서측|\bWEST\b/i.test((w&&w.location_desc)||'')?'B':(/동\s*편|동측|\bEAST\b/i.test((w&&w.location_desc)||'')?'A':'');
+    if(side){ var one=lds.filter(function(x){return new RegExp('^'+n+'팀\\s*'+side+'\\s*조').test(x.team||'');}); if(one.length) lds=one; }
+    if(!(grp&&(n===gn||n===PAIRX[gn]))&&lds.length) return {t:n+'팀 '+lds.map(function(x){return (/([A-C])\s*조/.exec(x.team)||[])[1];}).join('·')+'조',l:lds.map(function(x){return x.name;}).join(' · ')};
+    if(grp&&(n===gn||n===PAIRX[gn])){ var tm=n+'팀 '+grp[2]+'조', u=WK_USERS.filter(function(x){return x.role==='leader'&&x.team===tm;})[0]; if(n===gn) return {t:tm,l:me.name||''}; if(u) return {t:tm,l:u.name}; }
+    var m=WK_USERS.filter(function(x){return x.role==='manager'&&x.team===n+'팀';})[0]; return {t:n+'팀',l:m?m.name:''}; };
+  var f=function(a){ var e=srt(a).map(ent); return {t:e.map(function(x){return x.t;}).join(' · '), l:e.map(function(x){return x.l;}).filter(Boolean).join(' · ')}; };
+  var A=f(am),P=f(pm),N=f(nt);
+  return {am:A.t,amL:A.l,pm:P.t,pmL:P.l,nt:N.t,ntL:N.l};
+}
 function loadDailyHeader(){
   document.getElementById('teamAm').value=''; document.getElementById('leaderAm').value='';
   document.getElementById('teamPm').value=''; document.getElementById('leaderPm').value='';
@@ -1749,10 +1793,18 @@ function loadDailyHeader(){
         document.getElementById('leaderPm').value=h.leader_pm||'';
         document.getElementById('teamNight').value=h.team_night||'';
         document.getElementById('leaderNight').value=h.leader_night||'';
-      } else if(me){
-        if(curShift==='오전'){ document.getElementById('teamAm').value=me.team||''; document.getElementById('leaderAm').value=me.name||''; }
-        else if(curShift==='오후'){ document.getElementById('teamPm').value=me.team||''; document.getElementById('leaderPm').value=me.name||''; }
-        else if(curShift==='야간'){ document.getElementById('teamNight').value=me.team||''; document.getElementById('leaderNight').value=me.name||''; }
+        hdrFill();
+      } else {
+        var go=function(){
+          var d=whDefHdr(curWarehouse);
+          if(lastH&&((lastH.team_am||'').trim()||(lastH.team_pm||'').trim())) d={am:lastH.team_am||d.am,amL:lastH.leader_am||d.amL,pm:lastH.team_pm||d.pm,pmL:lastH.leader_pm||d.pmL,nt:lastH.team_night||d.nt,ntL:lastH.leader_night||d.ntL};
+          document.getElementById('teamAm').value=d.am; document.getElementById('leaderAm').value=d.amL;
+          document.getElementById('teamPm').value=d.pm; document.getElementById('leaderPm').value=d.pmL;
+          document.getElementById('teamNight').value=d.nt; document.getElementById('leaderNight').value=d.ntL;
+          hdrFill(); try{ ledInfoSum(); }catch(e){}
+        };
+        var lastH=null,ready=function(){ if(WK_USERS.length) go(); else wkLoadUsers().then(go); };
+        sbFetch('/warehouse_daily?warehouse_id=eq.'+curWarehouse.id+'&ledger_date=lt.'+curDate+'&or=(team_am.neq.,team_pm.neq.)&order=ledger_date.desc&limit=1&select=*').then(function(r){return r.json();}).then(function(a){ if(Array.isArray(a)&&a[0]) lastH=a[0]; ready(); }).catch(ready);
       }
     }).catch(function(){});
 }
@@ -4132,15 +4184,22 @@ function wkPageHtml(d,rows,pg,tot,o){var w=curWarehouse||{},g=function(i){try{re
   var am=g('teamAm'),amL=g('leaderAm'),pm=g('teamPm'),pmL=g('leaderPm'),wr=currentWriter();
   if(o){am=o.am||'';amL=o.amL||'';pm=o.pm||'';pmL=o.pmL||'';}
   var h='<div class="pg"><div class="tt">환경미화 자재 입.출고 관리대장(서브창고)</div><div class="sb">'+(o?o.sb:(d.slice(0,4)+'. '+parseInt(d.slice(5,7),10)+'. '+parseInt(d.slice(8,10),10)+'.('+WK_DN[wkDow(d)]+')'))+' · '+pg+'/'+tot+'쪽</div>';
-  h+='<table class="inf"><tr><td class="h" colspan="2">오전</td><td class="h" colspan="2">오후</td><td class="h">위치</td><td class="h">실번호</td></tr><tr><td class="h">팀</td><td class="h">팀장</td><td class="h">팀</td><td class="h">담당자</td><td rowspan="2">'+esc(w.location_desc||'')+'</td><td rowspan="2">'+esc(w.room_no||'')+'</td></tr><tr><td>'+esc(am)+'</td><td>'+esc(amL)+'</td><td>'+esc(pm)+'</td><td>'+esc(pmL)+'</td></tr></table>';
+  h+='<table class="inf"><tr><td class="h" colspan="2">오전</td><td class="h" colspan="2">오후</td><td class="h">위치</td><td class="h">실번호</td></tr><tr><td class="h">팀</td><td class="h">'+(/[A-C]\s*조/.test(am)||!am?'조장':'팀장')+'</td><td class="h">팀</td><td class="h">'+(/[A-C]\s*조/.test(pm)||!pm?'조장':'팀장')+'</td><td rowspan="2">'+esc(w.location_desc||'')+'</td><td rowspan="2">'+esc(w.room_no||'')+'</td></tr><tr><td>'+esc(am)+'</td><td>'+esc(amL)+'</td><td>'+esc(pm)+'</td><td>'+esc(pmL)+'</td></tr></table>';
   h+='<table class="mn"><colgroup>'+[8,27,7,7,6,12,7,17,9].map(function(x){return '<col style="width:'+x+'%">';}).join('')+'</colgroup><tr><th rowspan="2">일자</th><th rowspan="2">품목명</th><th rowspan="2">'+(o&&o.range?'기간 시작<br>전 재고':'전일<br>재고')+'</th><th rowspan="2">'+(o&&o.range?'입고<br>합계':'입고<br>수량')+'</th><th colspan="2">출고</th><th rowspan="2">잔여<br>수량</th><th rowspan="2">특이사항</th><th rowspan="2">작성자</th></tr><tr><th>'+(o&&o.range?'합계':'수량')+'</th><th>출고자</th></tr>';
   for(var i=0;i<15;i++){var r=rows[i];var c0=o?(i===0?'<td rowspan="15" class="dm">'+o.cell+'</td>':''):'<td>'+(i===0?(parseInt(d.slice(5,7),10)+'/'+parseInt(d.slice(8,10),10)+'<br>('+WK_DN[wkDow(d)]+')'):'')+'</td>';h+=r?'<tr>'+c0+'<td class="n">'+esc(r.n)+'</td><td>'+r.p+'</td><td>'+(r.i||'')+'</td><td>'+(r.o||'')+'</td><td class="w">'+esc(r.nm)+'</td><td><b>'+r.rem+'</b></td><td></td><td>'+((r.i||r.o)?esc(o?(r.wr||''):wr):'')+'</td></tr>':'<tr>'+c0+'<td class="n">&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td></tr>';}
-  return h+'</table><div class="sg"><span>작성자 :</span><span>확인(팀장) :</span></div></div>';}
-var WK_PRINT_CSS='@page{size:A4;margin:9mm}*{box-sizing:border-box;font-family:"Noto Sans KR","Malgun Gothic",sans-serif}body{margin:0;color:#111}.pg{height:278mm;page-break-after:always;display:flex;flex-direction:column}.pg:last-child{page-break-after:auto}.tt{font-size:21px;font-weight:800;margin:2mm 0 1mm}.sb{text-align:right;font-size:11px;margin-bottom:2mm}table{border-collapse:collapse;width:100%}td,th{border:1px solid #333;text-align:center;padding:0 2px;font-size:11px}.inf td{height:8mm;font-size:12px}.inf .h,.mn th{background:#F0F0F0;font-weight:800}.mn{margin-top:3mm;table-layout:fixed;flex:1}.mn th{height:9mm}.mn td{height:13.4mm}.mn td.n{font-weight:700;font-size:11px;line-height:1.2}.mn td.w{font-size:10px;line-height:1.2}.mn td.dm{font-size:12px;font-weight:700;line-height:1.6}.sg{display:flex;justify-content:space-between;margin-top:3mm;font-size:12px;font-weight:700}.sg span{border-bottom:1px solid #333;padding:0 14mm 1px 2px}';
+  var stOn=wkStampOn()&&(!tot||pg>=tot),stA='',stB='';if(stOn){
+    // 작성자 = 이 페이지 '작성자' 칸에 적힌 사람(조장·팀장) / 확인 = 그 작성자 팀의 팀장 (작성 기록이 없으면 오전 조장 기준)
+    var wn=[];(o?rows.map(function(r){return r.wr||'';}):[wr]).forEach(function(s){String(s||'').split(',').forEach(function(x){x=x.replace(/\s*외\s*\d+\s*$/,'').trim();if(x&&wn.indexOf(x)<0)wn.push(x);});});
+    wn=wn.filter(function(n){return WK_USERS.some(function(u){return u.name===n;});});
+    var tl=[];
+    if(!wn.length){wkSplitNames(String(d||'').slice(0,4)<'2027'?am:pm).forEach(function(t){var m=/(\d+)\s*팀/.exec(t),mg=m&&WK_USERS.filter(function(x){return x.role==='manager'&&x.team===m[1]+'팀';})[0];if(mg&&tl.indexOf(mg.name)<0)tl.push(mg.name);});}wn.forEach(function(n){stA+=wkRectStamp(n);var u=WK_USERS.filter(function(x){return x.name===n;})[0],m=u&&/(\d+)\s*팀/.exec(u.team||''),mg=m&&WK_USERS.filter(function(x){return x.role==='manager'&&x.team===m[1]+'팀';})[0];if(mg&&tl.indexOf(mg.name)<0)tl.push(mg.name);});
+    tl.slice(0,1).forEach(function(n){stB+=wkRectStamp(n);});}
+  return h+'</table>'+((!tot||pg>=tot)?'<div class="sg"><span>작성자 :'+stA+'</span><span>확인(팀장) :'+stB+'</span></div>':'')+'</div>';}
+var WK_PRINT_CSS='@page{size:A4;margin:9mm}*{box-sizing:border-box;font-family:"Noto Sans KR","Malgun Gothic",sans-serif}body{margin:0;color:#111}.pg{height:278mm;page-break-after:always;display:flex;flex-direction:column}.pg:last-child{page-break-after:auto}.tt{font-size:21px;font-weight:800;margin:2mm 0 1mm}.sb{text-align:right;font-size:11px;margin-bottom:2mm}table{border-collapse:collapse;width:100%}td,th{border:1px solid #333;text-align:center;padding:0 2px;font-size:11px}.inf td{height:8mm;font-size:12px}.inf .h,.mn th{background:#F0F0F0;font-weight:800}.mn{margin-top:3mm;table-layout:fixed;flex:1}.mn th{height:9mm}.mn td{height:13.4mm}.mn td.n{font-weight:700;font-size:11px;line-height:1.2}.mn td.w{font-size:10px;line-height:1.2}.mn td.dm{font-size:12px;font-weight:700;line-height:1.6}.sg{display:flex;justify-content:space-between;margin-top:3mm;font-size:12px;font-weight:700}.sg>span{display:inline-flex;align-items:center;gap:3px;min-height:8mm;border-bottom:1px solid #333;padding:0 4mm 1px 2px}';
 function wkPrint(all){var days=all?WK.days.filter(function(d){var a=false;WK.items.forEach(function(it){var v=wkDayVals(it.item_id,d);if(v.i||v.o)a=true;});return a;}):[WK.days[WK.tab]];
   if(!days.length){toast('출력할 입출고 내역이 없습니다');return;}
   var pages=[];days.forEach(function(d){var rows=wkDayRows(d),n=Math.max(1,Math.ceil(rows.length/15));for(var p=0;p<n;p++)pages.push({d:d,rows:rows.slice(p*15,p*15+15),pg:p+1,tot:n});});
-  var css='@page{size:A4;margin:9mm}*{box-sizing:border-box;font-family:"Noto Sans KR","Malgun Gothic",sans-serif}body{margin:0;color:#111}.pg{height:278mm;page-break-after:always;display:flex;flex-direction:column}.pg:last-child{page-break-after:auto}.tt{font-size:21px;font-weight:800;margin:2mm 0 1mm}.sb{text-align:right;font-size:11px;margin-bottom:2mm}table{border-collapse:collapse;width:100%}td,th{border:1px solid #333;text-align:center;padding:0 2px;font-size:11px}.inf td{height:8mm;font-size:12px}.inf .h,.mn th{background:#F0F0F0;font-weight:800}.mn{margin-top:3mm;table-layout:fixed;flex:1}.mn th{height:9mm}.mn td{height:13.4mm}.mn td.n{font-weight:700;font-size:11px;line-height:1.2}.mn td.w{font-size:10px;line-height:1.2}.sg{display:flex;justify-content:space-between;margin-top:3mm;font-size:12px;font-weight:700}.sg span{border-bottom:1px solid #333;padding:0 14mm 1px 2px}';
+  var css='@page{size:A4;margin:9mm}*{box-sizing:border-box;font-family:"Noto Sans KR","Malgun Gothic",sans-serif}body{margin:0;color:#111}.pg{height:278mm;page-break-after:always;display:flex;flex-direction:column}.pg:last-child{page-break-after:auto}.tt{font-size:21px;font-weight:800;margin:2mm 0 1mm}.sb{text-align:right;font-size:11px;margin-bottom:2mm}table{border-collapse:collapse;width:100%}td,th{border:1px solid #333;text-align:center;padding:0 2px;font-size:11px}.inf td{height:8mm;font-size:12px}.inf .h,.mn th{background:#F0F0F0;font-weight:800}.mn{margin-top:3mm;table-layout:fixed;flex:1}.mn th{height:9mm}.mn td{height:13.4mm}.mn td.n{font-weight:700;font-size:11px;line-height:1.2}.mn td.w{font-size:10px;line-height:1.2}.sg{display:flex;justify-content:space-between;margin-top:3mm;font-size:12px;font-weight:700}.sg>span{display:inline-flex;align-items:center;gap:3px;min-height:8mm;border-bottom:1px solid #333;padding:0 4mm 1px 2px}';
   var html='<!doctype html><html><head><meta charset="utf-8"><title>관리대장</title><style>'+css+'</style></head><body>'+pages.map(function(p){return wkPageHtml(p.d,p.rows,p.pg,p.tot);}).join('')+'</body></html>';
   window.__wkLastPrint=html;
   openPrintView(html,'주간 입출고 인쇄 미리보기');}
@@ -4254,6 +4313,7 @@ function wkPdRender(){
     h+='<label class="pd-ck"><input type="checkbox" '+(PD.act?'checked':'')+' onchange="wkPdAct(this)"> 입출고가 있거나 재고가 있는 품목만 출력 (끄면 전체 품목)</label>';
     h+='<div class="pd-info">'+(PD.split?'기간 안에서 입출고가 있는 날마다 한 장씩 나옵니다.':'선택한 기간('+wkPdDays()+'일)의 입고·출고가 품목별로 합산되어 나옵니다. 기간 시작 전 재고 + 입고 합계 − 출고 합계 = 잔여')+'</div>';
   }
+  h+='<label class="pd-ck"><input type="checkbox" '+(wkStampOn()?'checked':'')+' onchange="wkStampSet(this)"> 작성자·확인(팀장) 도장 넣기</label>';
   if(dirty)h+='<div class="pd-warn">저장하지 않은 입력이 있습니다. PDF에는 저장된 내용만 반영되므로 먼저 저장해 주세요.</div>';
   h+='<button type="button" class="pd-go" id="wkPdGo" onclick="wkPdMake()">PDF 저장·공유</button></div>';
   ov.innerHTML=h;ov.className='on';
@@ -4262,9 +4322,10 @@ async function wkPdFetch(){
   var wid=curWarehouse.id;
   var res=await Promise.all([sbFetchAll('/warehouse_ledger?warehouse_id=eq.'+wid+'&order=ledger_date.asc&select=item_id,ledger_date,prev_qty,in_qty,out_qty,remain_qty,leader_name,written_by'),
     sbFetchAll('/warehouse_txn?warehouse_id=eq.'+wid+'&ledger_date=gte.'+PD_RANGE.from+'&ledger_date=lte.'+PD_RANGE.to+'&order=txn_at.asc&select=item_id,ledger_date,kind,note'),
-    sbFetchAll('/warehouse_daily?warehouse_id=eq.'+wid+'&ledger_date=gte.'+PD_RANGE.from+'&ledger_date=lte.'+PD_RANGE.to+'&order=ledger_date.asc&select=*')]);
+    sbFetchAll('/warehouse_daily?warehouse_id=eq.'+wid+'&ledger_date=gte.'+PD_RANGE.from+'&ledger_date=lte.'+PD_RANGE.to+'&order=ledger_date.asc&select=*'),
+    sbFetch('/warehouse_daily?warehouse_id=eq.'+wid+'&ledger_date=lt.'+PD_RANGE.from+'&or=(team_am.neq.,team_pm.neq.)&order=ledger_date.desc&limit=1&select=*').then(function(r){return r.json();}).catch(function(){return [];})]);
   if(!Array.isArray(res[0])||!Array.isArray(res[1])||!Array.isArray(res[2]))throw new Error('불러오기 실패');
-  return {led:res[0],tx:res[1],daily:res[2]};
+  return {led:res[0],tx:res[1],daily:res[2],prev:Array.isArray(res[3])?res[3]:[]};
 }
 var PD_RANGE={from:'',to:''};
 // 한 구간(from~to)의 품목별 합산 행 계산
@@ -4282,8 +4343,15 @@ function wkPdRows(D,from,to){
   return rows;
 }
 function wkPdTeams(D,from,to){
-  var u=function(k){var a=[];D.daily.forEach(function(r){var d=String(r.ledger_date).slice(0,10);if(d<from||d>to)return;var v=(r[k]||'').trim();if(v&&a.indexOf(v)<0)a.push(v);});return a.join(' · ');};
-  return {am:u('team_am'),amL:u('leader_am'),pm:u('team_pm'),pmL:u('leader_pm')};
+  var rec={};D.daily.forEach(function(r){rec[String(r.ledger_date).slice(0,10)]=r;});
+  var df=whDefHdr(curWarehouse),pv=(D.prev&&D.prev[0])||{};
+  if((pv.team_am||'').trim()||(pv.team_pm||'').trim()){df={am:pv.team_am||df.am,amL:pv.leader_am||df.amL,pm:pv.team_pm||df.pm,pmL:pv.leader_pm||df.pmL};}
+  var out={am:[],amL:[],pm:[],pmL:[]};
+  var put=function(a,v){v=(v||'').trim();if(v&&a.indexOf(v)<0)a.push(v);};
+  var t=Date.parse(from+'T00:00:00Z'),e=Date.parse(to+'T00:00:00Z');
+  for(;t<=e;t+=864e5){var d=new Date(t).toISOString().slice(0,10),r=rec[d]||{};
+    put(out.am,r.team_am||df.am);put(out.amL,r.leader_am||df.amL);put(out.pm,r.team_pm||df.pm);put(out.pmL,r.leader_pm||df.pmL);}
+  return {am:out.am.join(' · '),amL:out.amL.join(' · '),pm:out.pm.join(' · '),pmL:out.pmL.join(' · ')};
 }
 function wkPdFmt(d){return d.slice(0,4)+'. '+parseInt(d.slice(5,7),10)+'. '+parseInt(d.slice(8,10),10)+'.('+WK_DN[wkDow(d)]+')';}
 function wkPdCell(d){return parseInt(d.slice(5,7),10)+'/'+parseInt(d.slice(8,10),10)+'('+WK_DN[wkDow(d)]+')';}
